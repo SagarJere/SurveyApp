@@ -1,0 +1,8 @@
+Alembic migrations. Every schema change is a migration (see CLAUDE.md).
+
+    uv run alembic revision --autogenerate -m "add surveys table"
+    uv run alembic upgrade head
+    uv run alembic downgrade -1
+
+The database URL comes from DATABASE_URL (via app.config), never from alembic.ini.
+Import new model modules in app/models/__init__.py so autogenerate can see them.

@@ -1,0 +1,115 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * shadcn/ui theme tokens. Components only use these semantic names, so light and dark mode
+ * (and later, per-survey accent colours) change in one place.
+ * Primary is the brand teal (#0E7A6A), the default survey accent.
+ */
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.985 0.002 197);
+  --foreground: oklch(0.2 0.012 200);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.012 200);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.012 200);
+  --primary: oklch(0.52 0.1 177);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.955 0.006 197);
+  --secondary-foreground: oklch(0.25 0.012 200);
+  --muted: oklch(0.955 0.006 197);
+  --muted-foreground: oklch(0.47 0.015 200);
+  --accent: oklch(0.94 0.02 177);
+  --accent-foreground: oklch(0.25 0.03 177);
+  --destructive: oklch(0.55 0.22 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.52 0.12 150);
+  --warning: oklch(0.6 0.13 70);
+  --border: oklch(0.91 0.006 197);
+  --input: oklch(0.88 0.008 197);
+  --ring: oklch(0.52 0.1 177);
+}
+
+.dark {
+  --background: oklch(0.17 0.008 200);
+  --foreground: oklch(0.96 0.004 197);
+  --card: oklch(0.21 0.01 200);
+  --card-foreground: oklch(0.96 0.004 197);
+  --popover: oklch(0.23 0.01 200);
+  --popover-foreground: oklch(0.96 0.004 197);
+  --primary: oklch(0.72 0.11 177);
+  --primary-foreground: oklch(0.18 0.02 177);
+  --secondary: oklch(0.27 0.01 200);
+  --secondary-foreground: oklch(0.96 0.004 197);
+  --muted: oklch(0.27 0.01 200);
+  --muted-foreground: oklch(0.72 0.012 200);
+  --accent: oklch(0.3 0.03 177);
+  --accent-foreground: oklch(0.96 0.004 197);
+  --destructive: oklch(0.65 0.2 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.72 0.14 150);
+  --warning: oklch(0.78 0.13 75);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.72 0.11 177);
+}
+
+@theme inline {
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply min-h-dvh bg-background text-foreground antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

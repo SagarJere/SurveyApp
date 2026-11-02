@@ -1,0 +1,131 @@
+# Survey App
+
+Internal survey application. HR and admin users build surveys, publish them to a list of employees, and view results on dashboards.
+
+- **Backend:** Python 3.12, FastAPI, SQLAlchemy 2 (async), Alembic, PostgreSQL 16
+- **Frontend:** React 18, Vite, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack Query, React Router 7
+
+Product and design documents live in [`docs/`](docs/). Start with [`CLAUDE.md`](CLAUDE.md) and [`docs/08-implementation-plan.md`](docs/08-implementation-plan.md).
+
+## Prerequisites
+
+| Tool | Version | Install |
+|---|---|---|
+| Docker (Docker Desktop or OrbStack) | with Compose v2 | https://docs.docker.com/get-docker/ |
+| uv | 0.13+ | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| Python | 3.12 (uv installs it) | `uv python install 3.12` |
+| Node.js | 20.19+ (24 recommended) | https://nodejs.org |
+
+## First-time setup
+
+```bash
+make setup      # creates .env with a random JWT_SECRET, installs backend and frontend deps
+make db         # starts PostgreSQL on localhost:5433 and waits until healthy
+make migrate    # applies migrations to the dev and test databases
+```
+
+Without `make`:
+
+```bash
+cp .env.example .env          # then set JWT_SECRET to a long random string
+cd backend && uv sync && cd ..
+cd frontend && npm ci && cd ..
+docker compose up -d db
+cd backend && uv run alembic upgrade head
+```
+
+## Run
+
+Each in its own terminal:
+
+```bash
+docker compose up -d db                                      # database
+cd backend && uv run uvicorn app.main:app --reload --port 8001   # API  -> http://localhost:8001/api
+cd frontend && npm run dev                                   # web  -> http://localhost:5173
+```
+
+The Vite dev server proxies `/api` to the backend, so the browser only talks to one origin. The header shows a green dot when the API and database are reachable.
+
+Useful URLs in development:
+
+- `GET http://localhost:8001/api/health`: API and database status
+- `http://localhost:8001/api/docs`: interactive API docs (disabled when `APP_ENV=production`)
+
+## Checks
+
+| | Backend (`cd backend`) | Frontend (`cd frontend`) |
+|---|---|---|
+| Lint + format | `uv run ruff check . && uv run ruff format --check .` | `npm run lint && npm run format:check` |
+| Type check | `uv run mypy` | `npm run typecheck` |
+| Tests | `uv run pytest` | `npm run test` |
+| Auto-fix | `uv run ruff check --fix . && uv run ruff format .` | `npm run lint:fix && npm run format` |
+
+`make check` runs all of them. Backend tests need the database running (`make db`) and use the separate `surveyapp_test` database. CI runs the same steps in `.github/workflows/ci.yml`.
+
+## Configuration
+
+All configuration comes from environment variables. [`.env.example`](.env.example) documents every one. The backend and the frontend both read the single `.env` at the repo root. Only `VITE_*` values reach the browser.
+
+The backend refuses to start in production (`APP_ENV=production`) when:
+
+- `JWT_SECRET` is shorter than 32 characters
+- `CORS_ORIGINS` contains `*`
+- `DB_ECHO` is on
+- `FILE_STORAGE_PATH` is a relative path
+
+## Database migrations
+
+Every schema change is an Alembic migration. Never edit the database by hand.
+
+```bash
+cd backend
+uv run alembic revision --autogenerate -m "add surveys table"
+uv run alembic upgrade head
+uv run alembic downgrade -1
+```
+
+Import each new model module in `backend/app/models/__init__.py` so autogenerate sees it.
+
+## Project layout
+
+```
+backend/
+  app/
+    main.py            app factory: settings, middleware, error handlers, routers
+    config.py          settings from environment variables
+    db.py              async engine and per-request session
+    errors.py          the shared error response format
+    middleware.py      request IDs and request logging
+    routers/           HTTP endpoints (thin)
+    services/          business logic
+    models/            SQLAlchemy models
+    schemas/           Pydantic request and response models
+    tests/             pytest
+  alembic/             migrations
+frontend/
+  src/
+    app/               router, providers, layouts, theme
+    components/        shared components; ui/ holds shadcn/ui components
+    features/          one folder per feature
+    lib/               API client, query client, utilities
+    test/              test setup and helpers
+docker/postgres/init/  runs once on a new database volume (creates the test database)
+```
+
+## API errors
+
+Every error response has the same shape:
+
+```json
+{ "error": { "code": "NOT_FOUND", "message": "Not Found", "details": {} } }
+```
+
+Every response carries an `X-Request-ID` header. The same ID appears in the API logs, and error toasts in the UI show it as a reference.
+
+## Troubleshooting
+
+- **Port 5432 is in use:** the compose file maps Postgres to 5433 by default. Change `POSTGRES_PORT` and the port in both database URLs in `.env` to use another.
+- **Port 8001 is in use:** set `BACKEND_PORT` in `.env` and pass the same value to `--port`. The Vite proxy reads `BACKEND_PORT`.
+- **Port 5173 is in use:** Vite picks the next free port. `CORS_ORIGINS` already allows 5173–5175.
+- **`docker compose` isn't found with OrbStack:** open the OrbStack app once so it can relink its command-line tools, or run `/Applications/OrbStack.app/Contents/MacOS/xbin/docker-compose` directly.
+- **The test database is missing:** it's created only when the volume is first created. Run `make db-reset` (this deletes local data), or create it by hand with `docker compose exec db createdb -U surveyapp surveyapp_test`.
