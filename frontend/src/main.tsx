@@ -16,7 +16,7 @@ const router = createAppRouter()
 
 createRoot(container).render(
   <StrictMode>
-    <AppProviders router={router}>
+    <AppProviders>
       <RouterProvider router={router} />
     </AppProviders>
   </StrictMode>,

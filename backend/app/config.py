@@ -12,6 +12,7 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 MIN_PRODUCTION_SECRET_LENGTH = 32
+PLACEHOLDER_SECRET = "change-me-to-a-long-random-string"  # noqa: S105 - the value we reject
 
 AppEnv = Literal["development", "test", "production"]
 AuthMode = Literal["dev", "sso"]
@@ -26,6 +27,8 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=False,
+        # Validation errors must never echo secrets (JWT_SECRET, DATABASE_URL) into logs.
+        hide_input_in_errors=True,
     )
 
     app_name: str = "Pulse API"
@@ -33,7 +36,7 @@ class Settings(BaseSettings):
     auth_mode: AuthMode = "dev"
     log_level: LogLevel = "INFO"
 
-    jwt_secret: SecretStr
+    jwt_secret: SecretStr = Field(min_length=16)
     jwt_expires_minutes: int = Field(default=480, ge=5, le=60 * 24)
 
     database_url: str
@@ -71,7 +74,16 @@ class Settings(BaseSettings):
                 raise ValueError(msg)
             # In development, relative paths are relative to the repo root, not the cwd.
             self.file_storage_path = (REPO_ROOT / self.file_storage_path).resolve()
+        if self.auth_mode == "sso":
+            msg = (
+                "AUTH_MODE=sso is not available yet: single sign-on is added in Phase 6. "
+                "Use AUTH_MODE=dev outside production."
+            )
+            raise ValueError(msg)
         if self.app_env == "production":
+            if self.jwt_secret.get_secret_value() == PLACEHOLDER_SECRET:
+                msg = "JWT_SECRET is still the placeholder from .env.example"
+                raise ValueError(msg)
             if len(self.jwt_secret.get_secret_value()) < MIN_PRODUCTION_SECRET_LENGTH:
                 msg = (
                     f"JWT_SECRET must be at least {MIN_PRODUCTION_SECRET_LENGTH} characters "
@@ -83,6 +95,12 @@ class Settings(BaseSettings):
                 raise ValueError(msg)
             if self.db_echo:
                 msg = "DB_ECHO must be off in production (it logs query parameters)"
+                raise ValueError(msg)
+            if self.auth_mode == "dev":
+                msg = (
+                    "AUTH_MODE=dev is not allowed when APP_ENV=production: "
+                    "it lets anyone sign in with just an employee ID"
+                )
                 raise ValueError(msg)
         return self
 

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as healthApi from '@/features/health/api'
+import { TEST_USERS } from '@/test/auth'
 import { renderRoute } from '@/test/render'
 
 beforeEach(() => {
@@ -16,7 +17,7 @@ beforeEach(() => {
 
 describe('routes', () => {
   it('renders My surveys at / inside the app shell', async () => {
-    renderRoute('/')
+    renderRoute('/', { user: TEST_USERS.hr })
 
     expect(await screen.findByRole('heading', { level: 1, name: 'My surveys' })).toBeInTheDocument()
     expect(screen.getByText("You're all caught up.")).toBeInTheDocument()
@@ -27,7 +28,7 @@ describe('routes', () => {
   })
 
   it('renders the surveys home for /admin/surveys', async () => {
-    renderRoute('/admin/surveys')
+    renderRoute('/admin/surveys', { user: TEST_USERS.hr })
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Surveys' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Surveys' })).toHaveAttribute('aria-current', 'page')
@@ -36,27 +37,27 @@ describe('routes', () => {
   it.each(['/admin/surveys/abc/edit', '/admin/surveys/abc/results'])(
     'shows survey-not-found for %s',
     async (path) => {
-      renderRoute(path)
+      renderRoute(path, { user: TEST_USERS.hr })
 
       expect(await screen.findByText("We couldn't find that survey")).toBeInTheDocument()
     },
   )
 
   it('lazy-loads the respondent route without the main navigation', async () => {
-    renderRoute('/s/some-survey')
+    renderRoute('/s/some-survey', { user: TEST_USERS.hr })
 
     expect(await screen.findByText("This survey isn't available to you.")).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument()
   })
 
   it('shows a not-found page for unknown paths', async () => {
-    renderRoute('/nowhere')
+    renderRoute('/nowhere', { user: TEST_USERS.hr })
 
     expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument()
   })
 
   it('navigates between sections with the main nav', async () => {
-    const { router } = renderRoute('/')
+    const { router } = renderRoute('/', { user: TEST_USERS.hr })
 
     await userEvent.click(await screen.findByRole('link', { name: 'Surveys' }))
 
@@ -65,7 +66,7 @@ describe('routes', () => {
   })
 
   it('offers a skip link to the main content as the first focus stop', async () => {
-    renderRoute('/')
+    renderRoute('/', { user: TEST_USERS.hr })
     await screen.findByRole('heading', { level: 1, name: 'My surveys' })
 
     await userEvent.tab()

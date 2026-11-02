@@ -22,6 +22,7 @@ Product and design documents live in [`docs/`](docs/). Start with [`CLAUDE.md`](
 make setup      # creates .env with a random JWT_SECRET, installs backend and frontend deps
 make db         # starts PostgreSQL on localhost:5433 and waits until healthy
 make migrate    # applies migrations to the dev and test databases
+make seed       # creates the test HR/admin accounts and lists the sign-in IDs
 ```
 
 Without `make`:
@@ -32,6 +33,7 @@ cd backend && uv sync && cd ..
 cd frontend && npm ci && cd ..
 docker compose up -d db
 cd backend && uv run alembic upgrade head
+cd backend && uv run python -m app.scripts.seed
 ```
 
 ## Run
@@ -45,6 +47,22 @@ cd frontend && npm run dev                                   # web  -> http://lo
 ```
 
 The Vite dev server proxies `/api` to the backend, so the browser only talks to one origin. The header shows a green dot when the API and database are reachable.
+
+## Signing in (test environments)
+
+With `AUTH_MODE=dev`, the sign-in page asks for an employee ID only. IDs are trimmed and uppercased, so ` e1002 ` signs in as `E1002`.
+
+| Employee ID | Role | Name |
+|---|---|---|
+| E1001 | Admin | Asha Rao |
+| E1002 | HR | Vikram Mehta |
+| E2001 to E2005 | Employee | test employees |
+
+Any other ID signs in as an employee. Run `make seed` once so E1001 and E1002 get their roles. HR and admin users see **Surveys** in the header. Employees don't, and get a "no access" page if they open an admin link.
+
+The API refuses to start when `APP_ENV=production` and `AUTH_MODE=dev`. Single sign-on replaces this sign-in page before go-live. Until then `AUTH_MODE=sso` is refused too.
+
+Sessions last 8 hours (`JWT_EXPIRES_MINUTES`). When a session expires, the app returns to the sign-in page and says why.
 
 Useful URLs in development:
 
@@ -67,6 +85,9 @@ Useful URLs in development:
 All configuration comes from environment variables. [`.env.example`](.env.example) documents every one. The backend and the frontend both read the single `.env` at the repo root. Only `VITE_*` values reach the browser.
 
 The backend refuses to start in production (`APP_ENV=production`) when:
+
+- `AUTH_MODE` is `dev`
+- `JWT_SECRET` is still the placeholder from `.env.example`
 
 - `JWT_SECRET` is shorter than 32 characters
 - `CORS_ORIGINS` contains `*`

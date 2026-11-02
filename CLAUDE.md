@@ -47,6 +47,7 @@ When a doc and this file disagree, ask before choosing.
 # backend (port 8001; the Vite proxy forwards /api there)
 cd backend && uv run uvicorn app.main:app --reload --port 8001
 cd backend && uv run alembic upgrade head
+cd backend && uv run python -m app.scripts.seed  # dev HR/admin accounts: E1001 admin, E1002 hr
 cd backend && uv run pytest                       # needs the db running; uses surveyapp_test
 cd backend && uv run ruff check . && uv run ruff format --check . && uv run mypy
 

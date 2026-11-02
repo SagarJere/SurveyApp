@@ -94,6 +94,11 @@ def error_response(
     )
 
 
+def _clean_message(message: str) -> str:
+    """Pydantic prefixes custom validator messages with "Value error, "; people don't need it."""
+    return message.removeprefix("Value error, ")
+
+
 def _validation_issues(errors: Sequence[Any]) -> list[dict[str, Any]]:
     """Keep only JSON-safe fields; pydantic's `ctx` can hold exception objects."""
     issues: list[dict[str, Any]] = []
@@ -103,7 +108,7 @@ def _validation_issues(errors: Sequence[Any]) -> list[dict[str, Any]]:
             {
                 "field": ".".join(loc[1:]) if len(loc) > 1 else ".".join(loc),
                 "location": loc[0] if loc else "",
-                "message": str(err.get("msg", "Invalid value")),
+                "message": _clean_message(str(err.get("msg", "Invalid value"))),
                 "type": str(err.get("type", "value_error")),
             }
         )

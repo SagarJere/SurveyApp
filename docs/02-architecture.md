@@ -106,7 +106,7 @@ CORS_ORIGINS=http://localhost:5173
 - TanStack Query for all server state. Query keys: `['surveys']`, `['survey', id]`, `['survey', id, 'results', filters]`.
 - Zustand store only for the builder's in-progress draft (see `05-survey-builder.md`).
 - Axios instance with interceptors: attach the JWT, redirect to login on 401, show a toast on 5xx.
-- **Dev auth mock:** when `import.meta.env.DEV`, the login page shows the EmployeeId field. In production it starts the SSO flow.
+- **Dev auth mock:** when `VITE_AUTH_MODE=dev`, the login page shows the EmployeeId field. With `VITE_AUTH_MODE=sso` it starts the SSO flow. It's a build setting that must match the backend's `AUTH_MODE`, because test environments run production builds and still need the EmployeeId field.
 - Route groups:
   - `/login`
   - `/` → "My surveys" (everyone)

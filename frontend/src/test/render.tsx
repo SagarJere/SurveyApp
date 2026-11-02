@@ -5,6 +5,9 @@ import { createMemoryRouter, RouterProvider } from 'react-router'
 
 import { AppProviders } from '@/app/providers'
 import { routes } from '@/app/router'
+import type { AuthUser } from '@/features/auth/types'
+
+import { signInAs } from './auth'
 
 export function createTestQueryClient(): QueryClient {
   return new QueryClient({
@@ -20,12 +23,20 @@ export function renderWithProviders(
   return { ...result, queryClient }
 }
 
-export function renderRoute(path: string, queryClient: QueryClient = createTestQueryClient()) {
+interface RenderRouteOptions {
+  /** Sign in as this user first. Omit to start signed out. */
+  user?: AuthUser
+  queryClient?: QueryClient
+}
+
+export function renderRoute(path: string, options: RenderRouteOptions = {}) {
+  const queryClient = options.queryClient ?? createTestQueryClient()
+  const fetchMe = options.user ? signInAs(options.user) : undefined
   const router = createMemoryRouter(routes, { initialEntries: [path] })
   const result = render(
     <AppProviders queryClient={queryClient}>
       <RouterProvider router={router} />
     </AppProviders>,
   )
-  return { ...result, router, queryClient }
+  return { ...result, router, queryClient, fetchMe }
 }

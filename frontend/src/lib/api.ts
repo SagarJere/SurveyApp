@@ -106,7 +106,7 @@ export function toApiError(error: unknown): ApiError {
 
 export interface ApiHandlers {
   /** Called after a 401. The token has already been cleared. */
-  onUnauthorized: () => void
+  onUnauthorized: (error: ApiError) => void
   /** Called for 5xx responses and network failures. */
   onServerError: (error: ApiError) => void
 }
@@ -165,7 +165,7 @@ export function createApiClient(baseURL: string = env.apiBaseUrl): AxiosInstance
 
       if (apiError.status === 401 && !config?.skipAuthRedirect) {
         tokenStore.clear()
-        handlers.onUnauthorized()
+        handlers.onUnauthorized(apiError)
       } else if ((apiError.isServerError || apiError.isNetworkError) && !config?.skipErrorToast) {
         handlers.onServerError(apiError)
       }

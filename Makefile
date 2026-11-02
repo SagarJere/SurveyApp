@@ -6,7 +6,7 @@ SHELL := /bin/bash
 
 BACKEND_PORT ?= 8001
 
-.PHONY: help setup db db-stop db-reset migrate api web lint typecheck test check \
+.PHONY: help setup db db-stop db-reset migrate seed api web lint typecheck test check \
         backend-lint backend-typecheck backend-test frontend-lint frontend-typecheck frontend-test
 
 help: ## Show this list
@@ -32,6 +32,9 @@ db-reset: ## Delete the database volume and start fresh (destroys local data)
 migrate: ## Apply migrations to the dev and test databases
 	cd backend && uv run alembic upgrade head
 	cd backend && DATABASE_URL="$$(grep -E '^TEST_DATABASE_URL=' ../.env | cut -d= -f2-)" uv run alembic upgrade head
+
+seed: ## Create the dev HR/admin accounts and list all test sign-in IDs
+	cd backend && uv run python -m app.scripts.seed
 
 api: ## Run the API with auto-reload
 	cd backend && uv run uvicorn app.main:app --reload --port $(BACKEND_PORT)

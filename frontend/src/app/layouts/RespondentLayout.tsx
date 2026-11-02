@@ -2,6 +2,7 @@ import { Outlet } from 'react-router'
 
 import { AppMark } from '@/components/app-mark'
 import { MAIN_CONTENT_ID, SkipLink } from '@/components/skip-link'
+import { UserMenu } from '@/features/auth/UserMenu'
 
 import { ThemeToggle } from '../theme/ThemeToggle'
 
@@ -16,7 +17,10 @@ export function RespondentLayout() {
       <header className="border-b bg-card">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-2 px-4">
           <AppMark />
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <UserMenu />
+          </div>
         </div>
       </header>
       <main

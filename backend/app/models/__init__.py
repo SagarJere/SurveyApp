@@ -4,5 +4,6 @@ Import every model module here so `Base.metadata` is complete for Alembic autoge
 """
 
 from app.models.base import Base
+from app.models.user import AppUser
 
-__all__ = ["Base"]
+__all__ = ["AppUser", "Base"]

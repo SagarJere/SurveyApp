@@ -5,11 +5,18 @@ Tests run against the `surveyapp_test` database (TEST_DATABASE_URL), never the d
 
 import os
 from collections.abc import AsyncIterator, Callable
+from pathlib import Path
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncEngine
 
+from app.auth.jwt import issue_token
+from app.auth.types import AuthenticatedUser, Role
 from app.config import Settings
 
 DEFAULT_TEST_DATABASE_URL = "postgresql+asyncpg://surveyapp:surveyapp@localhost:5433/surveyapp_test"
@@ -55,6 +62,43 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
     async with AsyncClient(transport=transport, base_url="http://testserver") as http:
         yield http
     await app.state.engine.dispose()
+
+
+BACKEND_DIR = Path(__file__).resolve().parents[2]
+# Tables emptied after every test. Add new tables here as later phases create them.
+TABLES = ("app_users",)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def migrated_database() -> None:
+    """Bring the test database to the latest migration once per test run."""
+    config = Config(str(BACKEND_DIR / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_DIR / "alembic"))
+    command.upgrade(config, "head")
+
+
+@pytest.fixture
+async def engine(app: FastAPI) -> AsyncIterator[AsyncEngine]:
+    """The app's engine, with every table emptied after the test."""
+    db: AsyncEngine = app.state.engine
+    yield db
+    async with db.begin() as conn:
+        await conn.execute(text(f"TRUNCATE {', '.join(TABLES)}"))
+
+
+def bearer(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def token_for(settings: Settings) -> Callable[..., str]:
+    """Make a valid access token for any user without going through login."""
+
+    def make(employee_id: str = "E9999", role: Role = "employee", name: str | None = None) -> str:
+        user = AuthenticatedUser(employee_id=employee_id, name=name, role=role)
+        return issue_token(user, settings).token
+
+    return make
 
 
 def pytest_configure() -> None:
