@@ -66,7 +66,7 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 # Tables emptied after every test. Add new tables here as later phases create them.
-TABLES = ("app_users",)
+TABLES = ("survey_members", "surveys", "app_users")
 
 
 @pytest.fixture(scope="session", autouse=True)

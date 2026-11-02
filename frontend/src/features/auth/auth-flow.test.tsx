@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as healthApi from '@/features/health/api'
+import * as surveysApi from '@/features/surveys/api'
 import { AxiosError } from 'axios'
 
 import { api, ApiError } from '@/lib/api'
@@ -13,6 +14,7 @@ import { renderRoute } from '@/test/render'
 import * as authApi from './api'
 
 beforeEach(() => {
+  vi.spyOn(surveysApi, 'listSurveys').mockResolvedValue([])
   vi.spyOn(healthApi, 'fetchHealth').mockResolvedValue({
     status: 'ok',
     database: 'ok',

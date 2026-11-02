@@ -3,10 +3,16 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as healthApi from '@/features/health/api'
+import * as surveysApi from '@/features/surveys/api'
+import { ApiError } from '@/lib/api'
 import { TEST_USERS } from '@/test/auth'
 import { renderRoute } from '@/test/render'
 
 beforeEach(() => {
+  vi.spyOn(surveysApi, 'listSurveys').mockResolvedValue([])
+  vi.spyOn(surveysApi, 'getSurvey').mockRejectedValue(
+    new ApiError({ status: 404, code: 'NOT_FOUND', message: "We couldn't find that survey." }),
+  )
   vi.spyOn(healthApi, 'fetchHealth').mockResolvedValue({
     status: 'ok',
     database: 'ok',

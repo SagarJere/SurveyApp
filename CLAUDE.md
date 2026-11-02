@@ -34,7 +34,7 @@ When a doc and this file disagree, ask before choosing.
 1. **Build phase by phase** following `docs/08-implementation-plan.md`. Finish and verify one phase before starting the next. Don't build features from later phases early.
 2. **Ask before** changing the data model, adding a dependency not listed above, or changing an agreed decision in `docs/01-requirements.md`.
 3. **Business rules live in the backend.** The frontend evaluates conditions for display, but the backend re-validates everything on save and submit (visibility, required, ranges, one response per employee, audience access).
-4. **Shared condition logic:** the condition evaluator exists once in TypeScript (`frontend/src/features/survey-logic/`) and once in Python (`backend/app/services/survey_logic.py`). Both must pass the same test cases in `docs/05-survey-builder.md` → "Condition test cases".
+4. **Shared condition logic:** the condition evaluator exists once in TypeScript (`frontend/src/features/survey-logic/`) and once in Python (`backend/app/services/survey_logic.py`). Both must pass the same test cases in `docs/05-survey-builder.md` → "Condition test cases". These live once in `shared/test-cases/*.json` and both test suites read them; change the case file first, then make both sides pass.
 5. **Every schema change is an Alembic migration.** Never edit the database by hand.
 6. **Write tests with each feature:** pytest for backend services and endpoints, Vitest + Testing Library for frontend logic and key components.
 7. **Responsive and accessible:** every screen works at 375px wide, supports keyboard use, and has visible focus states. Support light and dark mode via shadcn theme tokens.

@@ -49,6 +49,21 @@ export const routes: RouteObject[] = [
             ],
           },
           {
+            // The builder has its own full-width top bar instead of the app header.
+            path: 'admin/surveys/:surveyId/edit',
+            element: <RequireRole roles={SURVEY_MANAGER_ROLES} standalone />,
+            children: [
+              {
+                index: true,
+                // Its own chunk: employees answering surveys never download the builder.
+                lazy: async () => {
+                  const { BuilderPage } = await import('@/features/builder/BuilderPage')
+                  return { Component: BuilderPage }
+                },
+              },
+            ],
+          },
+          {
             Component: AppShell,
             children: [
               { index: true, Component: MySurveysPage },
@@ -57,7 +72,6 @@ export const routes: RouteObject[] = [
                 element: <RequireRole roles={SURVEY_MANAGER_ROLES} />,
                 children: [
                   { path: 'surveys', Component: SurveysHomePage },
-                  { path: 'surveys/:surveyId/edit', Component: SurveyNotFoundPage },
                   { path: 'surveys/:surveyId/results', Component: SurveyNotFoundPage },
                 ],
               },

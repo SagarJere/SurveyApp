@@ -1,0 +1,3061 @@
+{
+  "_comment": "Shared survey-logic cases (docs/05-survey-builder.md, 'Condition test cases' 1-8 and broken-condition states). Used by backend/app/tests/test_survey_logic.py and frontend/src/features/survey-logic/*.test.ts. Expected values are written by hand.",
+  "visibility": [
+    {
+      "name": "1a: Q2 = Hybrid shows Q3",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q3",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "is",
+              "val": "hybrid"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q2": "hybrid"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q2",
+        "q3"
+      ],
+      "kept_answers": {
+        "q2": "hybrid"
+      },
+      "missing_required": []
+    },
+    {
+      "name": "1b: Q2 = Remote hides Q3",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q3",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "is",
+              "val": "hybrid"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q2": "remote",
+        "q3": "yes"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q2"
+      ],
+      "kept_answers": {
+        "q2": "remote"
+      },
+      "missing_required": []
+    },
+    {
+      "name": "1c: Q2 unanswered hides Q3",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q3",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "is",
+              "val": "hybrid"
+            }
+          }
+        ]
+      },
+      "answers": {},
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q2"
+      ],
+      "kept_answers": {},
+      "missing_required": []
+    },
+    {
+      "name": "2a: 'is not' is false when the source is unanswered",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q5",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q5",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "not",
+              "val": "office"
+            }
+          }
+        ]
+      },
+      "answers": {},
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q2"
+      ],
+      "kept_answers": {},
+      "missing_required": []
+    },
+    {
+      "name": "2b: Q2 = Remote shows Q5 (is not Office)",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q5",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q5",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "not",
+              "val": "office"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q2": "remote"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q2",
+        "q5"
+      ],
+      "kept_answers": {
+        "q2": "remote"
+      },
+      "missing_required": []
+    },
+    {
+      "name": "2c: Q2 = Office hides Q5",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q5",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q5",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "not",
+              "val": "office"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q2": "office",
+        "q5": "x"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q2"
+      ],
+      "kept_answers": {
+        "q2": "office"
+      },
+      "missing_required": []
+    },
+    {
+      "name": "3a: chain: hidden Q3 hides Q4 and its answer is discarded",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "rating",
+            "text": "Question q3",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "is",
+              "val": "hybrid"
+            }
+          },
+          {
+            "key": "q4",
+            "section_key": "s1",
+            "type": "long",
+            "text": "Question q4",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q3",
+              "op": "gte",
+              "val": 4
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q2": "remote",
+        "q3": 5,
+        "q4": "text"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q2"
+      ],
+      "kept_answers": {
+        "q2": "remote"
+      },
+      "missing_required": []
+    },
+    {
+      "name": "3b: chain: Q2 = Hybrid and Q3 = 5 shows Q4",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "rating",
+            "text": "Question q3",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "is",
+              "val": "hybrid"
+            }
+          },
+          {
+            "key": "q4",
+            "section_key": "s1",
+            "type": "long",
+            "text": "Question q4",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q3",
+              "op": "gte",
+              "val": 4
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q2": "hybrid",
+        "q3": 5
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q2",
+        "q3",
+        "q4"
+      ],
+      "kept_answers": {
+        "q2": "hybrid",
+        "q3": 5
+      },
+      "missing_required": []
+    },
+    {
+      "name": "3c: chain: rating below threshold hides Q4",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "rating",
+            "text": "Question q3",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "is",
+              "val": "hybrid"
+            }
+          },
+          {
+            "key": "q4",
+            "section_key": "s1",
+            "type": "long",
+            "text": "Question q4",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q3",
+              "op": "gte",
+              "val": 4
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q2": "hybrid",
+        "q3": 3,
+        "q4": "x"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q2",
+        "q3"
+      ],
+      "kept_answers": {
+        "q2": "hybrid",
+        "q3": 3
+      },
+      "missing_required": []
+    },
+    {
+      "name": "4a: checkboxes include Laptop",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q7",
+            "section_key": "s1",
+            "type": "multi",
+            "text": "Question q7",
+            "required": false,
+            "options": [
+              {
+                "key": "laptop",
+                "label": "Laptop"
+              },
+              {
+                "key": "vpn",
+                "label": "VPN"
+              },
+              {
+                "key": "chair",
+                "label": "Chair"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q8",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q8",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q7",
+              "op": "is",
+              "val": "laptop"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q7": [
+          "laptop",
+          "vpn"
+        ]
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q7",
+        "q8"
+      ],
+      "kept_answers": {
+        "q7": [
+          "laptop",
+          "vpn"
+        ]
+      },
+      "missing_required": []
+    },
+    {
+      "name": "4b: checkboxes without Laptop",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q7",
+            "section_key": "s1",
+            "type": "multi",
+            "text": "Question q7",
+            "required": false,
+            "options": [
+              {
+                "key": "laptop",
+                "label": "Laptop"
+              },
+              {
+                "key": "vpn",
+                "label": "VPN"
+              },
+              {
+                "key": "chair",
+                "label": "Chair"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q8",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q8",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q7",
+              "op": "is",
+              "val": "laptop"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q7": [
+          "vpn"
+        ]
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q7"
+      ],
+      "kept_answers": {
+        "q7": [
+          "vpn"
+        ]
+      },
+      "missing_required": []
+    },
+    {
+      "name": "4c: empty checkbox answer counts as unanswered",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q7",
+            "section_key": "s1",
+            "type": "multi",
+            "text": "Question q7",
+            "required": false,
+            "options": [
+              {
+                "key": "laptop",
+                "label": "Laptop"
+              },
+              {
+                "key": "vpn",
+                "label": "VPN"
+              },
+              {
+                "key": "chair",
+                "label": "Chair"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q8",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q8",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q7",
+              "op": "is",
+              "val": "laptop"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q7": []
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q7"
+      ],
+      "kept_answers": {},
+      "missing_required": []
+    },
+    {
+      "name": "4d: checkboxes 'is not' Laptop",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q7",
+            "section_key": "s1",
+            "type": "multi",
+            "text": "Question q7",
+            "required": false,
+            "options": [
+              {
+                "key": "laptop",
+                "label": "Laptop"
+              },
+              {
+                "key": "vpn",
+                "label": "VPN"
+              },
+              {
+                "key": "chair",
+                "label": "Chair"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q8",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q8",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q7",
+              "op": "not",
+              "val": "laptop"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q7": [
+          "vpn"
+        ]
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q7",
+        "q8"
+      ],
+      "kept_answers": {
+        "q7": [
+          "vpn"
+        ]
+      },
+      "missing_required": []
+    },
+    {
+      "name": "5a: money 50000 meets 'at least 50,000'",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q5",
+            "section_key": "s1",
+            "type": "money",
+            "text": "Question q5",
+            "required": false,
+            "options": [],
+            "config": {
+              "currency": "INR",
+              "min": null,
+              "max": null,
+              "decimals": true
+            },
+            "condition": null
+          },
+          {
+            "key": "q6",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q6",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q5",
+              "op": "gte",
+              "val": 50000
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q5": 50000
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q5",
+        "q6"
+      ],
+      "kept_answers": {
+        "q5": 50000
+      },
+      "missing_required": []
+    },
+    {
+      "name": "5b: money 49999.99 does not",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q5",
+            "section_key": "s1",
+            "type": "money",
+            "text": "Question q5",
+            "required": false,
+            "options": [],
+            "config": {
+              "currency": "INR",
+              "min": null,
+              "max": null,
+              "decimals": true
+            },
+            "condition": null
+          },
+          {
+            "key": "q6",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q6",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q5",
+              "op": "gte",
+              "val": 50000
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q5": 49999.99
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q5"
+      ],
+      "kept_answers": {
+        "q5": 49999.99
+      },
+      "missing_required": []
+    },
+    {
+      "name": "5c: money 'at most' and zero counts as answered",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q5",
+            "section_key": "s1",
+            "type": "money",
+            "text": "Question q5",
+            "required": false,
+            "options": [],
+            "config": {
+              "currency": "INR"
+            },
+            "condition": null
+          },
+          {
+            "key": "q6",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q6",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q5",
+              "op": "lte",
+              "val": 1000
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q5": 0
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q5",
+        "q6"
+      ],
+      "kept_answers": {
+        "q5": 0
+      },
+      "missing_required": []
+    },
+    {
+      "name": "6a: section hidden: its answers dropped and required questions don't block",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          },
+          {
+            "key": "s2",
+            "title": "Section s2",
+            "condition": {
+              "src": "q5",
+              "op": "is",
+              "val": "yes"
+            }
+          }
+        ],
+        "questions": [
+          {
+            "key": "q5",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q5",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q6",
+            "section_key": "s2",
+            "type": "short",
+            "text": "Question q6",
+            "required": true,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q7",
+            "section_key": "s2",
+            "type": "rating",
+            "text": "Question q7",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          }
+        ]
+      },
+      "answers": {
+        "q5": "no",
+        "q6": "x",
+        "q7": 3
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q5"
+      ],
+      "kept_answers": {
+        "q5": "no"
+      },
+      "missing_required": []
+    },
+    {
+      "name": "6b: section shown: its required question is missing",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          },
+          {
+            "key": "s2",
+            "title": "Section s2",
+            "condition": {
+              "src": "q5",
+              "op": "is",
+              "val": "yes"
+            }
+          }
+        ],
+        "questions": [
+          {
+            "key": "q5",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q5",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q6",
+            "section_key": "s2",
+            "type": "short",
+            "text": "Question q6",
+            "required": true,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q7",
+            "section_key": "s2",
+            "type": "rating",
+            "text": "Question q7",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          }
+        ]
+      },
+      "answers": {
+        "q5": "yes"
+      },
+      "visible_sections": [
+        "s1",
+        "s2"
+      ],
+      "visible_questions": [
+        "q5",
+        "q6",
+        "q7"
+      ],
+      "kept_answers": {
+        "q5": "yes"
+      },
+      "missing_required": [
+        "q6"
+      ]
+    },
+    {
+      "name": "7a: hidden required question never blocks",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q1",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q1",
+            "required": true,
+            "options": [
+              {
+                "key": "a",
+                "label": "A"
+              },
+              {
+                "key": "b",
+                "label": "B"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q2",
+            "required": true,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q1",
+              "op": "is",
+              "val": "a"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q1": "b"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q1"
+      ],
+      "kept_answers": {
+        "q1": "b"
+      },
+      "missing_required": []
+    },
+    {
+      "name": "7b: visible required question blocks",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q1",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q1",
+            "required": true,
+            "options": [
+              {
+                "key": "a",
+                "label": "A"
+              },
+              {
+                "key": "b",
+                "label": "B"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q2",
+            "required": true,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q1",
+              "op": "is",
+              "val": "a"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q1": "a",
+        "q2": "  "
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q1",
+        "q2"
+      ],
+      "kept_answers": {
+        "q1": "a"
+      },
+      "missing_required": [
+        "q2"
+      ]
+    },
+    {
+      "name": "7c: unanswered required source is reported",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q1",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q1",
+            "required": true,
+            "options": [
+              {
+                "key": "a",
+                "label": "A"
+              },
+              {
+                "key": "b",
+                "label": "B"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q2",
+            "required": true,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q1",
+              "op": "is",
+              "val": "a"
+            }
+          }
+        ]
+      },
+      "answers": {},
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q1"
+      ],
+      "kept_answers": {},
+      "missing_required": [
+        "q1"
+      ]
+    },
+    {
+      "name": "8: broken condition (source deleted) shows the question",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q1",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q1",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q2",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "deleted",
+              "op": "is",
+              "val": "x"
+            }
+          }
+        ]
+      },
+      "answers": {},
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q1",
+        "q2"
+      ],
+      "kept_answers": {},
+      "missing_required": []
+    },
+    {
+      "name": "8b: source moved after: question shows",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q4",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q4",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q3",
+              "op": "gte",
+              "val": 4
+            }
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "rating",
+            "text": "Question q3",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          }
+        ]
+      },
+      "answers": {},
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q2",
+        "q4",
+        "q3"
+      ],
+      "kept_answers": {},
+      "missing_required": []
+    }
+  ],
+  "problems": [
+    {
+      "name": "no condition",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q3",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "is",
+              "val": "hybrid"
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q2",
+      "problem": null
+    },
+    {
+      "name": "healthy condition",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q3",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "is",
+              "val": "hybrid"
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q3",
+      "problem": null
+    },
+    {
+      "name": "source deleted",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q1",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q1",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q2",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "deleted",
+              "op": "is",
+              "val": "x"
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q2",
+      "problem": "source_missing"
+    },
+    {
+      "name": "Q2 moved below Q3",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q3",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "is",
+              "val": "hybrid"
+            }
+          },
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q3",
+      "problem": "source_after"
+    },
+    {
+      "name": "depends on itself",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q1",
+            "section_key": "s1",
+            "type": "rating",
+            "text": "Question q1",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q1",
+              "op": "gte",
+              "val": 3
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q1",
+      "problem": "source_after"
+    },
+    {
+      "name": "source became short answer",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q2",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q3",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "is",
+              "val": "hybrid"
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q3",
+      "problem": "source_ineligible"
+    },
+    {
+      "name": "source became paragraph",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "long",
+            "text": "Question q2",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q3",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "gte",
+              "val": 3
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q3",
+      "problem": "source_ineligible"
+    },
+    {
+      "name": "option removed",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q3",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "is",
+              "val": "hybrid"
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q3",
+      "problem": "answer_changed"
+    },
+    {
+      "name": "numeric operator on a choice",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q3",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "gte",
+              "val": 3
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q3",
+      "problem": "answer_changed"
+    },
+    {
+      "name": "choice operator on a rating",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "rating",
+            "text": "Question q2",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q3",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "is",
+              "val": 3
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q3",
+      "problem": "answer_changed"
+    },
+    {
+      "name": "rating value outside 1-5",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "rating",
+            "text": "Question q2",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q3",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "gte",
+              "val": 6
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q3",
+      "problem": "answer_changed"
+    },
+    {
+      "name": "rating value as text",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "rating",
+            "text": "Question q2",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q3",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "gte",
+              "val": "4"
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q3",
+      "problem": "answer_changed"
+    },
+    {
+      "name": "money value missing",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "money",
+            "text": "Question q2",
+            "required": false,
+            "options": [],
+            "config": {
+              "currency": "INR"
+            },
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q3",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "gte",
+              "val": null
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q3",
+      "problem": "answer_changed"
+    },
+    {
+      "name": "negative money value",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "money",
+            "text": "Question q2",
+            "required": false,
+            "options": [],
+            "config": {
+              "currency": "INR"
+            },
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q3",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "gte",
+              "val": -5
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q3",
+      "problem": "answer_changed"
+    },
+    {
+      "name": "healthy money condition",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q5",
+            "section_key": "s1",
+            "type": "money",
+            "text": "Question q5",
+            "required": false,
+            "options": [],
+            "config": {
+              "currency": "INR",
+              "min": null,
+              "max": null,
+              "decimals": true
+            },
+            "condition": null
+          },
+          {
+            "key": "q6",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q6",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q5",
+              "op": "gte",
+              "val": 50000
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q6",
+      "problem": null
+    },
+    {
+      "name": "dropdown is a valid source",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "dropdown",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q3",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "not",
+              "val": "no"
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q3",
+      "problem": null
+    },
+    {
+      "name": "section condition healthy",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          },
+          {
+            "key": "s2",
+            "title": "Section s2",
+            "condition": {
+              "src": "q5",
+              "op": "is",
+              "val": "yes"
+            }
+          }
+        ],
+        "questions": [
+          {
+            "key": "q5",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q5",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q6",
+            "section_key": "s2",
+            "type": "short",
+            "text": "Question q6",
+            "required": true,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q7",
+            "section_key": "s2",
+            "type": "rating",
+            "text": "Question q7",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          }
+        ]
+      },
+      "kind": "section",
+      "key": "s2",
+      "problem": null
+    },
+    {
+      "name": "section source in the same section",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          },
+          {
+            "key": "s2",
+            "title": "Section s2",
+            "condition": {
+              "src": "q6",
+              "op": "is",
+              "val": "yes"
+            }
+          }
+        ],
+        "questions": [
+          {
+            "key": "q5",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q5",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q6",
+            "section_key": "s2",
+            "type": "single",
+            "text": "Question q6",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": null
+          }
+        ]
+      },
+      "kind": "section",
+      "key": "s2",
+      "problem": "source_not_earlier_section"
+    },
+    {
+      "name": "section source in a later section",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          },
+          {
+            "key": "s2",
+            "title": "Section s2",
+            "condition": {
+              "src": "q6",
+              "op": "is",
+              "val": "yes"
+            }
+          },
+          {
+            "key": "s3",
+            "title": "Section s3",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q5",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q5",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q6",
+            "section_key": "s3",
+            "type": "single",
+            "text": "Question q6",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": null
+          }
+        ]
+      },
+      "kind": "section",
+      "key": "s2",
+      "problem": "source_not_earlier_section"
+    },
+    {
+      "name": "section source deleted",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          },
+          {
+            "key": "s2",
+            "title": "Section s2",
+            "condition": {
+              "src": "gone",
+              "op": "is",
+              "val": "yes"
+            }
+          }
+        ],
+        "questions": [
+          {
+            "key": "q5",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q5",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": null
+          }
+        ]
+      },
+      "kind": "section",
+      "key": "s2",
+      "problem": "source_missing"
+    }
+  ],
+  "validation": [
+    {
+      "name": "healthy survey",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          },
+          {
+            "key": "s2",
+            "title": "Section s2",
+            "condition": {
+              "src": "q5",
+              "op": "is",
+              "val": "yes"
+            }
+          }
+        ],
+        "questions": [
+          {
+            "key": "q5",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q5",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q6",
+            "section_key": "s2",
+            "type": "short",
+            "text": "Question q6",
+            "required": true,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q7",
+            "section_key": "s2",
+            "type": "rating",
+            "text": "Question q7",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          }
+        ]
+      },
+      "issues": []
+    },
+    {
+      "name": "no questions",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": []
+      },
+      "issues": [
+        {
+          "code": "no_questions",
+          "message": "Add at least one question.",
+          "question_key": null,
+          "section_key": null,
+          "problem": null
+        }
+      ]
+    },
+    {
+      "name": "missing text, too few options",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "single",
+            "text": "  ",
+            "required": false,
+            "options": [
+              {
+                "key": "x",
+                "label": "Only one"
+              }
+            ],
+            "config": {},
+            "condition": null
+          }
+        ]
+      },
+      "issues": [
+        {
+          "code": "question_text_missing",
+          "message": "Q1 has no question text.",
+          "question_key": "a",
+          "section_key": null,
+          "problem": null
+        },
+        {
+          "code": "options_too_few",
+          "message": "Q1 needs at least two options.",
+          "question_key": "a",
+          "section_key": null,
+          "problem": null
+        }
+      ]
+    },
+    {
+      "name": "empty and duplicate options",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "dropdown",
+            "text": "Question b",
+            "required": false,
+            "options": [
+              {
+                "key": "x",
+                "label": "Yes"
+              },
+              {
+                "key": "y",
+                "label": " yes "
+              },
+              {
+                "key": "z",
+                "label": ""
+              }
+            ],
+            "config": {},
+            "condition": null
+          }
+        ]
+      },
+      "issues": [
+        {
+          "code": "options_empty",
+          "message": "Q2 has an empty option. Fill it in or remove it.",
+          "question_key": "b",
+          "section_key": null,
+          "problem": null
+        },
+        {
+          "code": "options_duplicate",
+          "message": "Q2 has two options with the same text.",
+          "question_key": "b",
+          "section_key": null,
+          "problem": null
+        }
+      ]
+    },
+    {
+      "name": "money min above max",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "m",
+            "section_key": "s1",
+            "type": "money",
+            "text": "Question m",
+            "required": false,
+            "options": [],
+            "config": {
+              "currency": "INR",
+              "min": 500,
+              "max": 100,
+              "decimals": false
+            },
+            "condition": null
+          }
+        ]
+      },
+      "issues": [
+        {
+          "code": "money_range",
+          "message": "Q1 has a minimum larger than its maximum.",
+          "question_key": "m",
+          "section_key": null,
+          "problem": null
+        }
+      ]
+    },
+    {
+      "name": "money min equal to max is fine",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "m",
+            "section_key": "s1",
+            "type": "money",
+            "text": "Question m",
+            "required": false,
+            "options": [],
+            "config": {
+              "currency": "INR",
+              "min": 100,
+              "max": 100
+            },
+            "condition": null
+          }
+        ]
+      },
+      "issues": []
+    },
+    {
+      "name": "Q2 moved below Q3 (done-when check)",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q1",
+            "section_key": "s1",
+            "type": "rating",
+            "text": "Question q1",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "q3",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q3",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": {
+              "src": "q2",
+              "op": "is",
+              "val": "hybrid"
+            }
+          },
+          {
+            "key": "q2",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question q2",
+            "required": false,
+            "options": [
+              {
+                "key": "office",
+                "label": "Office, full-time"
+              },
+              {
+                "key": "hybrid",
+                "label": "Hybrid"
+              },
+              {
+                "key": "remote",
+                "label": "Remote"
+              }
+            ],
+            "config": {},
+            "condition": null
+          }
+        ]
+      },
+      "issues": [
+        {
+          "code": "condition_broken",
+          "message": "Q2 has a condition that needs attention.",
+          "question_key": "q3",
+          "section_key": null,
+          "problem": "source_after"
+        }
+      ]
+    },
+    {
+      "name": "broken section condition comes after question issues",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          },
+          {
+            "key": "s2",
+            "title": "Section s2",
+            "condition": {
+              "src": "b",
+              "op": "is",
+              "val": "yes"
+            }
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "short",
+            "text": "",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s2",
+            "type": "single",
+            "text": "Question b",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": null
+          }
+        ]
+      },
+      "issues": [
+        {
+          "code": "question_text_missing",
+          "message": "Q1 has no question text.",
+          "question_key": "a",
+          "section_key": null,
+          "problem": null
+        },
+        {
+          "code": "condition_broken",
+          "message": "Section 2 has a condition that needs attention.",
+          "question_key": null,
+          "section_key": "s2",
+          "problem": "source_not_earlier_section"
+        }
+      ]
+    },
+    {
+      "name": "closing date before opening date",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          }
+        ],
+        "settings": {
+          "opens_at": "2026-11-24",
+          "closes_at": "2026-11-10"
+        }
+      },
+      "issues": [
+        {
+          "code": "dates_order",
+          "message": "The closing date must be after the opening date.",
+          "question_key": null,
+          "section_key": null,
+          "problem": null
+        }
+      ]
+    },
+    {
+      "name": "same opening and closing date",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          }
+        ],
+        "settings": {
+          "opens_at": "2026-11-10",
+          "closes_at": "2026-11-10"
+        }
+      },
+      "issues": [
+        {
+          "code": "dates_order",
+          "message": "The closing date must be after the opening date.",
+          "question_key": null,
+          "section_key": null,
+          "problem": null
+        }
+      ]
+    },
+    {
+      "name": "dates in order",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          }
+        ],
+        "settings": {
+          "opens_at": "2026-11-10",
+          "closes_at": "2026-11-24"
+        }
+      },
+      "issues": []
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 
 import { cleanup } from '@testing-library/react'
+import { toast } from 'sonner'
 import { afterEach, beforeEach } from 'vitest'
 
 import { tokenStore } from '@/lib/token-store'
@@ -8,6 +9,13 @@ import { tokenStore } from '@/lib/token-store'
 import { installMatchMedia, resetMatchMedia } from './match-media'
 
 installMatchMedia()
+
+// jsdom doesn't implement these; the builder scrolls cards into view and Radix menus use
+// pointer capture.
+Element.prototype.scrollIntoView = () => undefined
+Element.prototype.hasPointerCapture = () => false
+Element.prototype.setPointerCapture = () => undefined
+Element.prototype.releasePointerCapture = () => undefined
 
 beforeEach(() => {
   tokenStore.clear()
@@ -19,4 +27,5 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  toast.dismiss()
 })

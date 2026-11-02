@@ -1,0 +1,229 @@
+{
+  "_comment": "The 'Workplace pulse' sample from docs/reference/ui-prototype.html as a saved draft (docs/reference/README.md). Phase 2 is done when HR can build this in the builder. Keys are fixed so tests can refer to them.",
+  "draft": {
+    "title": "Workplace pulse, Q4 2026",
+    "description": "Five quick questions about how and where you work. Takes about two minutes.",
+    "settings": {
+      "layout": "section",
+      "show_navigator": true,
+      "auto_next": false,
+      "one_response": true,
+      "allow_edit": false,
+      "anonymous": false,
+      "opens_at": "2026-11-10",
+      "closes_at": "2026-11-24"
+    },
+    "theme": {
+      "cover": "ocean",
+      "background_style": "image",
+      "background": "ocean",
+      "background_color": "#E8EEF3",
+      "blur": true,
+      "overlay": 25,
+      "accent": "#0E7A6A"
+    },
+    "sections": [
+      {
+        "key": "00000000-0000-0000-0000-000000000001",
+        "title": "Your work setup",
+        "description": "How and where you work most weeks.",
+        "condition": null
+      },
+      {
+        "key": "00000000-0000-0000-0000-000000000002",
+        "title": "Leading your team",
+        "description": "Only for people managers.",
+        "condition": {
+          "src": "00000000-0000-0000-0000-000000000014",
+          "op": "is",
+          "val": "00000000-0000-0000-0000-000000000012"
+        }
+      },
+      {
+        "key": "00000000-0000-0000-0000-000000000003",
+        "title": "Final thoughts",
+        "description": "",
+        "condition": null
+      }
+    ],
+    "questions": [
+      {
+        "key": "00000000-0000-0000-0000-000000000004",
+        "section_key": "00000000-0000-0000-0000-000000000001",
+        "type": "rating",
+        "text": "How satisfied are you with your current work setup?",
+        "help": "1 is very unsatisfied, 5 is very satisfied.",
+        "required": true,
+        "options": [],
+        "config": {},
+        "condition": null
+      },
+      {
+        "key": "00000000-0000-0000-0000-000000000008",
+        "section_key": "00000000-0000-0000-0000-000000000001",
+        "type": "single",
+        "text": "Which work mode do you follow most weeks?",
+        "help": "",
+        "required": true,
+        "options": [
+          {
+            "key": "00000000-0000-0000-0000-000000000005",
+            "label": "Office, full-time"
+          },
+          {
+            "key": "00000000-0000-0000-0000-000000000006",
+            "label": "Hybrid"
+          },
+          {
+            "key": "00000000-0000-0000-0000-000000000007",
+            "label": "Remote"
+          }
+        ],
+        "config": {},
+        "condition": null
+      },
+      {
+        "key": "00000000-0000-0000-0000-00000000000b",
+        "section_key": "00000000-0000-0000-0000-000000000001",
+        "type": "single",
+        "text": "How many days a week are you in the office?",
+        "help": "",
+        "required": true,
+        "options": [
+          {
+            "key": "00000000-0000-0000-0000-000000000009",
+            "label": "1–2 days"
+          },
+          {
+            "key": "00000000-0000-0000-0000-00000000000a",
+            "label": "3–4 days"
+          }
+        ],
+        "config": {},
+        "condition": {
+          "src": "00000000-0000-0000-0000-000000000008",
+          "op": "is",
+          "val": "00000000-0000-0000-0000-000000000006"
+        }
+      },
+      {
+        "key": "00000000-0000-0000-0000-000000000010",
+        "section_key": "00000000-0000-0000-0000-000000000001",
+        "type": "multi",
+        "text": "What would make remote work easier for you?",
+        "help": "Pick all that apply.",
+        "required": false,
+        "options": [
+          {
+            "key": "00000000-0000-0000-0000-00000000000c",
+            "label": "Better laptop"
+          },
+          {
+            "key": "00000000-0000-0000-0000-00000000000d",
+            "label": "Second monitor"
+          },
+          {
+            "key": "00000000-0000-0000-0000-00000000000e",
+            "label": "Faster VPN"
+          },
+          {
+            "key": "00000000-0000-0000-0000-00000000000f",
+            "label": "Ergonomic chair"
+          }
+        ],
+        "config": {},
+        "condition": {
+          "src": "00000000-0000-0000-0000-000000000008",
+          "op": "is",
+          "val": "00000000-0000-0000-0000-000000000007"
+        }
+      },
+      {
+        "key": "00000000-0000-0000-0000-000000000011",
+        "section_key": "00000000-0000-0000-0000-000000000001",
+        "type": "money",
+        "text": "Roughly how much have you spent setting up your home workspace this year?",
+        "help": "An estimate is fine.",
+        "required": false,
+        "options": [],
+        "config": {
+          "currency": "INR",
+          "min": null,
+          "max": 500000.0,
+          "decimals": false
+        },
+        "condition": {
+          "src": "00000000-0000-0000-0000-000000000008",
+          "op": "not",
+          "val": "00000000-0000-0000-0000-000000000005"
+        }
+      },
+      {
+        "key": "00000000-0000-0000-0000-000000000014",
+        "section_key": "00000000-0000-0000-0000-000000000001",
+        "type": "single",
+        "text": "Do you manage a team?",
+        "help": "",
+        "required": true,
+        "options": [
+          {
+            "key": "00000000-0000-0000-0000-000000000012",
+            "label": "Yes, I manage people"
+          },
+          {
+            "key": "00000000-0000-0000-0000-000000000013",
+            "label": "No"
+          }
+        ],
+        "config": {},
+        "condition": null
+      },
+      {
+        "key": "00000000-0000-0000-0000-000000000015",
+        "section_key": "00000000-0000-0000-0000-000000000002",
+        "type": "rating",
+        "text": "How satisfied are you with the support you can give your team?",
+        "help": "",
+        "required": true,
+        "options": [],
+        "config": {},
+        "condition": null
+      },
+      {
+        "key": "00000000-0000-0000-0000-000000000019",
+        "section_key": "00000000-0000-0000-0000-000000000002",
+        "type": "multi",
+        "text": "What would help you lead your team better?",
+        "help": "Pick all that apply.",
+        "required": false,
+        "options": [
+          {
+            "key": "00000000-0000-0000-0000-000000000016",
+            "label": "More in-office days together"
+          },
+          {
+            "key": "00000000-0000-0000-0000-000000000017",
+            "label": "Better collaboration tools"
+          },
+          {
+            "key": "00000000-0000-0000-0000-000000000018",
+            "label": "Manager training"
+          }
+        ],
+        "config": {},
+        "condition": null
+      },
+      {
+        "key": "00000000-0000-0000-0000-00000000001a",
+        "section_key": "00000000-0000-0000-0000-000000000003",
+        "type": "long",
+        "text": "Anything else you’d like HR to know?",
+        "help": "",
+        "required": false,
+        "options": [],
+        "config": {},
+        "condition": null
+      }
+    ]
+  }
+}

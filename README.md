@@ -131,6 +131,7 @@ frontend/
     lib/               API client, query client, utilities
     test/              test setup and helpers
 docker/postgres/init/  runs once on a new database volume (creates the test database)
+shared/test-cases/     rules tested on both sides: money words, conditions, validation, sample survey
 ```
 
 ## API errors

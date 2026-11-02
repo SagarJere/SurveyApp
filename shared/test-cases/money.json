@@ -1,0 +1,395 @@
+{
+  "_comment": "Golden cases for money formatting and amount in words. Used by backend/app/tests/test_money.py and frontend/src/features/survey-logic/money.test.ts. Amounts are strings so both languages read them exactly. Values from docs/05-survey-builder.md (Money type) plus singular-form edge cases.",
+  "cases": [
+    {
+      "currency": "INR",
+      "amount": "0",
+      "formatted": "₹0",
+      "words": "Zero rupees only"
+    },
+    {
+      "currency": "INR",
+      "amount": "1",
+      "formatted": "₹1",
+      "words": "One rupee only"
+    },
+    {
+      "currency": "INR",
+      "amount": "1.5",
+      "formatted": "₹1.50",
+      "words": "One rupee and fifty paise only"
+    },
+    {
+      "currency": "INR",
+      "amount": "10",
+      "formatted": "₹10",
+      "words": "Ten rupees only"
+    },
+    {
+      "currency": "INR",
+      "amount": "100000",
+      "formatted": "₹1,00,000",
+      "words": "One lakh rupees only"
+    },
+    {
+      "currency": "INR",
+      "amount": "125000",
+      "formatted": "₹1,25,000",
+      "words": "One lakh twenty-five thousand rupees only"
+    },
+    {
+      "currency": "INR",
+      "amount": "1234567.5",
+      "formatted": "₹12,34,567.50",
+      "words": "Twelve lakh thirty-four thousand five hundred sixty-seven rupees and fifty paise only"
+    },
+    {
+      "currency": "INR",
+      "amount": "10000000",
+      "formatted": "₹1,00,00,000",
+      "words": "One crore rupees only"
+    },
+    {
+      "currency": "INR",
+      "amount": "99999999999.99",
+      "formatted": "₹99,99,99,99,999.99",
+      "words": "Nine thousand nine hundred ninety-nine crore ninety-nine lakh ninety-nine thousand nine hundred ninety-nine rupees and ninety-nine paise only"
+    },
+    {
+      "currency": "INR",
+      "amount": "0.01",
+      "formatted": "₹0.01",
+      "words": "Zero rupees and one paisa only"
+    },
+    {
+      "currency": "INR",
+      "amount": "1.01",
+      "formatted": "₹1.01",
+      "words": "One rupee and one paisa only"
+    },
+    {
+      "currency": "INR",
+      "amount": "115",
+      "formatted": "₹115",
+      "words": "One hundred fifteen rupees only"
+    },
+    {
+      "currency": "INR",
+      "amount": "9999999999999.99",
+      "formatted": "₹99,99,99,99,99,999.99",
+      "words": "Nine lakh ninety-nine thousand nine hundred ninety-nine crore ninety-nine lakh ninety-nine thousand nine hundred ninety-nine rupees and ninety-nine paise only"
+    },
+    {
+      "currency": "USD",
+      "amount": "0",
+      "formatted": "$0",
+      "words": "Zero dollars"
+    },
+    {
+      "currency": "USD",
+      "amount": "1",
+      "formatted": "$1",
+      "words": "One dollar"
+    },
+    {
+      "currency": "USD",
+      "amount": "1.5",
+      "formatted": "$1.50",
+      "words": "One dollar and fifty cents"
+    },
+    {
+      "currency": "USD",
+      "amount": "10",
+      "formatted": "$10",
+      "words": "Ten dollars"
+    },
+    {
+      "currency": "USD",
+      "amount": "100000",
+      "formatted": "$100,000",
+      "words": "One hundred thousand dollars"
+    },
+    {
+      "currency": "USD",
+      "amount": "125000",
+      "formatted": "$125,000",
+      "words": "One hundred twenty-five thousand dollars"
+    },
+    {
+      "currency": "USD",
+      "amount": "1234567.5",
+      "formatted": "$1,234,567.50",
+      "words": "One million two hundred thirty-four thousand five hundred sixty-seven dollars and fifty cents"
+    },
+    {
+      "currency": "USD",
+      "amount": "10000000",
+      "formatted": "$10,000,000",
+      "words": "Ten million dollars"
+    },
+    {
+      "currency": "USD",
+      "amount": "99999999999.99",
+      "formatted": "$99,999,999,999.99",
+      "words": "Ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine dollars and ninety-nine cents"
+    },
+    {
+      "currency": "USD",
+      "amount": "0.01",
+      "formatted": "$0.01",
+      "words": "Zero dollars and one cent"
+    },
+    {
+      "currency": "USD",
+      "amount": "1.01",
+      "formatted": "$1.01",
+      "words": "One dollar and one cent"
+    },
+    {
+      "currency": "USD",
+      "amount": "115",
+      "formatted": "$115",
+      "words": "One hundred fifteen dollars"
+    },
+    {
+      "currency": "USD",
+      "amount": "9999999999999.99",
+      "formatted": "$9,999,999,999,999.99",
+      "words": "Nine trillion nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine dollars and ninety-nine cents"
+    },
+    {
+      "currency": "EUR",
+      "amount": "0",
+      "formatted": "€0",
+      "words": "Zero euros"
+    },
+    {
+      "currency": "EUR",
+      "amount": "1",
+      "formatted": "€1",
+      "words": "One euro"
+    },
+    {
+      "currency": "EUR",
+      "amount": "1.5",
+      "formatted": "€1.50",
+      "words": "One euro and fifty cents"
+    },
+    {
+      "currency": "EUR",
+      "amount": "10",
+      "formatted": "€10",
+      "words": "Ten euros"
+    },
+    {
+      "currency": "EUR",
+      "amount": "100000",
+      "formatted": "€100,000",
+      "words": "One hundred thousand euros"
+    },
+    {
+      "currency": "EUR",
+      "amount": "125000",
+      "formatted": "€125,000",
+      "words": "One hundred twenty-five thousand euros"
+    },
+    {
+      "currency": "EUR",
+      "amount": "1234567.5",
+      "formatted": "€1,234,567.50",
+      "words": "One million two hundred thirty-four thousand five hundred sixty-seven euros and fifty cents"
+    },
+    {
+      "currency": "EUR",
+      "amount": "10000000",
+      "formatted": "€10,000,000",
+      "words": "Ten million euros"
+    },
+    {
+      "currency": "EUR",
+      "amount": "99999999999.99",
+      "formatted": "€99,999,999,999.99",
+      "words": "Ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine euros and ninety-nine cents"
+    },
+    {
+      "currency": "EUR",
+      "amount": "0.01",
+      "formatted": "€0.01",
+      "words": "Zero euros and one cent"
+    },
+    {
+      "currency": "EUR",
+      "amount": "1.01",
+      "formatted": "€1.01",
+      "words": "One euro and one cent"
+    },
+    {
+      "currency": "EUR",
+      "amount": "115",
+      "formatted": "€115",
+      "words": "One hundred fifteen euros"
+    },
+    {
+      "currency": "EUR",
+      "amount": "9999999999999.99",
+      "formatted": "€9,999,999,999,999.99",
+      "words": "Nine trillion nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine euros and ninety-nine cents"
+    },
+    {
+      "currency": "GBP",
+      "amount": "0",
+      "formatted": "£0",
+      "words": "Zero pounds"
+    },
+    {
+      "currency": "GBP",
+      "amount": "1",
+      "formatted": "£1",
+      "words": "One pound"
+    },
+    {
+      "currency": "GBP",
+      "amount": "1.5",
+      "formatted": "£1.50",
+      "words": "One pound and fifty pence"
+    },
+    {
+      "currency": "GBP",
+      "amount": "10",
+      "formatted": "£10",
+      "words": "Ten pounds"
+    },
+    {
+      "currency": "GBP",
+      "amount": "100000",
+      "formatted": "£100,000",
+      "words": "One hundred thousand pounds"
+    },
+    {
+      "currency": "GBP",
+      "amount": "125000",
+      "formatted": "£125,000",
+      "words": "One hundred twenty-five thousand pounds"
+    },
+    {
+      "currency": "GBP",
+      "amount": "1234567.5",
+      "formatted": "£1,234,567.50",
+      "words": "One million two hundred thirty-four thousand five hundred sixty-seven pounds and fifty pence"
+    },
+    {
+      "currency": "GBP",
+      "amount": "10000000",
+      "formatted": "£10,000,000",
+      "words": "Ten million pounds"
+    },
+    {
+      "currency": "GBP",
+      "amount": "99999999999.99",
+      "formatted": "£99,999,999,999.99",
+      "words": "Ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine pounds and ninety-nine pence"
+    },
+    {
+      "currency": "GBP",
+      "amount": "0.01",
+      "formatted": "£0.01",
+      "words": "Zero pounds and one penny"
+    },
+    {
+      "currency": "GBP",
+      "amount": "1.01",
+      "formatted": "£1.01",
+      "words": "One pound and one penny"
+    },
+    {
+      "currency": "GBP",
+      "amount": "115",
+      "formatted": "£115",
+      "words": "One hundred fifteen pounds"
+    },
+    {
+      "currency": "GBP",
+      "amount": "9999999999999.99",
+      "formatted": "£9,999,999,999,999.99",
+      "words": "Nine trillion nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine pounds and ninety-nine pence"
+    },
+    {
+      "currency": "AED",
+      "amount": "0",
+      "formatted": "AED 0",
+      "words": "Zero dirhams"
+    },
+    {
+      "currency": "AED",
+      "amount": "1",
+      "formatted": "AED 1",
+      "words": "One dirham"
+    },
+    {
+      "currency": "AED",
+      "amount": "1.5",
+      "formatted": "AED 1.50",
+      "words": "One dirham and fifty fils"
+    },
+    {
+      "currency": "AED",
+      "amount": "10",
+      "formatted": "AED 10",
+      "words": "Ten dirhams"
+    },
+    {
+      "currency": "AED",
+      "amount": "100000",
+      "formatted": "AED 100,000",
+      "words": "One hundred thousand dirhams"
+    },
+    {
+      "currency": "AED",
+      "amount": "125000",
+      "formatted": "AED 125,000",
+      "words": "One hundred twenty-five thousand dirhams"
+    },
+    {
+      "currency": "AED",
+      "amount": "1234567.5",
+      "formatted": "AED 1,234,567.50",
+      "words": "One million two hundred thirty-four thousand five hundred sixty-seven dirhams and fifty fils"
+    },
+    {
+      "currency": "AED",
+      "amount": "10000000",
+      "formatted": "AED 10,000,000",
+      "words": "Ten million dirhams"
+    },
+    {
+      "currency": "AED",
+      "amount": "99999999999.99",
+      "formatted": "AED 99,999,999,999.99",
+      "words": "Ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine dirhams and ninety-nine fils"
+    },
+    {
+      "currency": "AED",
+      "amount": "0.01",
+      "formatted": "AED 0.01",
+      "words": "Zero dirhams and one fils"
+    },
+    {
+      "currency": "AED",
+      "amount": "1.01",
+      "formatted": "AED 1.01",
+      "words": "One dirham and one fils"
+    },
+    {
+      "currency": "AED",
+      "amount": "115",
+      "formatted": "AED 115",
+      "words": "One hundred fifteen dirhams"
+    },
+    {
+      "currency": "AED",
+      "amount": "9999999999999.99",
+      "formatted": "AED 9,999,999,999,999.99",
+      "words": "Nine trillion nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine dirhams and ninety-nine fils"
+    }
+  ]
+}
