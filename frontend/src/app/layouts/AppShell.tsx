@@ -17,7 +17,7 @@ export function AppShell() {
   return (
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
-      <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+      <header className="sticky top-0 z-40 border-b bg-card">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
           <AppMark />
           <nav aria-label="Main" className="flex min-w-0 flex-1 items-center gap-1">
@@ -30,8 +30,8 @@ export function AppShell() {
                   cn(
                     'inline-flex min-h-10 items-center rounded-md px-3 text-sm font-medium whitespace-nowrap transition-colors',
                     isActive
-                      ? 'bg-accent text-accent-foreground'
-                      : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
+                      ? 'bg-primary-soft text-primary'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground',
                   )
                 }
               >

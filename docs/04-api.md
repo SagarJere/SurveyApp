@@ -62,7 +62,7 @@ Roles: **E** = employee, **H** = HR, **A** = admin. "Member" = owner/co-owner of
 
 ### Import rules
 - Accept `.xlsx` and `.csv`. Header names are case-insensitive. `EmployeeId` is required.
-- Normalise IDs (trim, uppercase). Invalid: empty ID, ID with spaces inside, ID longer than 30 chars, invalid email format (if provided).
+- Normalise IDs (trim, uppercase). Invalid: empty ID, ID with spaces inside, ID longer than 30 chars, invalid email format (if provided). There is no other ID format rule (agreed 2026-11-02).
 - Duplicates in the file: keep the first, count the rest as duplicates. In `append` mode, IDs already in the audience are counted as duplicates.
 - Max 20,000 rows per file.
 

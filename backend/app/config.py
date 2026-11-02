@@ -28,7 +28,7 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    app_name: str = "Survey App API"
+    app_name: str = "Pulse API"
     app_env: AppEnv = "development"
     auth_mode: AuthMode = "dev"
     log_level: LogLevel = "INFO"

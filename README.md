@@ -1,6 +1,6 @@
-# Survey App
+# Pulse
 
-Internal survey application. HR and admin users build surveys, publish them to a list of employees, and view results on dashboards.
+Pulse is an internal survey application. HR and admin users build surveys, publish them to a list of employees, and view results on dashboards.
 
 - **Backend:** Python 3.12, FastAPI, SQLAlchemy 2 (async), Alembic, PostgreSQL 16
 - **Frontend:** React 18, Vite, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack Query, React Router 7

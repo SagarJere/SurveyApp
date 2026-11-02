@@ -4,67 +4,88 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * shadcn/ui theme tokens. Components only use these semantic names, so light and dark mode
- * (and later, per-survey accent colours) change in one place.
- * Primary is the brand teal (#0E7A6A), the default survey accent.
+ * Theme tokens, taken from docs/reference/ui-prototype.html and mapped to shadcn/ui names.
+ * Components only use these semantic names, so light and dark mode change in one place.
+ *
+ *   prototype       token
+ *   --bg            --background         page background
+ *   --surface       --card / --popover   cards, menus, top bar
+ *   --surface-2     --muted / --secondary  filled inputs, subtle fills
+ *   --ink           --foreground
+ *   --muted         --muted-foreground
+ *   --line          --border / --input
+ *   --accent        --primary            brand teal, the default survey accent
+ *   --accent-soft   --primary-soft       selected answers, open card halo
+ *   --logic         --logic              conditions (violet)
+ *   --warn          --warn               broken conditions, required marker, rows to fix
  */
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.985 0.002 197);
-  --foreground: oklch(0.2 0.012 200);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.012 200);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.012 200);
-  --primary: oklch(0.52 0.1 177);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.955 0.006 197);
-  --secondary-foreground: oklch(0.25 0.012 200);
-  --muted: oklch(0.955 0.006 197);
-  --muted-foreground: oklch(0.47 0.015 200);
-  --accent: oklch(0.94 0.02 177);
-  --accent-foreground: oklch(0.25 0.03 177);
-  --destructive: oklch(0.55 0.22 27);
-  --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.52 0.12 150);
-  --warning: oklch(0.6 0.13 70);
-  --border: oklch(0.91 0.006 197);
-  --input: oklch(0.88 0.008 197);
-  --ring: oklch(0.52 0.1 177);
+  --background: #edf1ef;
+  --foreground: #14302d;
+  --card: #ffffff;
+  --card-foreground: #14302d;
+  --popover: #ffffff;
+  --popover-foreground: #14302d;
+  --primary: #0e7a6a;
+  --primary-foreground: #ffffff;
+  --primary-soft: #dcefea;
+  --secondary: #f4f7f6;
+  --secondary-foreground: #14302d;
+  --muted: #f4f7f6;
+  --muted-foreground: #5a6b67;
+  --accent: #f4f7f6;
+  --accent-foreground: #14302d;
+  --logic: #6447c2;
+  --logic-soft: #eee9fb;
+  --warn: #a4410e;
+  --warn-soft: #fbeadb;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --success: #1f8a4c;
+  --border: #d3ddd9;
+  --input: #d3ddd9;
+  --ring: #0e7a6a;
 }
 
 .dark {
-  --background: oklch(0.17 0.008 200);
-  --foreground: oklch(0.96 0.004 197);
-  --card: oklch(0.21 0.01 200);
-  --card-foreground: oklch(0.96 0.004 197);
-  --popover: oklch(0.23 0.01 200);
-  --popover-foreground: oklch(0.96 0.004 197);
-  --primary: oklch(0.72 0.11 177);
-  --primary-foreground: oklch(0.18 0.02 177);
-  --secondary: oklch(0.27 0.01 200);
-  --secondary-foreground: oklch(0.96 0.004 197);
-  --muted: oklch(0.27 0.01 200);
-  --muted-foreground: oklch(0.72 0.012 200);
-  --accent: oklch(0.3 0.03 177);
-  --accent-foreground: oklch(0.96 0.004 197);
-  --destructive: oklch(0.65 0.2 25);
-  --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.72 0.14 150);
-  --warning: oklch(0.78 0.13 75);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.72 0.11 177);
+  --background: #0d1615;
+  --foreground: #e3ece9;
+  --card: #142120;
+  --card-foreground: #e3ece9;
+  --popover: #1a2928;
+  --popover-foreground: #e3ece9;
+  --primary: #3dbba5;
+  --primary-foreground: #06201c;
+  --primary-soft: #163833;
+  --secondary: #1a2928;
+  --secondary-foreground: #e3ece9;
+  --muted: #1a2928;
+  --muted-foreground: #94a5a1;
+  --accent: #1a2928;
+  --accent-foreground: #e3ece9;
+  --logic: #a894f2;
+  --logic-soft: #272246;
+  --warn: #f0a36e;
+  --warn-soft: #3a2416;
+  --destructive: #f97066;
+  --destructive-foreground: #1a0503;
+  --success: #4cc38a;
+  --border: #2a3a38;
+  --input: #2a3a38;
+  --ring: #3dbba5;
 }
 
 @theme inline {
   --font-sans:
-    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    sans-serif;
+    'Figtree Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-heading:
+    'Bricolage Grotesque Variable', 'Figtree Variable', ui-sans-serif, system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 6px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -73,16 +94,20 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-logic: var(--logic);
+  --color-logic-soft: var(--logic-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
-  --color-warning: var(--warning);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -96,7 +121,14 @@
     -webkit-text-size-adjust: 100%;
   }
   body {
-    @apply min-h-dvh bg-background text-foreground antialiased;
+    @apply min-h-dvh bg-background font-sans text-foreground antialiased;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  h1,
+  h2 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.01em;
   }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-ring;

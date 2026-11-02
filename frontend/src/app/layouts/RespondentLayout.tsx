@@ -13,7 +13,7 @@ export function RespondentLayout() {
   return (
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
-      <header className="border-b">
+      <header className="border-b bg-card">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-2 px-4">
           <AppMark />
           <ThemeToggle />

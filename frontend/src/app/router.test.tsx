@@ -23,7 +23,7 @@ describe('routes', () => {
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'My surveys' })).toHaveAttribute('aria-current', 'page')
     expect(await screen.findByText('Connected')).toBeInTheDocument()
-    expect(document.title).toBe('My surveys · Survey App')
+    expect(document.title).toBe('My surveys · Pulse')
   })
 
   it('renders the surveys home for /admin/surveys', async () => {

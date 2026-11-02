@@ -10,7 +10,7 @@ export function Toaster(props: ToasterProps) {
     <Sonner
       theme={resolvedTheme}
       className="toaster group"
-      position="top-center"
+      position="bottom-center"
       closeButton
       richColors
       style={

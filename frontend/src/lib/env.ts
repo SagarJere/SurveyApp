@@ -7,5 +7,5 @@ function valueOr(value: string | undefined, fallback: string): string {
 /** Typed access to build-time configuration (VITE_* variables from the repo-root .env). */
 export const env = {
   apiBaseUrl: valueOr(import.meta.env.VITE_API_BASE_URL, '/api'),
-  appName: valueOr(import.meta.env.VITE_APP_NAME, 'Survey App'),
+  appName: valueOr(import.meta.env.VITE_APP_NAME, 'Pulse'),
 } as const

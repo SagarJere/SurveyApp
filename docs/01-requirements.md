@@ -4,6 +4,12 @@
 
 Let HR/Admin create flexible surveys, publish them to a chosen group of employees, collect responses, and see results on modern, responsive dashboards. The UI must be visually appealing, modern and fully responsive (phone to desktop).
 
+## Branding (agreed)
+
+- The product is called **Pulse**. The logo is a check mark on an accent-coloured tile.
+- Fonts: Bricolage Grotesque for headings, Figtree for body text. Both are self-hosted, with no calls to Google Fonts.
+- The colour palette and component look follow `docs/reference/ui-prototype.html`. See `docs/reference/README.md` for where the prototype and the docs differ.
+
 ## Roles
 
 | Role | Can do |

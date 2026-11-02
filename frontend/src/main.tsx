@@ -1,3 +1,5 @@
+import '@fontsource-variable/figtree'
+import '@fontsource-variable/bricolage-grotesque/opsz.css'
 import './index.css'
 
 import { StrictMode } from 'react'
