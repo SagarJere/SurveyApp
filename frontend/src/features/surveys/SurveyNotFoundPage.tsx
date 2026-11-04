@@ -10,6 +10,7 @@ export function SurveyNotFoundPage() {
   usePageTitle('Survey not found')
   return (
     <EmptyState
+      level={1}
       icon={SearchXIcon}
       title="We couldn't find that survey"
       description="It may have been deleted, or it hasn't been shared with you."

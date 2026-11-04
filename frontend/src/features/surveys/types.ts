@@ -10,6 +10,7 @@ export interface SurveyListItem {
   status: SurveyStatus
   version_no: number | null
   response_count: number
+  responses_this_week: number
   audience_count: number
   response_rate: number | null
   opens_at: string | null
@@ -18,6 +19,7 @@ export interface SurveyListItem {
   my_role: MemberRole | null
   can_edit: boolean
   can_delete: boolean
+  open_to_all: boolean
   updated_at: string
 }
 

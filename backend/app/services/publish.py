@@ -16,6 +16,7 @@ from app.errors import AppError
 from app.models import QuestionOption, Survey, SurveyVersion, VersionQuestion, VersionSection
 from app.schemas.draft import Draft
 from app.services.audience import audience_count
+from app.services.results_cache import results_cache
 from app.services.survey_logic import Issue, validate_draft
 from app.services.surveys import SurveyAccess
 from app.services.theme_assets import usable_asset_ids
@@ -217,6 +218,7 @@ async def publish(session: AsyncSession, access: SurveyAccess, published_by: str
         )
     )
     await session.commit()
+    results_cache.invalidate(survey.id)
     version = await session.get(SurveyVersion, version_id)
     assert version is not None  # noqa: S101 - inserted above
     return version

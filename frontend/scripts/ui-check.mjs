@@ -177,8 +177,25 @@ async function main() {
       wait: 'main li',
     })
 
+    // Results. Question cards only appear once 5 or more people have responded
+    // (`uv run python -m app.scripts.seed_responses <survey id>` adds test responses in dev).
+    const results_ = `/admin/surveys/${sampleId}/results`
+    const resultsReady = 'main section[aria-label="Filters"]'
+    await shot('results-desktop', results_, { wait: resultsReady })
+    await shot('results-375', results_, { width: 375, height: 812, wait: resultsReady })
+    await shot('results-dark', results_, { dark: true, wait: resultsReady })
+    // Nobody is "not recorded", so this shows the small-group notice.
+    await shot('results-small-group-375', `${results_}?department=`, {
+      width: 375,
+      height: 812,
+      wait: 'text=Fewer than 5 people',
+    })
+
     // Lighthouse accessibility, as HR.
     const audits = [
+      ['surveys home, phone', '/admin/surveys', 'mobile'],
+      ['results, desktop', results_, 'desktop'],
+      ['results, phone', results_, 'mobile'],
       ['preview (section layout), desktop', `${edit}?mode=preview`, 'desktop'],
       ['preview (section layout), phone', `${edit}?mode=preview`, 'mobile'],
       ['preview (one question), phone', `/admin/surveys/${stepId}/edit?mode=preview`, 'mobile'],
@@ -196,13 +213,14 @@ async function main() {
     await page.evaluate((t) => localStorage.setItem('survey-app.access-token', t), employeeToken)
     await shot('my-surveys-desktop', '/', { wait: 'main li' })
     await shot('my-surveys-375', '/', { width: 375, height: 812, wait: 'main li' })
-    await shot('respond-desktop', `/s/${sampleId}`, { wait: 'article h1' })
-    await shot('respond-375', `/s/${sampleId}`, { width: 375, height: 812, wait: 'article h1' })
+    // E2001 may already have answered; then this shows the "thanks" screen instead.
+    await shot('respond-desktop', `/s/${sampleId}`, { wait: 'h1' })
+    await shot('respond-375', `/s/${sampleId}`, { width: 375, height: 812, wait: 'h1' })
     await shot('respond-375-dark', `/s/${sampleId}`, {
       width: 375,
       height: 812,
       dark: true,
-      wait: 'article h1',
+      wait: 'h1',
     })
     await runAudits([
       ['my surveys, phone', '/', 'mobile'],

@@ -27,6 +27,7 @@ When a doc and this file disagree, ask before choosing.
 - **Product name and look:** the app is called **Pulse**. Fonts are Bricolage Grotesque (headings) and Figtree (body), self-hosted via `@fontsource-variable`. Colours come from the prototype (see `frontend/src/index.css`).
 - **Approved in Phase 0:** React Router v7 (stay on v7: v8 needs React 19), Radix UI primitives, lucide-react, sonner, class-variance-authority, clsx, tailwind-merge, tw-animate-css (shadcn/ui helpers); uvicorn, asyncpg, pydantic-settings.
 - **Approved in Phase 3:** python-multipart (FastAPI file uploads); Playwright with its Chromium and Lighthouse as frontend dev tools for `npm run ui-check`.
+- **Approved in Phase 5:** @radix-ui/react-dialog (shadcn Dialog). Recharts was already in the stack.
 - **Tooling:** TypeScript 6.0 (typescript-eslint does not support 7 yet), ESLint 9 + typescript-eslint + jsx-a11y, Prettier, Vitest + Testing Library + jsdom; ruff, mypy (strict), pytest + pytest-asyncio + httpx.
 - **shadcn/ui on React 18:** components in `frontend/src/components/ui/` use `React.forwardRef`. Current shadcn CLI output targets React 19, so adapt any newly added component to `forwardRef` before use.
 

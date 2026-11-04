@@ -34,6 +34,7 @@ from app.services.answers import (
     is_invalid,
     money_range_error,
 )
+from app.services.results_cache import results_cache
 from app.services.survey_logic import evaluate, is_answered
 from app.services.version_content import VersionContent, load_version
 
@@ -468,6 +469,7 @@ async def submit(
         )
     )
     await session.commit()
+    results_cache.invalidate(survey_id)
     context.participation = await session.get(SurveyParticipation, (survey_id, user.employee_id))
     return Submitted(
         submitted_at=stamp,

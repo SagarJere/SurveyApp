@@ -9,6 +9,7 @@ export function NotFoundPage() {
   usePageTitle('Page not found')
   return (
     <EmptyState
+      level={1}
       icon={CompassIcon}
       title="Page not found"
       description="The link may be wrong, or the page may have moved."

@@ -1,11 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  BarChart3Icon,
   ClipboardListIcon,
+  ClockIcon,
   CopyIcon,
   Loader2Icon,
   LockIcon,
   PencilIcon,
   PlusIcon,
+  SearchIcon,
+  SearchXIcon,
   Trash2Icon,
   TriangleAlertIcon,
 } from 'lucide-react'
@@ -26,6 +30,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { NativeSelect } from '@/components/ui/native-select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePageTitle } from '@/hooks/use-page-title'
 import {
@@ -39,6 +45,16 @@ import {
 import { StatusPill } from '@/features/surveys/StatusPill'
 import { UNTITLED_SURVEY, type SurveyListItem } from '@/features/surveys/types'
 import { relativeTime, shortDate } from '@/lib/format'
+
+import { closingSoon, filterSurveys, homeKpis, type StatusFilter } from './home-stats'
+import { RateRing } from './RateRing'
+
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+  { value: 'all', label: 'All statuses' },
+  { value: 'published', label: 'Published' },
+  { value: 'draft', label: 'Draft' },
+  { value: 'closed', label: 'Closed' },
+]
 
 /** Surveys home for HR and admins: every survey you can see, plus "New survey". */
 export function SurveysHomePage() {
@@ -105,13 +121,107 @@ export function SurveysHomePage() {
           action={newSurveyButton}
         />
       ) : (
-        <ul className="flex flex-col gap-3">
-          {surveys.data.map((survey) => (
+        <SurveyList surveys={surveys.data} />
+      )}
+    </>
+  )
+}
+
+function SurveyList({ surveys }: { surveys: SurveyListItem[] }) {
+  const [status, setStatus] = useState<StatusFilter>('all')
+  const [search, setSearch] = useState('')
+  const kpis = homeKpis(surveys)
+  const shown = filterSurveys(surveys, status, search)
+  return (
+    <div className="flex flex-col gap-5">
+      <dl className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
+        <Kpi label="Live surveys" value={String(kpis.live)} />
+        <Kpi
+          label="Responses this week"
+          value={new Intl.NumberFormat().format(kpis.responsesThisWeek)}
+        />
+        <Kpi
+          label="Average response rate"
+          value={kpis.averageRate === null ? '–' : `${String(Math.round(kpis.averageRate * 100))}%`}
+        />
+      </dl>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="relative flex-1">
+          <SearchIcon
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <label htmlFor="survey-search" className="sr-only">
+            Search surveys
+          </label>
+          <Input
+            id="survey-search"
+            type="search"
+            className="pl-9"
+            placeholder="Search surveys"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value)
+            }}
+          />
+        </div>
+        <label htmlFor="survey-status" className="sr-only">
+          Status
+        </label>
+        <NativeSelect
+          id="survey-status"
+          value={status}
+          className="sm:w-44"
+          onChange={(event) => {
+            setStatus(event.target.value as StatusFilter)
+          }}
+        >
+          {STATUS_FILTERS.map((f) => (
+            <option key={f.value} value={f.value}>
+              {f.label}
+            </option>
+          ))}
+        </NativeSelect>
+      </div>
+      <p className="sr-only" role="status">
+        {shown.length === surveys.length
+          ? `${String(surveys.length)} surveys`
+          : `${String(shown.length)} of ${String(surveys.length)} surveys match`}
+      </p>
+      {shown.length === 0 ? (
+        <EmptyState
+          icon={SearchXIcon}
+          title="No surveys match"
+          description="Try another search or status."
+          action={
+            <Button
+              variant="outline"
+              onClick={() => {
+                setStatus('all')
+                setSearch('')
+              }}
+            >
+              Show all surveys
+            </Button>
+          }
+        />
+      ) : (
+        <ul className="flex flex-col gap-3" aria-label="Surveys">
+          {shown.map((survey) => (
             <SurveyRow key={survey.id} survey={survey} />
           ))}
         </ul>
       )}
-    </>
+    </div>
+  )
+}
+
+function Kpi({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-1 rounded-xl border bg-card p-4">
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className="font-heading text-3xl font-semibold tracking-tight tabular-nums">{value}</dd>
+    </div>
   )
 }
 
@@ -121,6 +231,8 @@ function SurveyRow({ survey }: { survey: SurveyListItem }) {
   const [confirming, setConfirming] = useState(false)
   const [confirmingClose, setConfirmingClose] = useState(false)
   const title = survey.title.trim() || UNTITLED_SURVEY
+  const published = survey.status !== 'draft'
+  const closes = closingSoon(survey)
 
   const duplicate = useMutation({
     mutationFn: () => duplicateSurvey(survey.id),
@@ -184,8 +296,41 @@ function SurveyRow({ survey }: { survey: SurveyListItem }) {
           Edited {relativeTime(survey.updated_at)}
           {schedule ? ` · ${schedule}` : ''}
         </p>
+        {closes ? (
+          <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold">
+            <ClockIcon className="size-4 text-warn" aria-hidden="true" />
+            {closes}
+          </p>
+        ) : null}
       </div>
+      {published ? (
+        survey.open_to_all ? (
+          <p className="text-sm tabular-nums sm:w-28">
+            <span className="block font-semibold">
+              {new Intl.NumberFormat().format(survey.response_count)}
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              {survey.response_count === 1 ? 'response' : 'responses'}
+            </span>
+          </p>
+        ) : (
+          <RateRing
+            className="sm:w-28"
+            responded={survey.response_count}
+            invited={survey.audience_count}
+            rate={survey.response_rate}
+          />
+        )
+      ) : null}
       <div className="flex flex-wrap gap-1.5">
+        {published ? (
+          <Button variant="outline" size="sm" asChild>
+            <Link to={`/admin/surveys/${survey.id}/results`} aria-label={`Results for ${title}`}>
+              <BarChart3Icon aria-hidden="true" />
+              Results
+            </Link>
+          </Button>
+        ) : null}
         {survey.can_edit ? (
           <Button variant="outline" size="sm" asChild>
             <Link to={`/admin/surveys/${survey.id}/edit`} aria-label={`Edit ${title}`}>

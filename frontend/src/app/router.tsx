@@ -7,7 +7,6 @@ import { RequireRole } from '@/features/auth/RequireRole'
 import { SURVEY_MANAGER_ROLES } from '@/features/auth/types'
 import { MySurveysPage } from '@/features/respond/MySurveysPage'
 import { SurveysHomePage } from '@/features/surveys-home/SurveysHomePage'
-import { SurveyNotFoundPage } from '@/features/surveys/SurveyNotFoundPage'
 
 import { AppShell } from './layouts/AppShell'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -71,7 +70,14 @@ export const routes: RouteObject[] = [
                 element: <RequireRole roles={SURVEY_MANAGER_ROLES} />,
                 children: [
                   { path: 'surveys', Component: SurveysHomePage },
-                  { path: 'surveys/:surveyId/results', Component: SurveyNotFoundPage },
+                  {
+                    path: 'surveys/:surveyId/results',
+                    // Its own chunk, so Recharts only loads for people who open results.
+                    lazy: async () => {
+                      const { ResultsPage } = await import('@/features/results/ResultsPage')
+                      return { Component: ResultsPage }
+                    },
+                  },
                 ],
               },
               { path: '*', Component: NotFoundPage },

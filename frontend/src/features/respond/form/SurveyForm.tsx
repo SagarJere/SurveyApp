@@ -544,9 +544,10 @@ function ThankYou({
       <span className="mx-auto grid size-11 place-items-center rounded-full bg-(--survey-accent-soft) text-(--survey-accent)">
         <CheckIcon className="size-6" aria-hidden="true" />
       </span>
-      <h2 ref={ref} tabIndex={-1} className="mt-3.5 text-2xl font-semibold outline-none">
+      {/* The form (and its h1 title) is gone, so this is the page's main heading now. */}
+      <h1 ref={ref} tabIndex={-1} className="mt-3.5 text-2xl font-semibold outline-none">
         Response recorded
-      </h2>
+      </h1>
       <p className="mx-auto mt-1 max-w-[44ch]">Thanks, your answers have been submitted.</p>
       <p className="mx-auto mt-1 max-w-[44ch] text-sm text-muted-foreground">
         {onEdit

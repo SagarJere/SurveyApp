@@ -9,6 +9,7 @@ export function ForbiddenPage() {
   usePageTitle('No access')
   return (
     <EmptyState
+      level={1}
       icon={ShieldOffIcon}
       title="You don't have access to this page"
       description="It's only for HR and admin users. If you need access, contact HR."

@@ -113,6 +113,21 @@ Uploaded and gallery images are stored as WebP under `FILE_STORAGE_PATH`. Browse
 - **Taking a survey:** employees see it under "My surveys" and answer at `/s/<survey id>`. Answers autosave as a draft, so people can pick up where they left off.
 - **Anonymous surveys:** responses store no employee ID, and times are rounded to the hour. A separate participation record still stops anyone answering twice. Anonymous responses can't be edited after submitting, because nothing links them to the person.
 
+## Results
+
+- **Dashboard:** open a published survey's **Results** from the surveys home, or go to `/admin/surveys/<survey id>/results`. Filters (department, location, dates, version) live in the URL, so a filtered view can be shared.
+- **Percentages** are out of the people who were shown each question.
+- **Small groups:** when filters leave fewer than 5 responses, the API sends no answer data and the page shows only participation figures.
+- **Exports:** "Export to Excel" gives Summary, Responses and Comments sheets for the current filters. Owners and co-owners can download the people who haven't responded yet.
+- **Individual responses** are listed only for surveys that aren't anonymous.
+- **Test data:** to fill a published survey with generated responses in development (refused when `APP_ENV=production`):
+
+```bash
+cd backend && uv run python -m app.scripts.seed_responses <survey id> 420
+```
+
+This adds test people T3001 onwards to the survey's audience and submits through the real submit path.
+
 `npm run ui-check` publishes the sample survey (if it's still a draft) with the dev test accounts as its audience, open from today for 30 days, so you can try it as E2001.
 
 ## Browser check
@@ -124,7 +139,7 @@ cd frontend && npx playwright install chromium   # once
 cd frontend && npm run ui-check -- http://localhost:5173 ui-check
 ```
 
-This takes screenshots at desktop, 375px and dark mode into `frontend/ui-check/`, and runs Lighthouse accessibility on the builder and Preview. It signs in as E1002 and creates the "Workplace pulse" sample survey if it's missing.
+This takes screenshots at desktop, 375px and dark mode into `frontend/ui-check/`, and runs Lighthouse accessibility on the surveys home, results, builder, Preview and respondent pages. It signs in as E1002 and creates the "Workplace pulse" sample survey if it's missing.
 
 ## Database migrations
 

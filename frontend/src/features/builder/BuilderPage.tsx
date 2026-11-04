@@ -77,6 +77,7 @@ export function BuilderPage() {
           <SurveyNotFoundPage />
         ) : (
           <EmptyState
+            level={1}
             icon={TriangleAlertIcon}
             title="We couldn't load this survey"
             description="Check your connection, then try again."

@@ -22,6 +22,7 @@ export function RequireAuth() {
     return (
       <div className="mx-auto max-w-lg px-4 py-16">
         <EmptyState
+          level={1}
           icon={CloudOffIcon}
           title="We couldn't load your account"
           description="Check your connection, then try again."

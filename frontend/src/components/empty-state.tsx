@@ -9,9 +9,19 @@ interface EmptyStateProps {
   description?: ReactNode
   action?: ReactNode
   className?: string
+  /** 1 when the empty state is the whole page, so the page still has a main heading. */
+  level?: 1 | 2
 }
 
-export function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+  className,
+  level = 2,
+}: EmptyStateProps) {
+  const Heading = level === 1 ? 'h1' : 'h2'
   return (
     <div
       className={cn(
@@ -22,7 +32,7 @@ export function EmptyState({ icon: Icon, title, description, action, className }
       <div className="flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary-soft-foreground">
         <Icon className="size-6" aria-hidden="true" />
       </div>
-      <h2 className="text-lg font-semibold">{title}</h2>
+      <Heading className="text-lg font-semibold">{title}</Heading>
       {description ? <p className="max-w-sm text-sm text-muted-foreground">{description}</p> : null}
       {action}
     </div>

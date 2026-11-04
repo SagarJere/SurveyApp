@@ -60,6 +60,7 @@ export function RespondPage() {
     const known = code in SCREENS || error?.status === 404 || error?.status === 403
     return (
       <EmptyState
+        level={1}
         icon={known ? (SCREENS[code] ?? LockIcon) : CloudOffIcon}
         title={
           known

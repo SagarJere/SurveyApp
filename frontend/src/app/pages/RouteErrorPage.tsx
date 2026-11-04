@@ -25,6 +25,7 @@ export function RouteErrorPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <EmptyState
+        level={1}
         icon={TriangleAlertIcon}
         title="Something went wrong"
         description="This page couldn't be shown. Reloading usually fixes it."

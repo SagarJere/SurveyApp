@@ -17,6 +17,7 @@ function item(overrides: Partial<SurveyListItem> = {}): SurveyListItem {
     status: 'draft',
     version_no: null,
     response_count: 0,
+    responses_this_week: 0,
     audience_count: 0,
     response_rate: null,
     opens_at: '2026-11-10',
@@ -25,6 +26,7 @@ function item(overrides: Partial<SurveyListItem> = {}): SurveyListItem {
     my_role: 'owner',
     can_edit: true,
     can_delete: true,
+    open_to_all: false,
     updated_at: new Date(Date.now() - 2 * 3600_000).toISOString(),
     ...overrides,
   }
@@ -165,5 +167,60 @@ describe('Surveys home', () => {
     renderRoute('/admin/surveys', { user: TEST_USERS.hr })
 
     expect(await screen.findByText("We couldn't load your surveys")).toBeInTheDocument()
+  })
+
+  it('shows KPIs, response-rate rings, closing-soon warnings and a Results link', async () => {
+    const soon = new Date()
+    soon.setDate(soon.getDate() + 3)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const closes = `${String(soon.getFullYear())}-${pad(soon.getMonth() + 1)}-${pad(soon.getDate())}`
+    vi.spyOn(surveysApi, 'listSurveys').mockResolvedValue([
+      item({
+        status: 'published',
+        version_no: 1,
+        can_delete: false,
+        response_count: 412,
+        responses_this_week: 57,
+        audience_count: 480,
+        response_rate: 0.8583,
+        opens_at: null,
+        closes_at: closes,
+      }),
+      item({
+        id: 'b',
+        title: 'Canteen feedback',
+        status: 'published',
+        version_no: 1,
+        can_delete: false,
+        open_to_all: true,
+        response_count: 31,
+        responses_this_week: 4,
+      }),
+      item({ id: 'c', title: 'Draft idea' }),
+    ])
+    const user = userEvent.setup()
+    renderRoute('/admin/surveys', { user: TEST_USERS.hr })
+
+    await screen.findByRole('link', { name: 'Workplace pulse, Q4 2026' })
+    const kpis = screen.getAllByRole('definition').map((d) => d.textContent)
+    // 2 live surveys, 61 this week, and the average rate only counts surveys with an invite list.
+    expect(kpis).toEqual(['2', '61', '86%'])
+
+    const rows = screen.getAllByRole('listitem')
+    expect(within(rows[0]!).getByText('86% responded, 412 of 480')).toBeInTheDocument()
+    expect(within(rows[0]!).getByText('Closes in 3 days')).toBeInTheDocument()
+    expect(
+      within(rows[0]!).getByRole('link', { name: 'Results for Workplace pulse, Q4 2026' }),
+    ).toHaveAttribute('href', `/admin/surveys/${SURVEY_ID}/results`)
+    expect(within(rows[1]!).getByText('31')).toBeInTheDocument()
+    expect(within(rows[2]!).queryByRole('link', { name: /Results/ })).not.toBeInTheDocument()
+
+    await user.type(screen.getByRole('searchbox', { name: 'Search surveys' }), 'canteen')
+    expect(screen.getAllByRole('listitem')).toHaveLength(1)
+    await user.clear(screen.getByRole('searchbox', { name: 'Search surveys' }))
+    await user.selectOptions(screen.getByLabelText('Status'), 'draft')
+    expect(screen.getAllByRole('listitem').map((r) => r.textContent)).toEqual([
+      expect.stringContaining('Draft idea'),
+    ])
   })
 })

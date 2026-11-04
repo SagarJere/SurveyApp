@@ -17,6 +17,7 @@ class SurveyListItem(BaseModel):
     status: SurveyStatus
     version_no: int | None
     response_count: int
+    responses_this_week: int
     audience_count: int
     response_rate: float | None
     opens_at: date | None
@@ -25,6 +26,7 @@ class SurveyListItem(BaseModel):
     my_role: MemberRole | None
     can_edit: bool
     can_delete: bool
+    open_to_all: bool
     updated_at: datetime
 
 

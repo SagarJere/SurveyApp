@@ -1,16 +1,23 @@
 """Survey drafts for HR and admins (docs/04-api.md, "Surveys")."""
 
-from dataclasses import asdict
-from datetime import date
+from dataclasses import asdict, dataclass
+from datetime import date, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Response, status
-from sqlalchemy import select
+from fastapi import APIRouter, Request, Response, status
+from sqlalchemy import func, select
 
 from app.auth.deps import CurrentUser, HrUser
+from app.config import Settings
 from app.db import SessionDep
 from app.errors import ErrorResponse
-from app.models import SurveyVersion
+from app.models import (
+    Survey,
+    SurveyAudience,
+    SurveyParticipation,
+    SurveyResponse,
+    SurveyVersion,
+)
 from app.schemas.draft import Draft
 from app.schemas.surveys import (
     CloseResponse,
@@ -24,6 +31,7 @@ from app.schemas.surveys import (
 )
 from app.services import publish as publishing
 from app.services import surveys as service
+from app.services.respond import close_if_expired, today
 
 router = APIRouter(prefix="/surveys", tags=["surveys"])
 
@@ -37,26 +45,114 @@ def _date(value: object) -> date | None:
     return date.fromisoformat(value) if isinstance(value, str) and value else None
 
 
-def _list_item(access: service.SurveyAccess, version_no: int | None) -> SurveyListItem:
+@dataclass(frozen=True, slots=True)
+class _Counts:
+    version_no: int | None = None
+    responses: int = 0
+    this_week: int = 0
+    audience: int = 0
+    respondents: int = 0
+    closes_at: date | None = None
+    opens_at: date | None = None
+
+
+def _list_item(access: service.SurveyAccess, counts: _Counts) -> SurveyListItem:
     survey = access.survey
     settings = survey.draft.get("settings", {})
+    audience = 0 if survey.open_to_all else counts.audience
+    published = survey.current_version_id is not None
     return SurveyListItem(
         id=survey.id,
         title=survey.title,
         status=survey.status,  # type: ignore[arg-type]
-        version_no=version_no,
-        # Audiences and responses arrive in later phases; until then there are none.
-        response_count=0,
-        audience_count=0,
-        response_rate=None,
-        opens_at=_date(settings.get("opens_at")),
-        closes_at=_date(settings.get("closes_at")),
+        version_no=counts.version_no,
+        response_count=counts.responses,
+        responses_this_week=counts.this_week,
+        audience_count=audience,
+        response_rate=round(counts.respondents / audience, 4) if audience else None,
+        # Published surveys run on the published dates; drafts show what's being planned.
+        opens_at=counts.opens_at if published else _date(settings.get("opens_at")),
+        closes_at=counts.closes_at if published else _date(settings.get("closes_at")),
         has_unpublished_changes=survey.has_unpublished_changes,
         my_role=access.member_role,  # type: ignore[arg-type]
         can_edit=access.can_edit,
         can_delete=access.can_delete,
+        open_to_all=survey.open_to_all,
         updated_at=survey.updated_at,
     )
+
+
+async def _list_counts(
+    session: SessionDep, settings: Settings, survey_ids: list[UUID]
+) -> dict[UUID, _Counts]:
+    if not survey_ids:
+        return {}
+    week_ago = today(settings) - timedelta(days=6)
+    local_day = func.date(func.timezone(settings.survey_timezone, SurveyResponse.submitted_at))
+    responses = dict(
+        (
+            await session.execute(
+                select(SurveyResponse.survey_id, func.count())
+                .where(SurveyResponse.survey_id.in_(survey_ids))
+                .group_by(SurveyResponse.survey_id)
+            )
+        ).all()
+    )
+    this_week = dict(
+        (
+            await session.execute(
+                select(SurveyResponse.survey_id, func.count())
+                .where(SurveyResponse.survey_id.in_(survey_ids), local_day >= week_ago)
+                .group_by(SurveyResponse.survey_id)
+            )
+        ).all()
+    )
+    audience = dict(
+        (
+            await session.execute(
+                select(SurveyAudience.survey_id, func.count())
+                .where(SurveyAudience.survey_id.in_(survey_ids))
+                .group_by(SurveyAudience.survey_id)
+            )
+        ).all()
+    )
+    respondents = dict(
+        (
+            await session.execute(
+                select(SurveyParticipation.survey_id, func.count())
+                .where(
+                    SurveyParticipation.survey_id.in_(survey_ids),
+                    SurveyParticipation.status == "submitted",
+                )
+                .group_by(SurveyParticipation.survey_id)
+            )
+        ).all()
+    )
+    versions = {
+        row.survey_id: row
+        for row in (
+            await session.execute(
+                select(
+                    Survey.id.label("survey_id"), SurveyVersion.version_no, SurveyVersion.settings
+                )
+                .join(SurveyVersion, SurveyVersion.id == Survey.current_version_id)
+                .where(Survey.id.in_(survey_ids))
+            )
+        ).all()
+    }
+    out: dict[UUID, _Counts] = {}
+    for survey_id in survey_ids:
+        version = versions.get(survey_id)
+        out[survey_id] = _Counts(
+            version_no=version.version_no if version else None,
+            responses=responses.get(survey_id, 0),
+            this_week=this_week.get(survey_id, 0),
+            audience=audience.get(survey_id, 0),
+            respondents=respondents.get(survey_id, 0),
+            opens_at=_date(version.settings.get("opens_at")) if version else None,
+            closes_at=_date(version.settings.get("closes_at")) if version else None,
+        )
+    return out
 
 
 def _detail(access: service.SurveyAccess, version_no: int | None) -> SurveyDetail:
@@ -80,26 +176,16 @@ def _detail(access: service.SurveyAccess, version_no: int | None) -> SurveyDetai
 
 
 @router.get("", response_model=list[SurveyListItem], summary="Surveys you can see")
-async def list_surveys(user: HrUser, session: SessionDep) -> list[SurveyListItem]:
+async def list_surveys(request: Request, user: HrUser, session: SessionDep) -> list[SurveyListItem]:
+    settings: Settings = request.app.state.settings
     accesses = await service.list_surveys(session, user)
-    version_ids = [a.survey.current_version_id for a in accesses if a.survey.current_version_id]
-    numbers: dict[UUID, int] = {}
-    if version_ids:
-        rows = await session.execute(
-            select(SurveyVersion.id, SurveyVersion.version_no).where(
-                SurveyVersion.id.in_(version_ids)
-            )
-        )
-        numbers = {row[0]: row[1] for row in rows.all()}
-    return [
-        _list_item(
-            access,
-            numbers.get(access.survey.current_version_id)
-            if access.survey.current_version_id
-            else None,
-        )
-        for access in accesses
-    ]
+    for access in accesses:  # surveys past their close date close themselves
+        if access.survey.current_version_id is not None and access.survey.status == "published":
+            version = await session.get(SurveyVersion, access.survey.current_version_id)
+            if version is not None:
+                await close_if_expired(session, settings, access.survey, version.settings)
+    counts = await _list_counts(session, settings, [a.survey.id for a in accesses])
+    return [_list_item(access, counts[access.survey.id]) for access in accesses]
 
 
 @router.post(
