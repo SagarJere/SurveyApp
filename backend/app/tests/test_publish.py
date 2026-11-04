@@ -41,6 +41,10 @@ async def _survey(
     )
     assert saved.status_code == 200, saved.text
     survey["draft_updated_at"] = saved.json()["draft_updated_at"]
+    opened = await client.put(
+        f"/api/surveys/{survey['id']}/audience/open-to-all", headers=hr, json={"open_to_all": True}
+    )
+    assert opened.status_code == 200
     return survey
 
 

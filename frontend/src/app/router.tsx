@@ -41,9 +41,8 @@ export const routes: RouteObject[] = [
               {
                 index: true,
                 lazy: async () => {
-                  const { SurveyUnavailablePage } =
-                    await import('@/features/respond/respondent-chunk')
-                  return { Component: SurveyUnavailablePage }
+                  const { RespondPage } = await import('@/features/respond/respondent-chunk')
+                  return { Component: RespondPage }
                 },
               },
             ],

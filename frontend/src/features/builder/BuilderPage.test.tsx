@@ -533,6 +533,7 @@ describe('publishing and closing', () => {
           problem: null,
         },
       ],
+      warnings: [],
     })
 
     await user.click(screen.getByRole('button', { name: 'Publish' }))
@@ -558,6 +559,7 @@ describe('publishing and closing', () => {
           problem: null,
         },
       ],
+      warnings: [],
     })
     vi.spyOn(surveysApi, 'listGallery').mockResolvedValue([])
     vi.spyOn(surveysApi, 'listUploads').mockResolvedValue([])

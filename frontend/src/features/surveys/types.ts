@@ -63,6 +63,8 @@ export interface ThemeAsset {
 
 export interface ValidateResponse {
   issues: Issue[]
+  /** Worth knowing, but publishing goes ahead. */
+  warnings: Issue[]
 }
 
 export const UNTITLED_SURVEY = 'Untitled survey'

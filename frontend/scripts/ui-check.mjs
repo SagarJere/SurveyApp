@@ -46,12 +46,60 @@ async function surveyWith(token, draft) {
   return survey.id
 }
 
+const TEST_ACCOUNTS = [
+  ['E1001', 'Asha Rao', 'People', 'Pune'],
+  ['E1002', 'Vikram Mehta', 'People', 'Pune'],
+  ['E2001', 'Priya Nair', 'Engineering', 'Pune'],
+  ['E2002', 'Rahul Sharma', 'Engineering', 'Delhi'],
+  ['E2003', 'Meera Iyer', 'Sales', 'Mumbai'],
+  ['E2004', 'Arjun Singh', 'Sales', 'Delhi'],
+  ['E2005', 'Fatima Khan', 'Finance', 'Mumbai'],
+]
+
+function isoDay(offsetDays) {
+  const d = new Date()
+  d.setDate(d.getDate() + offsetDays)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/**
+ * Publish the sample once, open from today for 30 days, with the dev test accounts as its
+ * audience, so it can be tried as an employee. Left alone if it's already published.
+ */
+async function publishSample(token, surveyId) {
+  const detail = await api('GET', `/surveys/${surveyId}`, token)
+  if (detail.status !== 'draft') return
+  const draft = {
+    ...detail.draft,
+    settings: { ...detail.draft.settings, opens_at: isoDay(0), closes_at: isoDay(30) },
+  }
+  await api('PUT', `/surveys/${surveyId}/draft`, token, {
+    draft,
+    draft_updated_at: detail.draft_updated_at,
+  })
+  const csv = [
+    'EmployeeId,Name,Department,Location',
+    ...TEST_ACCOUNTS.map((r) => r.join(',')),
+  ].join('\n')
+  const form = new FormData()
+  form.append('file', new Blob([csv], { type: 'text/csv' }), 'test-accounts.csv')
+  const upload = await fetch(`${BASE}/api/surveys/${surveyId}/audience/uploads?mode=replace`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  })
+  const preview = await upload.json()
+  await api('POST', `/surveys/${surveyId}/audience/uploads/${preview.upload_id}/apply`, token)
+  await api('POST', `/surveys/${surveyId}/publish`, token)
+}
+
 async function main() {
   mkdirSync(OUT, { recursive: true })
   const { access_token: token } = await api('POST', '/auth/login', null, { employee_id: 'E1002' })
 
   const existing = (await api('GET', '/surveys', token)).find((s) => s.title === SAMPLE_TITLE)
   const sampleId = existing?.id ?? (await surveyWith(token, pulse))
+  await publishSample(token, sampleId)
   const stepId = await surveyWith(token, {
     ...pulse,
     title: 'UI check (one question at a time)',
@@ -122,7 +170,14 @@ async function main() {
       wait: 'nav[aria-label="Questions"]',
     })
 
-    // Lighthouse accessibility on Preview, desktop and phone, both layouts.
+    await shot('builder-audience-desktop', `${edit}?tab=audience`, { wait: 'main li' })
+    await shot('builder-audience-375', `${edit}?tab=audience`, {
+      width: 375,
+      height: 812,
+      wait: 'main li',
+    })
+
+    // Lighthouse accessibility, as HR.
     const audits = [
       ['preview (section layout), desktop', `${edit}?mode=preview`, 'desktop'],
       ['preview (section layout), phone', `${edit}?mode=preview`, 'mobile'],
@@ -130,7 +185,37 @@ async function main() {
       ['builder questions, desktop', edit, 'desktop'],
       ['builder theme, desktop', `${edit}?tab=theme`, 'desktop'],
       ['builder settings, desktop', `${edit}?tab=settings`, 'desktop'],
+      ['builder audience, desktop', `${edit}?tab=audience`, 'desktop'],
     ]
+    await runAudits(audits)
+
+    // As an employee in the sample's audience.
+    const { access_token: employeeToken } = await api('POST', '/auth/login', null, {
+      employee_id: 'E2001',
+    })
+    await page.evaluate((t) => localStorage.setItem('survey-app.access-token', t), employeeToken)
+    await shot('my-surveys-desktop', '/', { wait: 'main li' })
+    await shot('my-surveys-375', '/', { width: 375, height: 812, wait: 'main li' })
+    await shot('respond-desktop', `/s/${sampleId}`, { wait: 'article h1' })
+    await shot('respond-375', `/s/${sampleId}`, { width: 375, height: 812, wait: 'article h1' })
+    await shot('respond-375-dark', `/s/${sampleId}`, {
+      width: 375,
+      height: 812,
+      dark: true,
+      wait: 'article h1',
+    })
+    await runAudits([
+      ['my surveys, phone', '/', 'mobile'],
+      ['take a survey, phone', `/s/${sampleId}`, 'mobile'],
+      ['take a survey, desktop', `/s/${sampleId}`, 'desktop'],
+    ])
+  } finally {
+    await context.close()
+    rmSync(profile, { recursive: true, force: true })
+    await api('DELETE', `/surveys/${stepId}`, token)
+  }
+
+  async function runAudits(audits) {
     for (const [label, url, formFactor] of audits) {
       const mobile = formFactor === 'mobile'
       const run = await lighthouse(`${BASE}${url}`, {
@@ -154,10 +239,6 @@ async function main() {
         failing,
       })
     }
-  } finally {
-    await context.close()
-    rmSync(profile, { recursive: true, force: true })
-    await api('DELETE', `/surveys/${stepId}`, token)
   }
 
   console.log(

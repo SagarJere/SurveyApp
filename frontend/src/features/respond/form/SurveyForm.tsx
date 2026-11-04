@@ -4,7 +4,7 @@
  * navigator, auto-next, money input and theme.
  */
 import { CheckIcon, Loader2Icon } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { answerProblem } from '@/features/survey-logic/answers'
@@ -23,15 +23,30 @@ export type SurveyContent = Pick<
   'title' | 'description' | 'settings' | 'theme' | 'sections' | 'questions'
 >
 
+/** What onSubmit can report back: nothing (it worked) or problems keyed by question key. */
+export type SubmitOutcome = { errors: Record<string, string> } | undefined
+
 interface SurveyFormProps {
   survey: SurveyContent
   assets: AssetResolver
-  /** Called with the answers to visible questions only. */
-  onSubmit: (answers: Answers) => Promise<void> | void
+  /** Called with the answers to visible questions only. Throw to stay on the form. */
+  onSubmit: (answers: Answers) => Promise<SubmitOutcome> | SubmitOutcome
   /** Extra button on the thank-you screen (Preview: "Reset preview"). */
   onReset?: () => void
   /** Height of any sticky bar above the form, so the progress bar sticks below it. */
   stickyTop?: number
+  /** Answers to start with (a saved draft, or a submitted response being edited). */
+  initialAnswers?: Answers
+  /** Start on the thank-you screen (they've already responded). */
+  initiallySubmitted?: boolean
+  /** Every change, with hidden answers already discarded (for autosave). */
+  onAnswersChange?: (answers: Answers) => void
+  /** Shown next to the progress label, e.g. "Saved". */
+  status?: ReactNode
+  /** Thank-you screen offers "Edit response". Default: the survey allows editing. */
+  canEditAfterSubmit?: boolean
+  /** Thank-you screen offers "Start another response". Default: one response is off. */
+  canRespondAgain?: boolean
 }
 
 const AUTO_NEXT_MS = 350
@@ -43,13 +58,51 @@ interface Group {
   questions: Question[]
 }
 
-export function SurveyForm({ survey, assets, onSubmit, onReset, stickyTop = 0 }: SurveyFormProps) {
+/** Where to continue a saved draft: the first unanswered visible question, or its page. */
+function resumePosition(survey: SurveyContent, answers: Answers): number {
+  const visibility = evaluate(survey, answers)
+  const visible = survey.questions.filter((q) => visibility.visibleQuestions.includes(q.key))
+  const firstOpen = visible.findIndex((q) => !isAnswered(answers[q.key]))
+  if (firstOpen <= 0) return 0
+  if (survey.settings.layout === 'step') return firstOpen
+  if (survey.settings.layout === 'section') {
+    const sectionsWithQuestions = survey.sections.filter((s) =>
+      visible.some((q) => q.section_key === s.key),
+    )
+    const target = visible[firstOpen]?.section_key
+    return Math.max(
+      0,
+      sectionsWithQuestions.findIndex((s) => s.key === target),
+    )
+  }
+  return 0
+}
+
+export function SurveyForm({
+  survey,
+  assets,
+  onSubmit,
+  onReset,
+  stickyTop = 0,
+  initialAnswers,
+  initiallySubmitted = false,
+  onAnswersChange,
+  status,
+  canEditAfterSubmit,
+  canRespondAgain,
+}: SurveyFormProps) {
   const { settings, theme } = survey
   const layout = settings.layout
-  const [answers, setAnswers] = useState<Answers>({})
-  const [position, setPosition] = useState(0)
+  const [answers, setAnswers] = useState<Answers>(() =>
+    initialAnswers ? evaluate(survey, initialAnswers).keptAnswers : {},
+  )
+  const [position, setPosition] = useState(() =>
+    initialAnswers && !initiallySubmitted ? resumePosition(survey, initialAnswers) : 0,
+  )
   const [direction, setDirection] = useState<'forward' | 'back' | null>(null)
-  const [submitted, setSubmitted] = useState(false)
+  const [submitted, setSubmitted] = useState(initiallySubmitted)
+  // Problems the server found on submit, until the person changes that answer.
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [revealed, setRevealed] = useState<ReadonlySet<string>>(() => new Set())
   // Set by Next/Back; the next heading to mount takes focus (see focusOnMount).
@@ -122,6 +175,10 @@ export function SurveyForm({ survey, assets, onSubmit, onReset, stickyTop = 0 }:
   const answer = (question: Question, value: unknown) => {
     const next = evaluate(survey, { ...answers, [question.key]: value }).keptAnswers
     setAnswers(next)
+    onAnswersChange?.(next)
+    if (question.key in errors) {
+      setErrors(({ [question.key]: _, ...rest }) => rest)
+    }
     // Questions this answer revealed fade in briefly.
     const nowVisible = evaluate(survey, next).visibleQuestions
     setRevealed(new Set(nowVisible.filter((key) => !visibleKeys.has(key))))
@@ -137,11 +194,37 @@ export function SurveyForm({ survey, assets, onSubmit, onReset, stickyTop = 0 }:
     }
   }
 
+  /** After a failed submit: go to the first question with a problem and focus it. */
+  const showFirstError = (found: Record<string, string>) => {
+    const index = visible.findIndex((q) => q.key in found)
+    const question = visible[index]
+    if (!question) return
+    if (layout === 'step') {
+      go(index, index > current ? 'forward' : 'back')
+      return
+    }
+    if (layout === 'section') {
+      const page = groups.findIndex((g) => g.questions.includes(question))
+      if (page !== current) go(page, page > current ? 'forward' : 'back')
+    }
+    window.requestAnimationFrame(() => {
+      const heading = document.getElementById(`q-title-${question.key}`)
+      heading?.scrollIntoView({ block: 'center' })
+      heading?.focus({ preventScroll: true })
+    })
+  }
+
   const submit = async () => {
     if (anyBlocked || submitting) return
     setSubmitting(true)
     try {
-      await onSubmit(visibility.keptAnswers)
+      const outcome = await onSubmit(visibility.keptAnswers)
+      if (outcome && Object.keys(outcome.errors).length) {
+        setErrors(outcome.errors)
+        showFirstError(outcome.errors)
+        return
+      }
+      setErrors({})
       setSubmitted(true)
       topRef.current?.scrollIntoView({ block: 'start' })
     } finally {
@@ -156,6 +239,7 @@ export function SurveyForm({ survey, assets, onSubmit, onReset, stickyTop = 0 }:
       question={question}
       number={numberOf.get(question.key) ?? 0}
       value={answers[question.key]}
+      serverError={errors[question.key]}
       onChange={(value) => {
         answer(question, value)
       }}
@@ -353,8 +437,19 @@ export function SurveyForm({ survey, assets, onSubmit, onReset, stickyTop = 0 }:
     <ThankYou
       survey={survey}
       onEdit={
-        settings.allow_edit
+        (canEditAfterSubmit ?? (settings.allow_edit && !settings.anonymous))
           ? () => {
+              setSubmitted(false)
+            }
+          : undefined
+      }
+      onAnother={
+        (canRespondAgain ?? !settings.one_response)
+          ? () => {
+              setAnswers({})
+              onAnswersChange?.({})
+              setPosition(0)
+              setDirection(null)
               setSubmitted(false)
             }
           : undefined
@@ -387,6 +482,7 @@ export function SurveyForm({ survey, assets, onSubmit, onReset, stickyTop = 0 }:
           />
         </div>
         <span aria-live="polite">{progressLabel}</span>
+        {status ? <span className="border-l pl-3 text-muted-foreground">{status}</span> : null}
       </div>
       {visible.length === 0 ? (
         <p className="px-6 py-10 text-center text-muted-foreground">
@@ -428,10 +524,12 @@ export function SurveyForm({ survey, assets, onSubmit, onReset, stickyTop = 0 }:
 function ThankYou({
   survey,
   onEdit,
+  onAnother,
   onReset,
 }: {
   survey: SurveyContent
   onEdit: (() => void) | undefined
+  onAnother: (() => void) | undefined
   onReset: (() => void) | undefined
 }) {
   const { settings } = survey
@@ -451,7 +549,7 @@ function ThankYou({
       </h2>
       <p className="mx-auto mt-1 max-w-[44ch]">Thanks, your answers have been submitted.</p>
       <p className="mx-auto mt-1 max-w-[44ch] text-sm text-muted-foreground">
-        {settings.allow_edit
+        {onEdit
           ? editUntil
             ? `You can change your answers until ${editUntil}.`
             : 'You can change your answers while the survey is open.'
@@ -463,6 +561,11 @@ function ThankYou({
         {onEdit ? (
           <Button variant="outline" onClick={onEdit}>
             Edit response
+          </Button>
+        ) : null}
+        {onAnother ? (
+          <Button variant="outline" onClick={onAnother}>
+            Start another response
           </Button>
         ) : null}
         {onReset ? (

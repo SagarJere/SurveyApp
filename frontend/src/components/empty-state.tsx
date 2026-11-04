@@ -19,7 +19,7 @@ export function EmptyState({ icon: Icon, title, description, action, className }
         className,
       )}
     >
-      <div className="flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary">
+      <div className="flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary-soft-foreground">
         <Icon className="size-6" aria-hidden="true" />
       </div>
       <h2 className="text-lg font-semibold">{title}</h2>

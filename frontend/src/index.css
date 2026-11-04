@@ -30,6 +30,8 @@
   --primary: #0e7a6a;
   --primary-foreground: #ffffff;
   --primary-soft: #dcefea;
+  /* Teal text on --primary-soft: a shade darker than the brand teal for 4.5:1 contrast. */
+  --primary-soft-foreground: #0a6658;
   --secondary: #f4f7f6;
   --secondary-foreground: #14302d;
   --muted: #f4f7f6;
@@ -58,6 +60,7 @@
   --primary: #3dbba5;
   --primary-foreground: #06201c;
   --primary-soft: #163833;
+  --primary-soft-foreground: #3dbba5;
   --secondary: #1a2928;
   --secondary-foreground: #e3ece9;
   --muted: #1a2928;
@@ -95,6 +98,7 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);

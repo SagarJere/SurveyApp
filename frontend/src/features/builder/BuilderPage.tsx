@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { AudienceTab } from '@/features/audience/AudienceTab'
 import { SettingsTab } from '@/features/settings/SettingsTab'
 import type { Issue } from '@/features/survey-logic/validation'
 import {
@@ -117,6 +118,7 @@ const TABS = [
   { value: 'questions', label: 'Questions' },
   { value: 'theme', label: 'Theme' },
   { value: 'settings', label: 'Settings' },
+  { value: 'audience', label: 'Audience' },
 ] as const
 type Tab = (typeof TABS)[number]['value']
 
@@ -206,7 +208,9 @@ function BuilderEditor({ survey, onReload }: { survey: SurveyDetail; onReload: (
     store.setIssues(issues)
     const first = issues[0]
     if (!first) return
-    if (first.code === 'theme_image_missing') {
+    if (first.code === 'audience_empty') {
+      navigate({ tab: 'audience', mode: 'edit' })
+    } else if (first.code === 'theme_image_missing') {
       navigate({ tab: 'theme', mode: 'edit' })
     } else if (first.code === 'dates_order') {
       navigate({ tab: 'settings', mode: 'edit' })
@@ -239,11 +243,12 @@ function BuilderEditor({ survey, onReload }: { survey: SurveyDetail; onReload: (
         )
         return
       }
-      const { issues } = await validateSurvey(survey.id)
+      const { issues, warnings } = await validateSurvey(survey.id)
       if (issues.length) {
         showFirstIssue(issues)
         return
       }
+      for (const warning of warnings) toast.warning(warning.message)
       const result = await publishSurvey(survey.id)
       useBuilderStore.getState().setIssues([])
       setLifecycle({
@@ -407,8 +412,10 @@ function BuilderEditor({ survey, onReload }: { survey: SurveyDetail; onReload: (
               </>
             ) : tab === 'theme' ? (
               <ThemeTab />
-            ) : (
+            ) : tab === 'settings' ? (
               <SettingsTab />
+            ) : (
+              <AudienceTab />
             )}
           </div>
         )}

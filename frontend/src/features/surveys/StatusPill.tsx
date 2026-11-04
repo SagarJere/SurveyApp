@@ -22,7 +22,7 @@ export function StatusPill({
       className={cn(
         'inline-flex items-center rounded-full border px-2 py-px text-xs font-semibold',
         status === 'published'
-          ? 'border-transparent bg-primary-soft text-primary'
+          ? 'border-transparent bg-primary-soft text-primary-soft-foreground'
           : 'bg-muted text-foreground',
         className,
       )}

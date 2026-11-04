@@ -272,7 +272,9 @@ IssueCode = Literal[
     "money_range",
     "condition_broken",
     "dates_order",
-    "theme_image_missing",  # server-only check (needs the asset table), see services/publish.py
+    "theme_image_missing",  # server-only checks (need the database), see services/publish.py
+    "audience_empty",
+    "audience_small_anonymous",  # a warning: doesn't block publishing
 ]
 
 

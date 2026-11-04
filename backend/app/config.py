@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -46,6 +47,8 @@ class Settings(BaseSettings):
     health_db_timeout_seconds: float = Field(default=2.0, gt=0, le=30)
 
     file_storage_path: Path = REPO_ROOT / "data" / "files"
+    # Survey open/close dates are calendar dates in this time zone (an IANA name).
+    survey_timezone: str = "Asia/Kolkata"
     cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:5173"]
     )
@@ -57,6 +60,23 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [origin.strip().rstrip("/") for origin in value.split(",") if origin.strip()]
         return value
+
+    @field_validator("survey_timezone")
+    @classmethod
+    def _known_timezone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError):
+            msg = (
+                f"SURVEY_TIMEZONE {value!r} isn't a known time zone. Use an IANA name such as "
+                "Asia/Kolkata (on slim Linux images, install the tzdata package)."
+            )
+            raise ValueError(msg) from None
+        return value
+
+    @property
+    def timezone(self) -> ZoneInfo:
+        return ZoneInfo(self.survey_timezone)
 
     @field_validator("database_url")
     @classmethod

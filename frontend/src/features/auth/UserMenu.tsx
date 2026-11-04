@@ -33,20 +33,17 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="gap-2 px-1.5 sm:px-2"
-          aria-label={`Account: ${displayName}`}
-        >
+        {/* The accessible name ("Account: Priya Nair") comes from the button's own text, so
+            what sighted and screen-reader users get always matches. */}
+        <Button variant="ghost" className="gap-2 px-1.5 sm:px-2">
           <span
-            className="grid size-8 place-items-center rounded-full bg-primary-soft text-xs font-bold text-primary"
+            className="grid size-8 place-items-center rounded-full bg-primary-soft text-xs font-bold text-primary-soft-foreground"
             aria-hidden="true"
           >
             {initials(user)}
           </span>
-          <span className="hidden max-w-36 truncate md:inline" aria-hidden="true">
-            {displayName}
-          </span>
+          <span className="sr-only">Account:</span>{' '}
+          <span className="sr-only max-w-36 truncate md:not-sr-only">{displayName}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">

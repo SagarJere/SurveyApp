@@ -2,12 +2,14 @@
 
 from fastapi import APIRouter
 
-from app.routers import auth, health, surveys, theme_assets
+from app.routers import audience, auth, health, respond, surveys, theme_assets
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(health.router)
 api_router.include_router(auth.router)
 api_router.include_router(surveys.router)
 api_router.include_router(theme_assets.router)
+api_router.include_router(audience.router)
+api_router.include_router(respond.router)
 
 __all__ = ["api_router"]

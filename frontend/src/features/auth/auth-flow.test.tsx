@@ -10,10 +10,12 @@ import { api, ApiError } from '@/lib/api'
 import { tokenStore } from '@/lib/token-store'
 import { fakeToken, TEST_USERS } from '@/test/auth'
 import { renderRoute } from '@/test/render'
+import { mockRespondDefaults, NOT_AVAILABLE } from '@/test/respond'
 
 import * as authApi from './api'
 
 beforeEach(() => {
+  mockRespondDefaults()
   vi.spyOn(surveysApi, 'listSurveys').mockResolvedValue([])
   vi.spyOn(healthApi, 'fetchHealth').mockResolvedValue({
     status: 'ok',
@@ -106,7 +108,7 @@ describe('role-based navigation', () => {
   it('lets employees open a survey link', async () => {
     renderRoute('/s/abc', { user: TEST_USERS.employee })
 
-    expect(await screen.findByText("This survey isn't available to you.")).toBeInTheDocument()
+    expect(await screen.findByText(NOT_AVAILABLE)).toBeInTheDocument()
   })
 })
 

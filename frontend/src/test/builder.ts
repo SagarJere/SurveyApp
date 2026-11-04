@@ -44,7 +44,9 @@ export function mockBuilderApi(draft: Draft, overrides: Partial<SurveyDetail> = 
       draft_updated_at: `2026-11-02T10:00:${String(saves).padStart(2, '0')}+00:00`,
     })
   })
-  const validateSurvey = vi.spyOn(surveysApi, 'validateSurvey').mockResolvedValue({ issues: [] })
+  const validateSurvey = vi
+    .spyOn(surveysApi, 'validateSurvey')
+    .mockResolvedValue({ issues: [], warnings: [] })
   return { getSurvey, saveDraft, validateSurvey }
 }
 

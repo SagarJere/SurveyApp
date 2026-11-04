@@ -64,6 +64,7 @@ class IssueOut(BaseModel):
 
 class ValidateResponse(BaseModel):
     issues: list[IssueOut]
+    warnings: list[IssueOut] = []
 
 
 class PublishResponse(BaseModel):

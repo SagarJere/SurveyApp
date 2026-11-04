@@ -106,6 +106,15 @@ Every environment needs this once, production included. Gallery images keep fixe
 
 Uploaded and gallery images are stored as WebP under `FILE_STORAGE_PATH`. Browsers load them through signed links that expire after about a day, because `<img>` tags can't send a sign-in token.
 
+## Audiences and responding
+
+- **Audience:** in the builder's Audience tab, upload an Excel or CSV file (use "Download template"), check the preview, then Apply. Or switch on "Open to all employees". A survey can't be published with an empty audience.
+- **Dates:** open and close dates are calendar days in `SURVEY_TIMEZONE` (default `Asia/Kolkata`). A survey closes itself after its close date.
+- **Taking a survey:** employees see it under "My surveys" and answer at `/s/<survey id>`. Answers autosave as a draft, so people can pick up where they left off.
+- **Anonymous surveys:** responses store no employee ID, and times are rounded to the hour. A separate participation record still stops anyone answering twice. Anonymous responses can't be edited after submitting, because nothing links them to the person.
+
+`npm run ui-check` publishes the sample survey (if it's still a draft) with the dev test accounts as its audience, open from today for 30 days, so you can try it as E2001.
+
 ## Browser check
 
 With `make api` and `make web` running:

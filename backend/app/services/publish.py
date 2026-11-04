@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.errors import AppError
 from app.models import QuestionOption, Survey, SurveyVersion, VersionQuestion, VersionSection
 from app.schemas.draft import Draft
+from app.services.audience import audience_count
 from app.services.survey_logic import Issue, validate_draft
 from app.services.surveys import SurveyAccess
 from app.services.theme_assets import usable_asset_ids
@@ -43,9 +44,45 @@ async def theme_issues(session: AsyncSession, survey_id: uuid.UUID, draft: Draft
     return issues
 
 
+SMALL_ANONYMOUS_AUDIENCE = 10
+
+
+async def audience_issues(session: AsyncSession, survey: Survey) -> list[Issue]:
+    if survey.open_to_all or await audience_count(session, survey.id) > 0:
+        return []
+    return [
+        Issue(
+            "audience_empty",
+            "Add people to the audience, or open the survey to all employees.",
+        )
+    ]
+
+
+async def publish_warnings(session: AsyncSession, survey: Survey) -> list[Issue]:
+    """Things worth knowing that don't block publishing."""
+    draft = Draft.model_validate(survey.draft)
+    if not draft.settings.anonymous or survey.open_to_all:
+        return []
+    count = await audience_count(session, survey.id)
+    if 0 < count < SMALL_ANONYMOUS_AUDIENCE:
+        return [
+            Issue(
+                "audience_small_anonymous",
+                f"Only {count} {'person is' if count == 1 else 'people are'} in the audience. "
+                "With anonymous responses, answers from a group this small may be easy to "
+                "identify.",
+            )
+        ]
+    return []
+
+
 async def publish_issues(session: AsyncSession, survey: Survey) -> list[Issue]:
     draft = Draft.model_validate(survey.draft)
-    return [*validate_draft(draft.as_logic_dict()), *await theme_issues(session, survey.id, draft)]
+    return [
+        *validate_draft(draft.as_logic_dict()),
+        *await theme_issues(session, survey.id, draft),
+        *await audience_issues(session, survey),
+    ]
 
 
 def _issues_error(issues: list[Issue]) -> AppError:

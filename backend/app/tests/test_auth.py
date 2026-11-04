@@ -189,7 +189,7 @@ async def test_invalid_token_is_401_invalid_token(client: AsyncClient) -> None:
         ("/api/_test/admin", "admin", 200),
     ],
 )
-async def test_role_checks(  # noqa: PLR0917 - pytest injects fixtures and parameters
+async def test_role_checks(
     app: FastAPI,
     client: AsyncClient,
     token_for: Callable[..., str],

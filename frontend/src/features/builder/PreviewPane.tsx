@@ -33,7 +33,7 @@ export function PreviewPane({ stickyTop }: { stickyTop: number }) {
             variant="outline"
             size="sm"
             aria-pressed={phone}
-            className="aria-pressed:border-primary aria-pressed:bg-primary-soft aria-pressed:text-primary"
+            className="aria-pressed:border-primary aria-pressed:bg-primary-soft aria-pressed:text-primary-soft-foreground"
             onClick={() => {
               setPhone((value) => !value)
             }}

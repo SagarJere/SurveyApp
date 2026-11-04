@@ -7,8 +7,10 @@ import * as surveysApi from '@/features/surveys/api'
 import { ApiError } from '@/lib/api'
 import { TEST_USERS } from '@/test/auth'
 import { renderRoute } from '@/test/render'
+import { mockRespondDefaults, NOT_AVAILABLE } from '@/test/respond'
 
 beforeEach(() => {
+  mockRespondDefaults()
   vi.spyOn(surveysApi, 'listSurveys').mockResolvedValue([])
   vi.spyOn(surveysApi, 'getSurvey').mockRejectedValue(
     new ApiError({ status: 404, code: 'NOT_FOUND', message: "We couldn't find that survey." }),
@@ -26,7 +28,7 @@ describe('routes', () => {
     renderRoute('/', { user: TEST_USERS.hr })
 
     expect(await screen.findByRole('heading', { level: 1, name: 'My surveys' })).toBeInTheDocument()
-    expect(screen.getByText("You're all caught up.")).toBeInTheDocument()
+    expect(await screen.findByText("You're all caught up.")).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'My surveys' })).toHaveAttribute('aria-current', 'page')
     expect(await screen.findByText('Connected')).toBeInTheDocument()
@@ -52,7 +54,7 @@ describe('routes', () => {
   it('lazy-loads the respondent route without the main navigation', async () => {
     renderRoute('/s/some-survey', { user: TEST_USERS.hr })
 
-    expect(await screen.findByText("This survey isn't available to you.")).toBeInTheDocument()
+    expect(await screen.findByText(NOT_AVAILABLE)).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument()
   })
 

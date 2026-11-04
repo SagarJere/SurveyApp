@@ -141,7 +141,11 @@ async def save_draft(
 async def validate(survey_id: UUID, user: CurrentUser, session: SessionDep) -> ValidateResponse:
     access = await service.get_access(session, user, survey_id, "edit")
     issues = await publishing.publish_issues(session, access.survey)
-    return ValidateResponse(issues=[IssueOut(**asdict(issue)) for issue in issues])
+    warnings = await publishing.publish_warnings(session, access.survey)
+    return ValidateResponse(
+        issues=[IssueOut(**asdict(issue)) for issue in issues],
+        warnings=[IssueOut(**asdict(warning)) for warning in warnings],
+    )
 
 
 @router.post(

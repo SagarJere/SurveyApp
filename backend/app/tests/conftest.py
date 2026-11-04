@@ -68,6 +68,12 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 # Tables emptied after every test. Add new tables here as later phases create them.
 TABLES = (
+    "response_shown",
+    "response_answers",
+    "survey_participation",
+    "survey_responses",
+    "survey_audience",
+    "audience_uploads",
     "question_options",
     "survey_questions",
     "survey_sections",

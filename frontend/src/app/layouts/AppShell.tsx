@@ -36,7 +36,7 @@ export function AppShell() {
                   cn(
                     'inline-flex min-h-10 shrink-0 items-center rounded-md px-2.5 text-sm font-medium whitespace-nowrap transition-colors sm:px-3',
                     isActive
-                      ? 'bg-primary-soft text-primary'
+                      ? 'bg-primary-soft text-primary-soft-foreground'
                       : 'text-muted-foreground hover:bg-accent hover:text-foreground',
                   )
                 }

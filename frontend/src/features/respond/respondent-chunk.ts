@@ -3,4 +3,4 @@
  * Only import this through dynamic `import()` from the router.
  */
 export { RespondentLayout } from '@/app/layouts/RespondentLayout'
-export { SurveyUnavailablePage } from './SurveyUnavailablePage'
+export { RespondPage } from './RespondPage'

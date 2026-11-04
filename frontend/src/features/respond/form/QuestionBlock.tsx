@@ -11,6 +11,8 @@ interface QuestionBlockProps {
   number: number
   value: unknown
   onChange: (value: unknown) => void
+  /** A problem the server found on submit; replaces the local range message. */
+  serverError?: string
   /** Fade in briefly: the question was just revealed by a condition. */
   reveal?: boolean
   /** One-question-at-a-time layout: larger question text, no divider. */
@@ -22,11 +24,11 @@ interface QuestionBlockProps {
 /** One question with its label, help text, input, amount in words and range error. */
 export const QuestionBlock = forwardRef<HTMLHeadingElement, QuestionBlockProps>(
   function QuestionBlock(
-    { question, number, value, onChange, reveal, large, headingLevel, className },
+    { question, number, value, onChange, serverError, reveal, large, headingLevel, className },
     headingRef,
   ) {
     const id = (part: string) => `q-${part}-${question.key}`
-    const error = moneyRangeError(question, value)
+    const error = serverError ?? moneyRangeError(question, value)
     const describedBy =
       [
         question.help.trim() ? id('help') : null,

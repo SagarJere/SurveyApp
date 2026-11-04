@@ -61,6 +61,11 @@ async def _pulse_survey(client: AsyncClient, headers: Headers) -> dict[str, Any]
     saved = await _save(client, headers, survey, PULSE)
     assert saved.status_code == 200, saved.text
     survey["draft_updated_at"] = saved.json()["draft_updated_at"]
+    await client.put(
+        f"/api/surveys/{survey['id']}/audience/open-to-all",
+        headers=headers,
+        json={"open_to_all": True},
+    )
     return survey
 
 
@@ -332,7 +337,7 @@ async def test_sample_survey_has_no_issues(
     response = await client.post(f"/api/surveys/{survey['id']}/validate", headers=hr)
 
     assert response.status_code == 200
-    assert response.json() == {"issues": []}
+    assert response.json() == {"issues": [], "warnings": []}
 
 
 async def test_moving_q2_below_q3_is_reported(
@@ -371,7 +376,7 @@ async def test_new_survey_needs_a_question(
         "issues"
     ]
 
-    assert [i["code"] for i in issues] == ["no_questions"]
+    assert [i["code"] for i in issues] == ["no_questions", "audience_empty"]
 
 
 # --- duplicate and delete -------------------------------------------------------------------
@@ -394,7 +399,8 @@ async def test_duplicate_copies_with_fresh_keys(
     assert old_keys.isdisjoint(new_keys)
     assert [q["text"] for q in dup["draft"]["questions"]] == [q["text"] for q in PULSE["questions"]]
     issues = (await client.post(f"/api/surveys/{dup['id']}/validate", headers=hr)).json()
-    assert issues == {"issues": []}  # conditions were remapped to the new keys
+    # Conditions were remapped to the new keys. The audience isn't copied, so that's the only issue.
+    assert [i["code"] for i in issues["issues"]] == ["audience_empty"]
 
 
 async def test_owner_deletes_a_draft(client: AsyncClient, engine: AsyncEngine, hr: Headers) -> None:
