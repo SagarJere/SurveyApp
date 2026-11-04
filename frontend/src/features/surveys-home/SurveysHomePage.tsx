@@ -3,6 +3,7 @@ import {
   ClipboardListIcon,
   CopyIcon,
   Loader2Icon,
+  LockIcon,
   PencilIcon,
   PlusIcon,
   Trash2Icon,
@@ -28,6 +29,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePageTitle } from '@/hooks/use-page-title'
 import {
+  closeSurvey,
   createSurvey,
   deleteSurvey,
   duplicateSurvey,
@@ -117,6 +119,7 @@ function SurveyRow({ survey }: { survey: SurveyListItem }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [confirming, setConfirming] = useState(false)
+  const [confirmingClose, setConfirmingClose] = useState(false)
   const title = survey.title.trim() || UNTITLED_SURVEY
 
   const duplicate = useMutation({
@@ -137,6 +140,18 @@ function SurveyRow({ survey }: { survey: SurveyListItem }) {
       )
       void queryClient.invalidateQueries({ queryKey: surveyKeys.all })
       toast.success(`Deleted “${title}”.`)
+    },
+  })
+
+  const close = useMutation({
+    mutationFn: () => closeSurvey(survey.id),
+    onSuccess: () => {
+      setConfirmingClose(false)
+      void queryClient.invalidateQueries({ queryKey: surveyKeys.all })
+      toast.success(`Closed “${title}”. No new responses will be accepted.`)
+    },
+    onError: () => {
+      setConfirmingClose(false)
     },
   })
 
@@ -191,6 +206,45 @@ function SurveyRow({ survey }: { survey: SurveyListItem }) {
           <CopyIcon aria-hidden="true" />
           Duplicate
         </Button>
+        {survey.status === 'published' && survey.can_edit ? (
+          <AlertDialog open={confirmingClose} onOpenChange={setConfirmingClose}>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`Close ${title}`}
+              onClick={() => {
+                setConfirmingClose(true)
+              }}
+            >
+              <LockIcon aria-hidden="true" />
+              Close
+            </Button>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Close “{title}”?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Employees won&apos;t be able to respond any more. Responses so far are kept. You
+                  can&apos;t reopen a closed survey.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep it open</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={close.isPending}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    close.mutate()
+                  }}
+                >
+                  {close.isPending ? (
+                    <Loader2Icon className="animate-spin" aria-hidden="true" />
+                  ) : null}
+                  Close survey
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : null}
         {survey.can_delete ? (
           <AlertDialog open={confirming} onOpenChange={setConfirming}>
             <Button

@@ -135,6 +135,35 @@
   }
 }
 
+/* Survey (respondent) transitions. Disabled below for people who prefer reduced motion. */
+@keyframes survey-step-forward {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+}
+@keyframes survey-step-back {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+}
+@keyframes survey-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@utility animate-step-forward {
+  animation: survey-step-forward 250ms ease-out;
+}
+@utility animate-step-back {
+  animation: survey-step-back 250ms ease-out;
+}
+@utility animate-reveal {
+  animation: survey-reveal 280ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

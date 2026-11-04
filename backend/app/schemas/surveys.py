@@ -40,6 +40,7 @@ class SurveyDetail(BaseModel):
     my_role: MemberRole | None
     can_edit: bool
     can_delete: bool
+    closed_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
@@ -63,3 +64,15 @@ class IssueOut(BaseModel):
 
 class ValidateResponse(BaseModel):
     issues: list[IssueOut]
+
+
+class PublishResponse(BaseModel):
+    status: SurveyStatus
+    version_no: int
+    published_at: datetime
+    has_unpublished_changes: bool
+
+
+class CloseResponse(BaseModel):
+    status: SurveyStatus
+    closed_at: datetime

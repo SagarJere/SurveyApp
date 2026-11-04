@@ -8,6 +8,7 @@ import { ApiError } from '@/lib/api'
 import { TEST_USERS } from '@/test/auth'
 import { lastSavedDraft, mockBuilderApi, pulseDraft, surveyDetail, SURVEY_ID } from '@/test/builder'
 import { renderRoute } from '@/test/render'
+import * as surveysApi from '@/features/surveys/api'
 
 import { newSection } from './draft-ops'
 
@@ -205,8 +206,14 @@ describe('building the Workplace pulse sample (Phase 2 done-when)', () => {
     // The conditional cards are tagged.
     expect(screen.getAllByText('Shown when Q6 is “Yes, I manage people”')).toHaveLength(1)
 
-    expect(await screen.findByText('All changes saved', {}, { timeout: 3000 })).toBeInTheDocument()
-    expect(shape(lastSavedDraft(saveDraft))).toEqual(shape(pulseDraft()))
+    // Autosave catches up with the last edit; the saved draft is the prototype's survey.
+    await waitFor(
+      () => {
+        expect(shape(lastSavedDraft(saveDraft))).toEqual(shape(pulseDraft()))
+      },
+      { timeout: 8000 },
+    )
+    expect(await screen.findByText('All changes saved')).toBeInTheDocument()
   }, 60_000)
 })
 
@@ -244,46 +251,6 @@ describe('builder with the sample loaded', () => {
       within(card(q3)).getByText(
         'Q3 now comes after this question. Move it back up or change the condition.',
       ),
-    ).toBeInTheDocument()
-  })
-
-  it('"Check for issues" saves, validates and opens the first problem', async () => {
-    const user = userEvent.setup()
-    const draft = pulseDraft()
-    const q3 = draft.questions[2]!.key
-    const { validateSurvey, saveDraft } = await openBuilder(draft)
-    await user.type(screen.getByLabelText('Survey title'), '!')
-    validateSurvey.mockResolvedValue({
-      issues: [
-        {
-          code: 'condition_broken',
-          message: 'Q3 has a condition that needs attention.',
-          question_key: q3,
-          section_key: null,
-          problem: 'source_after',
-        },
-      ],
-    })
-
-    await user.click(screen.getByRole('button', { name: 'Check for issues' }))
-
-    expect(
-      await screen.findByText(
-        'Fix 1 issue before publishing. Q3 has a condition that needs attention.',
-      ),
-    ).toBeInTheDocument()
-    expect(saveDraft).toHaveBeenCalled() // pending edits were saved first
-    expect(head(q3)).toHaveAttribute('aria-expanded', 'true')
-  })
-
-  it('reports a clean survey', async () => {
-    const user = userEvent.setup()
-    await openBuilder(pulseDraft())
-
-    await user.click(screen.getByRole('button', { name: 'Check for issues' }))
-
-    expect(
-      await screen.findByText('No issues found. This survey is ready to publish.'),
     ).toBeInTheDocument()
   })
 
@@ -498,5 +465,210 @@ describe('access', () => {
       await screen.findByRole('heading', { name: "You don't have access to this page" }),
     ).toBeInTheDocument()
     expect(getSurvey).not.toHaveBeenCalled()
+  })
+})
+
+describe('publishing and closing', () => {
+  function mockPublish(versionNo = 1) {
+    return vi.spyOn(surveysApi, 'publishSurvey').mockResolvedValue({
+      status: 'published',
+      version_no: versionNo,
+      published_at: '2026-11-02T12:00:00+00:00',
+      has_unpublished_changes: false,
+    })
+  }
+
+  it('publishes version 1, then "Publish changes" after an edit makes version 2', async () => {
+    const user = userEvent.setup()
+    const { saveDraft, validateSurvey } = await openBuilder(pulseDraft())
+    const publish = mockPublish(1)
+
+    await user.type(screen.getByLabelText('Survey title'), '!')
+    await user.click(screen.getByRole('button', { name: 'Publish' }))
+
+    expect(await screen.findByText(/^Published\. Employees can respond/)).toBeInTheDocument()
+    expect(saveDraft).toHaveBeenCalled() // pending edits were saved first
+    expect(validateSurvey).toHaveBeenCalled()
+    expect(publish).toHaveBeenCalledWith(SURVEY_ID)
+    expect(screen.getByRole('button', { name: 'Published' })).toBeDisabled()
+    expect(screen.getByText('Published v1')).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('Survey title'), '?')
+    expect(screen.getByRole('button', { name: 'Publish changes' })).toBeEnabled()
+
+    publish.mockResolvedValue({
+      status: 'published',
+      version_no: 2,
+      published_at: '2026-11-02T13:00:00+00:00',
+      has_unpublished_changes: false,
+    })
+    await user.click(screen.getByRole('button', { name: 'Publish changes' }))
+
+    expect(
+      await screen.findByText('Published version 2. Earlier responses stay linked to version 1.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Published v2')).toBeInTheDocument()
+  })
+
+  it('opens the first problem instead of publishing', async () => {
+    const user = userEvent.setup()
+    const draft = pulseDraft()
+    const q3 = draft.questions[2]!.key
+    const { validateSurvey } = await openBuilder(draft)
+    const publish = mockPublish()
+    validateSurvey.mockResolvedValue({
+      issues: [
+        {
+          code: 'options_too_few',
+          message: 'Q3 needs at least two options.',
+          question_key: q3,
+          section_key: null,
+          problem: null,
+        },
+        {
+          code: 'question_text_missing',
+          message: 'Q9 has no question text.',
+          question_key: draft.questions[8]!.key,
+          section_key: null,
+          problem: null,
+        },
+      ],
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Publish' }))
+
+    expect(
+      await screen.findByText('Fix 2 issues before publishing. Q3 needs at least two options.'),
+    ).toBeInTheDocument()
+    expect(publish).not.toHaveBeenCalled()
+    expect(head(q3)).toHaveAttribute('aria-expanded', 'true')
+    expect(card(q3)).toHaveClass('border-primary')
+  })
+
+  it('sends theme problems to the Theme tab', async () => {
+    const user = userEvent.setup()
+    const { validateSurvey, router } = await openBuilder(pulseDraft())
+    validateSurvey.mockResolvedValue({
+      issues: [
+        {
+          code: 'theme_image_missing',
+          message: 'The cover image is no longer available. Choose another.',
+          question_key: null,
+          section_key: null,
+          problem: null,
+        },
+      ],
+    })
+    vi.spyOn(surveysApi, 'listGallery').mockResolvedValue([])
+    vi.spyOn(surveysApi, 'listUploads').mockResolvedValue([])
+
+    await user.click(screen.getByRole('button', { name: 'Publish' }))
+
+    await waitFor(() => {
+      expect(router.state.location.search).toBe('?tab=theme')
+    })
+    expect(screen.getByRole('tab', { name: 'Theme' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('closes a published survey after confirming', async () => {
+    const user = userEvent.setup()
+    const { saveDraft } = mockBuilderApi(pulseDraft(), { status: 'published', version_no: 1 })
+    renderRoute(PATH, { user: TEST_USERS.hr })
+    await screen.findByLabelText('Survey title')
+    const close = vi.spyOn(surveysApi, 'closeSurvey').mockResolvedValue({
+      status: 'closed',
+      closed_at: '2026-11-03T09:00:00+00:00',
+    })
+
+    expect(screen.getByRole('button', { name: 'Published' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'More actions' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Close survey…' }))
+    const dialog = await screen.findByRole('alertdialog', { name: 'Close this survey?' })
+    await user.click(within(dialog).getByRole('button', { name: 'Close survey' }))
+
+    expect(close).toHaveBeenCalledWith(SURVEY_ID)
+    expect(
+      await screen.findByText('Survey closed. No new responses will be accepted.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Closed' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'More actions' })).not.toBeInTheDocument()
+    expect(saveDraft).not.toHaveBeenCalled()
+  })
+})
+
+describe('tabs and preview', () => {
+  beforeEach(() => {
+    vi.spyOn(surveysApi, 'listGallery').mockResolvedValue([])
+    vi.spyOn(surveysApi, 'listUploads').mockResolvedValue([])
+  })
+
+  it('switches tabs with the keyboard and keeps the tab in the URL', async () => {
+    const user = userEvent.setup()
+    const { router } = await openBuilder(pulseDraft())
+
+    screen.getByRole('tab', { name: 'Questions' }).focus()
+    await user.keyboard('{ArrowRight}')
+
+    expect(screen.getByRole('tab', { name: 'Theme' })).toHaveFocus()
+    expect(router.state.location.search).toBe('?tab=theme')
+    expect(screen.getByRole('heading', { name: 'Accent colour' })).toBeInTheDocument()
+
+    await user.keyboard('{ArrowRight}')
+    expect(screen.getByRole('heading', { name: 'Schedule' })).toBeInTheDocument()
+  })
+
+  it('saves settings changes', async () => {
+    const user = userEvent.setup()
+    const { saveDraft } = await openBuilder(pulseDraft())
+    await user.click(screen.getByRole('tab', { name: 'Settings' }))
+
+    await user.click(screen.getByRole('radio', { name: /One question at a time/ }))
+    await user.click(screen.getByRole('switch', { name: 'Move on automatically' }))
+    await user.click(screen.getByRole('switch', { name: 'Anonymous responses' }))
+
+    await waitFor(() => {
+      expect(lastSavedDraft(saveDraft).settings).toMatchObject({
+        layout: 'step',
+        auto_next: true,
+        anonymous: true,
+      })
+    })
+  })
+
+  it('warns when the closing date is before the opening date', async () => {
+    const user = userEvent.setup()
+    await openBuilder(pulseDraft())
+    await user.click(screen.getByRole('tab', { name: 'Settings' }))
+
+    const closes = screen.getByLabelText('Closes')
+    await user.clear(closes)
+    await user.type(closes, '2026-11-01')
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The closing date must be after the opening date.',
+    )
+  })
+
+  it('previews the survey with phone width and reset', async () => {
+    const user = userEvent.setup()
+    const { router } = await openBuilder(pulseDraft())
+
+    await user.click(screen.getByRole('button', { name: 'Preview' }))
+
+    expect(router.state.location.search).toBe('?mode=preview')
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Workplace pulse, Q4 2026' }),
+    ).toBeInTheDocument()
+    // Progress label and section label; section 2 stays hidden until Q6 is answered.
+    expect(screen.getAllByText('Section 1 of 2')).toHaveLength(2)
+    await user.click(screen.getByRole('button', { name: 'Phone width' }))
+    expect(screen.getByRole('button', { name: 'Phone width' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    expect(screen.getByLabelText('Survey title')).toBeInTheDocument()
   })
 })

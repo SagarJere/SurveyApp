@@ -45,8 +45,9 @@ def settings_factory() -> Callable[..., Settings]:
 
 
 @pytest.fixture
-def settings() -> Settings:
-    return make_settings()
+def settings(tmp_path: Path) -> Settings:
+    # Each test stores files in its own temporary folder.
+    return make_settings(file_storage_path=tmp_path / "files")
 
 
 @pytest.fixture
@@ -66,7 +67,16 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 # Tables emptied after every test. Add new tables here as later phases create them.
-TABLES = ("survey_members", "surveys", "app_users")
+TABLES = (
+    "question_options",
+    "survey_questions",
+    "survey_sections",
+    "theme_assets",
+    "survey_versions",
+    "survey_members",
+    "surveys",
+    "app_users",
+)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -106,3 +116,25 @@ def pytest_configure() -> None:
     os.environ.setdefault("JWT_SECRET", TEST_JWT_SECRET)
     os.environ["DATABASE_URL"] = test_database_url()
     os.environ["APP_ENV"] = "test"
+
+
+@pytest.fixture(scope="session")
+def gallery_sources(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Small stand-ins for the 8 gallery images (the real ones are slow to convert)."""
+    from PIL import Image  # noqa: PLC0415
+
+    from app.services.theme_assets import GALLERY  # noqa: PLC0415
+
+    folder = tmp_path_factory.mktemp("gallery")
+    for index, (slug, _) in enumerate(GALLERY):
+        Image.new("RGB", (320, 200), (20 * index, 90, 120)).save(folder / f"{slug}.jpg")
+    return folder
+
+
+@pytest.fixture
+async def gallery(app: FastAPI, engine: AsyncEngine, gallery_sources: Path) -> list[str]:
+    """Load the 8 company gallery images into the test database and storage."""
+    from app.services.theme_assets import seed_gallery  # noqa: PLC0415
+
+    async with app.state.sessionmaker() as session:
+        return await seed_gallery(session, app.state.storage, gallery_sources)

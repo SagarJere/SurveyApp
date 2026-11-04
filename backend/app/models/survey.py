@@ -26,8 +26,10 @@ class Survey(Base):
     draft_updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
-    # Becomes a foreign key to survey_versions when publishing arrives (Phase 3).
-    current_version_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    current_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("survey_versions.id", ondelete="SET NULL", use_alter=True),
+    )
     has_unpublished_changes: Mapped[bool] = mapped_column(Boolean, server_default="false")
     open_to_all: Mapped[bool] = mapped_column(Boolean, server_default="false")
     created_by: Mapped[str] = mapped_column(Text)

@@ -10,7 +10,7 @@ import {
 } from '@/features/survey-logic/conditions'
 import type { Condition, ConditionOp, Currency, Draft } from '@/features/survey-logic/types'
 
-import { AmountField } from './AmountField'
+import { AmountField } from '@/components/amount-field'
 import { OP_LABELS, problemMessage } from './condition-text'
 import { conditionFor, type ConditionTarget } from './draft-ops'
 import { useBuilderStore } from './store'

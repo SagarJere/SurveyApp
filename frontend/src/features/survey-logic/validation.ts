@@ -19,6 +19,8 @@ export type IssueCode =
   | 'money_range'
   | 'condition_broken'
   | 'dates_order'
+  /** Server-only: a theme image no longer exists (needs the database). */
+  | 'theme_image_missing'
 
 export interface Issue {
   code: IssueCode

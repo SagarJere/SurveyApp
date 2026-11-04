@@ -137,6 +137,28 @@ describe('Surveys home', () => {
     expect(await screen.findByText('No surveys yet')).toBeInTheDocument()
   })
 
+  it('closes a published survey after confirming', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(surveysApi, 'listSurveys').mockResolvedValue([
+      item({ status: 'published', version_no: 2, can_delete: false }),
+    ])
+    const close = vi
+      .spyOn(surveysApi, 'closeSurvey')
+      .mockResolvedValue({ status: 'closed', closed_at: '2026-11-03T09:00:00+00:00' })
+    renderRoute('/admin/surveys', { user: TEST_USERS.hr })
+
+    expect(await screen.findByText('Published v2')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Close Workplace pulse, Q4 2026' }))
+    await user.click(await screen.findByRole('button', { name: 'Close survey' }))
+
+    expect(close).toHaveBeenCalledWith(SURVEY_ID)
+    expect(
+      await screen.findByText(
+        'Closed “Workplace pulse, Q4 2026”. No new responses will be accepted.',
+      ),
+    ).toBeInTheDocument()
+  })
+
   it('shows a retry when the list fails to load', async () => {
     vi.spyOn(surveysApi, 'listSurveys').mockRejectedValue(new Error('offline'))
 

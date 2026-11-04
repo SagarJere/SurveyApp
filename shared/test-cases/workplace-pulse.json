@@ -1,5 +1,5 @@
 {
-  "_comment": "The 'Workplace pulse' sample from docs/reference/ui-prototype.html as a saved draft (docs/reference/README.md). Phase 2 is done when HR can build this in the builder. Keys are fixed so tests can refer to them.",
+  "_comment": "The 'Workplace pulse' sample from docs/reference/ui-prototype.html as a saved draft (docs/reference/README.md). Phase 2 is done when HR can build this in the builder. Keys are fixed so tests can refer to them. Theme images use the fixed ID of the 'Ocean' gallery image (theme_assets.gallery_id('ocean')).",
   "draft": {
     "title": "Workplace pulse, Q4 2026",
     "description": "Five quick questions about how and where you work. Takes about two minutes.",
@@ -14,9 +14,9 @@
       "closes_at": "2026-11-24"
     },
     "theme": {
-      "cover": "ocean",
+      "cover": "ffce68c6-f64a-5a5b-828b-91f1b1ae774c",
       "background_style": "image",
-      "background": "ocean",
+      "background": "ffce68c6-f64a-5a5b-828b-91f1b1ae774c",
       "background_color": "#E8EEF3",
       "blur": true,
       "overlay": 25,

@@ -25,6 +25,7 @@ export function surveyDetail(draft: Draft, overrides: Partial<SurveyDetail> = {}
     my_role: 'owner',
     can_edit: true,
     can_delete: true,
+    closed_at: null,
     created_at: '2026-11-02T09:00:00+00:00',
     updated_at: '2026-11-02T10:00:00+00:00',
     ...overrides,

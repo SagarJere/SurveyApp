@@ -15,6 +15,7 @@ from app.errors import register_error_handlers
 from app.logging_config import configure_logging
 from app.middleware import REQUEST_ID_HEADER, RequestContextMiddleware
 from app.routers import api_router
+from app.services.storage import LocalFileStorage
 
 API_VERSION = "0.1.0"
 
@@ -46,6 +47,7 @@ def create_app(settings: Settings | None = None, *, setup_logging: bool = True) 
     app.state.settings = settings
     app.state.engine = engine
     app.state.sessionmaker = create_sessionmaker(engine)
+    app.state.storage = LocalFileStorage(settings.file_storage_path)
 
     register_error_handlers(app)
 

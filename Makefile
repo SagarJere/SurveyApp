@@ -33,7 +33,8 @@ migrate: ## Apply migrations to the dev and test databases
 	cd backend && uv run alembic upgrade head
 	cd backend && DATABASE_URL="$$(grep -E '^TEST_DATABASE_URL=' ../.env | cut -d= -f2-)" uv run alembic upgrade head
 
-seed: ## Create the dev HR/admin accounts and list all test sign-in IDs
+seed: ## Load the theme gallery, create the dev HR/admin accounts, list the test sign-in IDs
+	cd backend && uv run python -m app.scripts.seed_gallery
 	cd backend && uv run python -m app.scripts.seed
 
 api: ## Run the API with auto-reload

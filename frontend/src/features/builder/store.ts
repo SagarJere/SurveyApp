@@ -5,7 +5,14 @@
 import { create } from 'zustand'
 
 import type { Issue } from '@/features/survey-logic/validation'
-import type { Condition, Draft, MoneyConfig, QuestionType } from '@/features/survey-logic/types'
+import type {
+  Condition,
+  Draft,
+  MoneyConfig,
+  QuestionType,
+  SurveySettings,
+  Theme,
+} from '@/features/survey-logic/types'
 
 import * as ops from './draft-ops'
 
@@ -35,6 +42,8 @@ interface BuilderState {
   setIssues: (issues: Issue[] | null) => void
 
   setTitle: (title: string) => void
+  updateSettings: (patch: Partial<SurveySettings>) => void
+  updateTheme: (patch: Partial<Theme>) => void
   setDescription: (description: string) => void
   addQuestion: (type: QuestionType, sectionKey: string) => void
   updateQuestion: (key: string, patch: ops.QuestionPatch) => void
@@ -144,6 +153,14 @@ export const useBuilderStore = create<BuilderState>()((set, get) => {
     },
     setDescription: (description) => {
       edit(ops.setDescription(get().draft, description))
+    },
+    updateSettings: (patch) => {
+      const { draft } = get()
+      edit({ ...draft, settings: { ...draft.settings, ...patch } })
+    },
+    updateTheme: (patch) => {
+      const { draft } = get()
+      edit({ ...draft, theme: { ...draft.theme, ...patch } })
     },
     addQuestion: (type, sectionKey) => {
       const [draft, question] = ops.addQuestion(get().draft, type, sectionKey)

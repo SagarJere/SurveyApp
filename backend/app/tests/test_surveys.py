@@ -125,7 +125,7 @@ async def test_list_is_newest_first(client: AsyncClient, engine: AsyncEngine, hr
 
 
 async def test_reload_restores_the_whole_sample_survey(
-    client: AsyncClient, engine: AsyncEngine, hr: Headers
+    client: AsyncClient, engine: AsyncEngine, hr: Headers, gallery: list[str]
 ) -> None:
     survey = await _pulse_survey(client, hr)
 
@@ -325,7 +325,7 @@ async def test_incomplete_drafts_can_still_be_saved(
 
 
 async def test_sample_survey_has_no_issues(
-    client: AsyncClient, engine: AsyncEngine, hr: Headers
+    client: AsyncClient, engine: AsyncEngine, hr: Headers, gallery: list[str]
 ) -> None:
     survey = await _pulse_survey(client, hr)
 
@@ -336,7 +336,7 @@ async def test_sample_survey_has_no_issues(
 
 
 async def test_moving_q2_below_q3_is_reported(
-    client: AsyncClient, engine: AsyncEngine, hr: Headers
+    client: AsyncClient, engine: AsyncEngine, hr: Headers, gallery: list[str]
 ) -> None:
     survey = await _pulse_survey(client, hr)
     q3_key = PULSE["questions"][2]["key"]
@@ -378,7 +378,7 @@ async def test_new_survey_needs_a_question(
 
 
 async def test_duplicate_copies_with_fresh_keys(
-    client: AsyncClient, engine: AsyncEngine, hr: Headers
+    client: AsyncClient, engine: AsyncEngine, hr: Headers, gallery: list[str]
 ) -> None:
     survey = await _pulse_survey(client, hr)
 
@@ -407,14 +407,11 @@ async def test_owner_deletes_a_draft(client: AsyncClient, engine: AsyncEngine, h
 
 
 async def test_published_surveys_cannot_be_deleted(
-    client: AsyncClient, engine: AsyncEngine, hr: Headers
+    client: AsyncClient, engine: AsyncEngine, hr: Headers, gallery: list[str]
 ) -> None:
-    survey = await _create(client, hr)
-    async with engine.begin() as conn:
-        await conn.execute(
-            text("UPDATE surveys SET current_version_id = gen_random_uuid() WHERE id = :id"),
-            {"id": survey["id"]},
-        )
+    survey = await _pulse_survey(client, hr)
+    published = await client.post(f"/api/surveys/{survey['id']}/publish", headers=hr)
+    assert published.status_code == 200, published.text
 
     listed = (await client.get("/api/surveys", headers=hr)).json()[0]
     response = await client.delete(f"/api/surveys/{survey['id']}", headers=hr)
@@ -427,16 +424,13 @@ async def test_published_surveys_cannot_be_deleted(
 
 
 async def test_saving_after_publish_marks_unpublished_changes(
-    client: AsyncClient, engine: AsyncEngine, hr: Headers
+    client: AsyncClient, engine: AsyncEngine, hr: Headers, gallery: list[str]
 ) -> None:
-    survey = await _create(client, hr)
-    async with engine.begin() as conn:
-        await conn.execute(
-            text("UPDATE surveys SET current_version_id = gen_random_uuid() WHERE id = :id"),
-            {"id": survey["id"]},
-        )
+    survey = await _pulse_survey(client, hr)
+    published = await client.post(f"/api/surveys/{survey['id']}/publish", headers=hr)
+    assert published.status_code == 200, published.text
 
-    await _save(client, hr, survey, {**survey["draft"], "title": "Changed"})
+    await _save(client, hr, survey, {**PULSE, "title": "Changed"})
 
     reloaded = (await client.get(f"/api/surveys/{survey['id']}", headers=hr)).json()
     assert reloaded["has_unpublished_changes"] is True

@@ -17,3 +17,13 @@ export const env = {
   /** Must match the backend's AUTH_MODE. "dev" signs in with an employee ID only. */
   authMode: authMode(import.meta.env.VITE_AUTH_MODE),
 } as const
+
+/**
+ * Turn an API-relative path such as "/api/files/…" into a URL the browser can load, also when
+ * the API lives on another origin (VITE_API_BASE_URL=https://api.example.com/api).
+ */
+export function apiUrl(path: string): string {
+  if (/^https?:\/\//.test(path)) return path
+  const base = new URL(env.apiBaseUrl, window.location.origin)
+  return new URL(path, base.origin).toString()
+}

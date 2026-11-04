@@ -58,7 +58,7 @@ With `AUTH_MODE=dev`, the sign-in page asks for an employee ID only. IDs are tri
 | E1002 | HR | Vikram Mehta |
 | E2001 to E2005 | Employee | test employees |
 
-Any other ID signs in as an employee. Run `make seed` once so E1001 and E1002 get their roles. HR and admin users see **Surveys** in the header. Employees don't, and get a "no access" page if they open an admin link.
+Any other ID signs in as an employee. Run `make seed` once so E1001 and E1002 get their roles and the theme gallery is loaded. HR and admin users see **Surveys** in the header. Employees don't, and get a "no access" page if they open an admin link.
 
 The API refuses to start when `APP_ENV=production` and `AUTH_MODE=dev`. Single sign-on replaces this sign-in page before go-live. Until then `AUTH_MODE=sso` is refused too.
 
@@ -93,6 +93,29 @@ The backend refuses to start in production (`APP_ENV=production`) when:
 - `CORS_ORIGINS` contains `*`
 - `DB_ECHO` is on
 - `FILE_STORAGE_PATH` is a relative path
+
+## Theme gallery
+
+The 8 gallery images live in `backend/app/assets/gallery/` as `ocean.jpg`, `dawn.jpg`, and so on. They are placeholders drawn to match the UI prototype. To use approved company artwork, replace a file with an image of the same name (JPG, PNG or WebP), then run:
+
+```bash
+cd backend && uv run python -m app.scripts.seed_gallery
+```
+
+Every environment needs this once, production included. Gallery images keep fixed IDs, so surveys that use them don't change. `uv run python -m app.scripts.make_gallery_placeholders` redraws the placeholders.
+
+Uploaded and gallery images are stored as WebP under `FILE_STORAGE_PATH`. Browsers load them through signed links that expire after about a day, because `<img>` tags can't send a sign-in token.
+
+## Browser check
+
+With `make api` and `make web` running:
+
+```bash
+cd frontend && npx playwright install chromium   # once
+cd frontend && npm run ui-check -- http://localhost:5173 ui-check
+```
+
+This takes screenshots at desktop, 375px and dark mode into `frontend/ui-check/`, and runs Lighthouse accessibility on the builder and Preview. It signs in as E1002 and creates the "Workplace pulse" sample survey if it's missing.
 
 ## Database migrations
 

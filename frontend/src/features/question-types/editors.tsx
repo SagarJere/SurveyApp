@@ -2,7 +2,7 @@ import { PlusIcon, XIcon } from 'lucide-react'
 
 import { Switch } from '@/components/ui/switch'
 import { NativeSelect } from '@/components/ui/native-select'
-import { AmountField } from '@/features/builder/AmountField'
+import { AmountField } from '@/components/amount-field'
 import { useBuilderStore } from '@/features/builder/store'
 import { DEFAULT_MONEY_CONFIG } from '@/features/builder/draft-ops'
 import {

@@ -13,9 +13,21 @@ installMatchMedia()
 // jsdom doesn't implement these; the builder scrolls cards into view and Radix menus use
 // pointer capture.
 Element.prototype.scrollIntoView = () => undefined
+window.scrollTo = () => undefined
 Element.prototype.hasPointerCapture = () => false
 Element.prototype.setPointerCapture = () => undefined
 Element.prototype.releasePointerCapture = () => undefined
+globalThis.ResizeObserver = class {
+  observe() {
+    return undefined
+  }
+  unobserve() {
+    return undefined
+  }
+  disconnect() {
+    return undefined
+  }
+}
 
 beforeEach(() => {
   tokenStore.clear()
