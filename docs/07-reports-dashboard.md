@@ -113,6 +113,8 @@ Generate amount words on the server so exports and dashboard match.
 
 **Excel (`export.xlsx?kind=responses|analytics`)**. The results page has a Download menu with both.
 
+Every sheet opens with a title block: the survey title (row 1), the response count with invited and rate (row 2), and the export time with filters (row 3). Row 4 is blank and the headings start on row 5. The data is an Excel table, so filter buttons and pivot tables work. The survey title is also the print header, with page numbers in the footer.
+
 - *Responses* (`kind=responses`): the Responses sheet below, on its own.
 - *Responses with analytics* (`kind=analytics`, the default): Summary with a native Excel bar chart per choice, rating and money question; Participation by department with a chart; Responses per day with a chart; Responses; Comments.
 

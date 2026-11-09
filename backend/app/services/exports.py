@@ -5,6 +5,8 @@ Two kinds:
 - "analytics": Summary (the dashboard's figures with a bar chart per question), Participation
   (by department, with a chart), Responses per day (with a chart), Responses and Comments.
 
+Every sheet opens with the survey title, the response count, and when it was exported with
+which filters; the data below it is an Excel table (filter buttons, works with pivot tables).
 Money stays numeric with an "in words" column alongside. Filters apply, and so does the
 small-group rule (anonymous surveys only): a small group gets participation figures only.
 """
@@ -18,6 +20,7 @@ from openpyxl import Workbook
 from openpyxl.chart import BarChart, Reference
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from app.services.money import Currency, amount_in_words
 from app.services.results import display_answer
@@ -26,6 +29,9 @@ HEADER_FILL = PatternFill("solid", fgColor="0E7A6A")
 HEADER_FONT = Font(bold=True, color="FFFFFF")
 TITLE_FONT = Font(bold=True, size=14)
 BOLD = Font(bold=True)
+MUTED_FONT = Font(color="5B6B67")
+# Rows 1-3 hold the title block, row 4 is blank, and tables start with their headings on row 5.
+HEADING_ROW = 5
 # Excel number formats. INR uses Indian grouping (12,34,567); others group in threes.
 MONEY_FORMATS: dict[str, str] = {
     "INR": '[>=10000000]"₹"##\\,##\\,##\\,##0.00;[>=100000]"₹"##\\,##\\,##0.00;"₹"##,##0.00',
@@ -61,16 +67,59 @@ def _safe(value: Any) -> Any:
     return value
 
 
+def response_count_text(summary: dict[str, Any]) -> str:
+    """ "421 responses, from 490 invited (86%)" or "3 responses (open to all employees)"."""
+    count = summary["responses"]
+    text = f"{count:,} {'response' if count == 1 else 'responses'}"
+    if summary["invited"] is None:
+        return f"{text} (open to all employees)"
+    text += f", from {summary['invited']:,} invited"
+    if summary["response_rate"] is not None:
+        text += f" ({round(summary['response_rate'] * 100)}%)"
+    return text
+
+
+def _title_block(sheet: Any, data: dict[str, Any], extra: str | None = None) -> None:
+    """Rows 1-3: survey title, response count, export time and filters. Also the print setup."""
+    title = data["title"]
+    sheet.cell(row=1, column=1, value=_safe(title)).font = TITLE_FONT
+    count = response_count_text(data["summary"])
+    sheet.cell(row=2, column=1, value=f"{count} · {extra}" if extra else count).font = BOLD
+    sheet.cell(
+        row=3,
+        column=1,
+        value=f"Exported {data['exported_at']:%d %b %Y %H:%M} (UTC) · Filters: "
+        f"{data['filters_text']}",
+    ).font = MUTED_FONT
+    # Printing: the title on every page, page numbers at the bottom.
+    sheet.oddHeader.center.text = title.replace("&", "&&")[:200]
+    sheet.oddFooter.center.text = "Page &P of &N"
+    sheet.page_setup.orientation = "landscape"
+    sheet.page_setup.fitToWidth = 1
+    sheet.page_setup.fitToHeight = 0
+    sheet.sheet_properties.pageSetUpPr.fitToPage = True
+
+
+def _as_table(sheet: Any, name: str, columns: int) -> None:
+    """Make the headings on HEADING_ROW and the rows below them an Excel table."""
+    last_row = sheet.max_row
+    sheet.freeze_panes = sheet.cell(row=HEADING_ROW + 1, column=1).coordinate
+    sheet.print_title_rows = f"{HEADING_ROW}:{HEADING_ROW}"
+    if last_row <= HEADING_ROW:
+        return  # Excel tables need at least one data row; headings alone stay as they are.
+    ref = f"A{HEADING_ROW}:{get_column_letter(columns)}{last_row}"
+    table = Table(displayName=name, ref=ref)
+    table.tableStyleInfo = TableStyleInfo(name="TableStyleLight9", showRowStripes=True)
+    sheet.add_table(table)
+
+
 def _summary_sheet(sheet: Any, data: dict[str, Any]) -> None:
     summary = data["summary"]
     sheet.title = "Summary"
     sheet.column_dimensions["A"].width = 60
     for column in ("B", "C", "D"):
         sheet.column_dimensions[column].width = 18
-    sheet.append([data["title"]])
-    sheet["A1"].font = TITLE_FONT
-    sheet.append([f"Exported {data['exported_at']:%d %b %Y %H:%M} (UTC)"])
-    sheet.append([f"Filters: {data['filters_text']}"])
+    _title_block(sheet, data)
     sheet.append([])
     sheet.append(["Responses", summary["responses"]])
     sheet.append(
@@ -246,13 +295,14 @@ def _responses_sheet(sheet: Any, data: dict[str, Any]) -> None:
     fixed_columns = len(header)
     money_columns: list[tuple[int, str]] = []
     for q in questions:
-        title = f"Q{q['number']}. {q['text']}"
+        # Excel table column names are limited to 255 characters; the Q number keeps them unique.
+        title = f"Q{q['number']}. {q['text']}"[:250]
         header.append(title)
         if q["type"] == "money":
             money_columns.append((len(header), q["config"].get("currency", "INR")))
             header.append(f"Q{q['number']} in words")
-    _header(sheet, 1, header)
-    sheet.freeze_panes = "B2"
+    _title_block(sheet, data)
+    _header(sheet, HEADING_ROW, header)
     for row in data["responses"]:
         values: list[Any] = [str(row["id"])]
         if not anonymous:
@@ -269,8 +319,8 @@ def _responses_sheet(sheet: Any, data: dict[str, Any]) -> None:
             else:
                 values.append(_safe(display_answer(q, value)) if value is not None else None)
         sheet.append(values)
-    date_column = 5 if not anonymous else 2
-    for row_number in range(2, sheet.max_row + 1):
+    date_column = 4 if not anonymous else 2
+    for row_number in range(HEADING_ROW + 1, sheet.max_row + 1):
         sheet.cell(row=row_number, column=date_column).number_format = "dd mmm yyyy hh:mm"
         for column, code in money_columns:
             sheet.cell(row=row_number, column=column).number_format = MONEY_FORMATS.get(
@@ -279,11 +329,15 @@ def _responses_sheet(sheet: Any, data: dict[str, Any]) -> None:
     for index in range(1, len(header) + 1):
         is_question = index > fixed_columns
         sheet.column_dimensions[get_column_letter(index)].width = 30 if is_question else 18
+    _as_table(sheet, "Responses", len(header))
+    # Keep the ID (and name) in view while scrolling across the questions.
+    sheet.freeze_panes = sheet.cell(row=HEADING_ROW + 1, column=1 if anonymous else 4).coordinate
 
 
 def _comments_sheet(sheet: Any, data: dict[str, Any]) -> None:
     numbers = {q["key"]: q for q in data["question_list"]}
-    _header(sheet, 1, ["Question", "Comment", "Department"])
+    _title_block(sheet, data, f"{len(data['comments']):,} comments")
+    _header(sheet, HEADING_ROW, ["Question", "Comment", "Department"])
     sheet.column_dimensions["A"].width = 50
     sheet.column_dimensions["B"].width = 80
     sheet.column_dimensions["C"].width = 22
@@ -299,6 +353,7 @@ def _comments_sheet(sheet: Any, data: dict[str, Any]) -> None:
         sheet.cell(row=sheet.max_row, column=2).alignment = Alignment(
             wrap_text=True, vertical="top"
         )
+    _as_table(sheet, "Comments", 3)
 
 
 def _participation_sheet(sheet: Any, data: dict[str, Any]) -> None:
@@ -317,8 +372,8 @@ def _participation_sheet(sheet: Any, data: dict[str, Any]) -> None:
             "Rate",
         ]
     )
-    _header(sheet, 1, header)
-    sheet.freeze_panes = "A2"
+    _title_block(sheet, data)
+    _header(sheet, HEADING_ROW, header)
     for row in participation["departments"]:
         name = row["department"] or "Not recorded"
         if open_to_all:
@@ -326,16 +381,17 @@ def _participation_sheet(sheet: Any, data: dict[str, Any]) -> None:
         else:
             sheet.append([_safe(name), row["invited"], row["responded"], row["rate"]])
             sheet.cell(row=sheet.max_row, column=4).number_format = "0%"
-    if sheet.max_row < 2:  # noqa: PLR2004 - header only
+    _as_table(sheet, "Participation", len(header))
+    if sheet.max_row <= HEADING_ROW:
         return
     _bar_chart(
         sheet,
         title="Responded by department" if open_to_all else "Response rate by department",
-        first_row=2,
+        first_row=HEADING_ROW + 1,
         last_row=sheet.max_row,
         label_col=1,
         value_col=2 if open_to_all else 4,
-        anchor="F2",
+        anchor=f"F{HEADING_ROW}",
         percent=not open_to_all,
     )
 
@@ -344,21 +400,22 @@ def _daily_sheet(sheet: Any, data: dict[str, Any]) -> None:
     days = data["timeline"]["days"]
     sheet.column_dimensions["A"].width = 16
     sheet.column_dimensions["B"].width = 14
-    _header(sheet, 1, ["Day", "Responses"])
-    sheet.freeze_panes = "A2"
+    _title_block(sheet, data)
+    _header(sheet, HEADING_ROW, ["Day", "Responses"])
     for day in days:
         sheet.append([day["day"], day["n"]])
         sheet.cell(row=sheet.max_row, column=1).number_format = "dd mmm yyyy"
+    _as_table(sheet, "ResponsesPerDay", 2)
     if not days:
         return
     _bar_chart(
         sheet,
         title="Responses per day",
-        first_row=2,
+        first_row=HEADING_ROW + 1,
         last_row=sheet.max_row,
         label_col=1,
         value_col=2,
-        anchor="D2",
+        anchor=f"D{HEADING_ROW}",
         percent=False,
         horizontal=False,
         width_cm=max(14.0, min(40.0, 0.6 * len(days))),
@@ -367,16 +424,15 @@ def _daily_sheet(sheet: Any, data: dict[str, Any]) -> None:
 
 def _small_group_sheet(sheet: Any, data: dict[str, Any]) -> None:
     sheet.column_dimensions["A"].width = 90
-    sheet.append([data["title"]])
-    sheet["A1"].font = TITLE_FONT
-    sheet.append([f"Filters: {data['filters_text']}"])
-    sheet.append([])
-    sheet.append([SMALL_GROUP_NOTE])
+    _title_block(sheet, data)
+    sheet.cell(row=HEADING_ROW, column=1, value=SMALL_GROUP_NOTE)
 
 
 def build_export(data: dict[str, Any], kind: ExportKind = "analytics") -> bytes:
     """The workbook for one of the two export kinds (see the module docstring)."""
     workbook = Workbook()
+    workbook.properties.title = data["title"][:255]
+    workbook.properties.creator = "Pulse"
     first = workbook.active
     assert first is not None  # noqa: S101 - a new workbook always has one sheet
     small = data["summary"]["small_group"]

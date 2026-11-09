@@ -14,6 +14,7 @@ import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
 from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -337,12 +338,12 @@ async def check_export(ctx: Ctx, responses: int, texts: int) -> None:
     assert len(workbook["Responses per day"]._charts) == 1
     assert "analytics" in export.headers["content-disposition"]
     sheet = workbook["Responses"]
-    header = [c.value for c in sheet[1]]
+    header = [c.value for c in sheet[5]]  # rows 1-3: title block, row 4: blank
     money_col = header.index(f"Q5. {PULSE['questions'][4]['text']}")
     assert header[money_col + 1] == "Q5 in words"
-    assert sheet.max_row == responses + 1
+    assert sheet.max_row == responses + 5
     money_cells = [
-        row[money_col] for row in sheet.iter_rows(min_row=2) if row[money_col].value is not None
+        row[money_col] for row in sheet.iter_rows(min_row=6) if row[money_col].value is not None
     ]
     assert money_cells
     assert all(isinstance(c.value, int | float) for c in money_cells)  # numeric, not text
@@ -350,7 +351,23 @@ async def check_export(ctx: Ctx, responses: int, texts: int) -> None:
     words = sheet.cell(row=money_cells[0].row, column=money_col + 2).value
     assert isinstance(words, str)
     assert words.endswith("only")
-    assert workbook["Comments"].max_row == texts + 1
+    assert workbook["Comments"].max_row == texts + 5
+
+    # Every sheet opens with the title, the response count, and the export time and filters.
+    count = f"{responses:,} responses, from "
+    for name in workbook.sheetnames:
+        ws = workbook[name]
+        assert ws["A1"].value == PULSE["title"], name
+        assert str(ws["A2"].value).startswith(count), name
+        assert str(ws["A3"].value).startswith("Exported "), name
+        assert PULSE["title"] in ws.oddHeader.center.text, name
+    assert str(workbook["Comments"]["A2"].value).endswith(f" · {texts:,} comments")
+    # The data is an Excel table, so filters and pivot tables work despite the title rows.
+    table = sheet.tables["Responses"]
+    assert table.ref == f"A5:{get_column_letter(len(header))}{responses + 5}"
+    assert sheet.freeze_panes == "D6"
+    assert sheet.cell(row=6, column=4).number_format == "dd mmm yyyy hh:mm"
+    assert set(workbook["Participation"].tables) == {"Participation"}
 
     # Responses only: one sheet, the same rows and columns as the analytics file's Responses.
     plain = await ctx.client.get(
@@ -358,8 +375,8 @@ async def check_export(ctx: Ctx, responses: int, texts: int) -> None:
     )
     plain_book = load_workbook(io.BytesIO(plain.content))
     assert plain_book.sheetnames == ["Responses"]
-    assert [c.value for c in plain_book["Responses"][1]] == header
-    assert plain_book["Responses"].max_row == responses + 1
+    assert [c.value for c in plain_book["Responses"][5]] == header
+    assert plain_book["Responses"].max_row == responses + 5
     assert "responses" in plain.headers["content-disposition"]
 
     # A named survey exports every answer even for a group of 3.
@@ -368,7 +385,7 @@ async def check_export(ctx: Ctx, responses: int, texts: int) -> None:
         headers=ctx.hr,
         params={"department": "Legal", "kind": "responses"},
     )
-    assert load_workbook(io.BytesIO(legal.content))["Responses"].max_row == 3 + 1
+    assert load_workbook(io.BytesIO(legal.content))["Responses"].max_row == 3 + 5
 
     bad = await ctx.client.get(
         f"/api/surveys/{ctx.s}/results/export.xlsx", headers=ctx.hr, params={"kind": "pdf"}
@@ -468,7 +485,7 @@ async def test_anonymous_survey_hides_answers_until_five_responses(
     assert comments["items"] == []
     assert analytics.sheetnames == ["Summary", "Participation", "Responses per day"]
     assert plain.sheetnames == ["Responses"]
-    assert "Fewer than 5 people" in str(plain["Responses"]["A4"].value)
+    assert "Fewer than 5 people" in str(plain["Responses"]["A5"].value)
     assert after["small_group"] is False
     assert after["responses"] == 5
 
@@ -488,8 +505,8 @@ async def test_named_survey_shows_answers_from_the_first_response(
     assert questions["small_group"] is False
     assert questions["responses"] == 2
     assert questions["sections"]
-    assert sheet.max_row == 2 + 1
-    assert sheet["B1"].value == "Employee ID"
+    assert sheet.max_row == 2 + 5
+    assert sheet["B5"].value == "Employee ID"
 
 
 async def test_anonymous_results_show_no_names(
@@ -502,7 +519,7 @@ async def test_anonymous_results_show_no_names(
     comments = await get(client, hr, survey_id, "comments")
     summary = await get(client, hr, survey_id, "summary")
     export = await client.get(f"/api/surveys/{survey_id}/results/export.xlsx", headers=hr)
-    header = [c.value for c in load_workbook(io.BytesIO(export.content))["Responses"][1]]
+    header = [c.value for c in load_workbook(io.BytesIO(export.content))["Responses"][5]]
 
     assert responses.status_code == 403
     assert all(item["employee"] is None for item in comments["items"])

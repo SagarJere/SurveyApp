@@ -556,7 +556,8 @@ async def test_open_to_all_reports_use_the_name_people_signed_in_with(
     sheet = load_workbook(io.BytesIO(export.content))["Responses"]
 
     assert listed.json()["items"][0]["name"] == "Kavya Menon"
-    assert [sheet["B2"].value, sheet["C2"].value] == ["W2001", "Kavya Menon"]
+    assert [sheet["B6"].value, sheet["C6"].value] == ["W2001", "Kavya Menon"]
+    assert sheet["A2"].value == "1 response (open to all employees)"
 
 
 async def test_the_audience_list_name_wins_over_the_sign_in_name(
