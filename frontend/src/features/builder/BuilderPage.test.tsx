@@ -2,6 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent, { type UserEvent } from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import * as audienceApi from '@/features/audience/api'
 import * as healthApi from '@/features/health/api'
 import type { Condition, Draft } from '@/features/survey-logic/types'
 import { ApiError } from '@/lib/api'
@@ -482,6 +483,17 @@ describe('publishing and closing', () => {
     const user = userEvent.setup()
     const { saveDraft, validateSurvey } = await openBuilder(pulseDraft())
     const publish = mockPublish(1)
+    vi.spyOn(audienceApi, 'listAudience').mockResolvedValue({
+      open_to_all: false,
+      total: 1,
+      matching: 1,
+      page: 1,
+      page_size: 25,
+      items: [],
+      departments: [],
+      can_replace: false,
+    })
+    expect(screen.queryByRole('button', { name: 'Share survey link' })).not.toBeInTheDocument()
 
     await user.type(screen.getByLabelText('Survey title'), '!')
     await user.click(screen.getByRole('button', { name: 'Publish' }))
@@ -490,8 +502,27 @@ describe('publishing and closing', () => {
     expect(saveDraft).toHaveBeenCalled() // pending edits were saved first
     expect(validateSurvey).toHaveBeenCalled()
     expect(publish).toHaveBeenCalledWith(SURVEY_ID)
+    // The first publish hands over the link to send out.
+    const share = await screen.findByRole('dialog', { name: /^Share “/ })
+    expect(within(share).getByText(/Published\. Send this link to your audience\./)).toBeVisible()
+    expect(within(share).getByLabelText('Survey link')).toHaveValue(
+      `${window.location.origin}/s/${SURVEY_ID}`,
+    )
+    expect(within(share).getByText(/Only people on the audience list/)).toBeVisible()
+    await user.keyboard('{Escape}')
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
     expect(screen.getByRole('button', { name: 'Published' })).toBeDisabled()
     expect(screen.getByText('Published v1')).toBeInTheDocument()
+
+    // Later, the link is one click away.
+    await user.click(screen.getByRole('button', { name: 'Share survey link' }))
+    expect(await screen.findByRole('dialog', { name: /^Share “/ })).toBeVisible()
+    await user.keyboard('{Escape}')
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
 
     await user.type(screen.getByLabelText('Survey title'), '?')
     expect(screen.getByRole('button', { name: 'Publish changes' })).toBeEnabled()

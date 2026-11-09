@@ -3,8 +3,9 @@
  * builder's Preview now and /s/:surveyId in Phase 4. Three layouts, conditions, the question
  * navigator, auto-next, money input and theme.
  */
-import { CheckIcon, Loader2Icon } from 'lucide-react'
+import { CheckIcon, HomeIcon, Loader2Icon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link } from 'react-router'
 
 import { Button } from '@/components/ui/button'
 import { answerProblem } from '@/features/survey-logic/answers'
@@ -33,6 +34,8 @@ interface SurveyFormProps {
   onSubmit: (answers: Answers) => Promise<SubmitOutcome> | SubmitOutcome
   /** Extra button on the thank-you screen (Preview: "Reset preview"). */
   onReset?: () => void
+  /** The respondent's home page, offered on the thank-you screen. Not shown in Preview. */
+  homeLink?: { to: string; label: string }
   /** Height of any sticky bar above the form, so the progress bar sticks below it. */
   stickyTop?: number
   /** Answers to start with (a saved draft, or a submitted response being edited). */
@@ -83,6 +86,7 @@ export function SurveyForm({
   assets,
   onSubmit,
   onReset,
+  homeLink,
   stickyTop = 0,
   initialAnswers,
   initiallySubmitted = false,
@@ -455,6 +459,7 @@ export function SurveyForm({
           : undefined
       }
       onReset={onReset}
+      homeLink={homeLink}
     />
   ) : (
     <>
@@ -526,11 +531,13 @@ function ThankYou({
   onEdit,
   onAnother,
   onReset,
+  homeLink,
 }: {
   survey: SurveyContent
   onEdit: (() => void) | undefined
   onAnother: (() => void) | undefined
   onReset: (() => void) | undefined
+  homeLink: { to: string; label: string } | undefined
 }) {
   const { settings } = survey
   const editUntil = settings.allow_edit && settings.closes_at ? shortDate(settings.closes_at) : null
@@ -559,6 +566,14 @@ function ThankYou({
             : 'You can submit another response if needed.'}
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
+        {homeLink ? (
+          <Button className={ACCENT_BUTTON} asChild>
+            <Link to={homeLink.to}>
+              <HomeIcon aria-hidden="true" />
+              {homeLink.label}
+            </Link>
+          </Button>
+        ) : null}
         {onEdit ? (
           <Button variant="outline" onClick={onEdit}>
             Edit response

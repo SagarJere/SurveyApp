@@ -112,7 +112,8 @@ Uploaded and gallery images are stored as WebP under `FILE_STORAGE_PATH`. Browse
 
 - **Audience:** in the builder's Audience tab, upload an Excel or CSV file (use "Download template"), check the preview, then Apply. Or switch on "Open to all employees". A survey can't be published with an empty audience.
 - **Dates:** open and close dates are calendar days in `SURVEY_TIMEZONE` (default `Asia/Kolkata`). A survey closes itself after its close date.
-- **Taking a survey:** employees see it under "My surveys" and answer at `/s/<survey id>`. Answers autosave as a draft, so people can pick up where they left off.
+- **Sharing:** once a survey is published, the builder shows its link straight away. Later, use **Share** in the builder or on the surveys list. Copy the link, or use **Email** to open your mail app with a ready-made invitation that includes the link and closing date. Only people in the audience can open it, unless the survey is open to all.
+- **Taking a survey:** employees see it under "My surveys" and answer at `/s/<survey id>`. After submitting, "Go to My surveys" takes them back to their home page. Answers autosave as a draft, so people can pick up where they left off.
 - **Anonymous surveys:** responses store no employee ID, and times are rounded to the hour. A separate participation record still stops anyone answering twice. Anonymous responses can't be edited after submitting, because nothing links them to the person.
 
 ## Results

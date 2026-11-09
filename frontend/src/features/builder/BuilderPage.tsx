@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { audienceKeys, listAudience, type AudienceQuery } from '@/features/audience/api'
 import { AudienceTab } from '@/features/audience/AudienceTab'
 import { SettingsTab } from '@/features/settings/SettingsTab'
 import type { Issue } from '@/features/survey-logic/validation'
@@ -29,6 +30,7 @@ import {
   surveyKeys,
   validateSurvey,
 } from '@/features/surveys/api'
+import { ShareSurveyDialog } from '@/features/surveys/ShareSurveyDialog'
 import { SurveyNotFoundPage } from '@/features/surveys/SurveyNotFoundPage'
 import { UNTITLED_SURVEY, type SurveyDetail, type SurveyStatus } from '@/features/surveys/types'
 import { ThemeTab } from '@/features/theme/ThemeTab'
@@ -150,6 +152,7 @@ function BuilderEditor({ survey, onReload }: { survey: SurveyDetail; onReload: (
     hasUnpublishedChanges: survey.has_unpublished_changes,
   })
   const [publishing, setPublishing] = useState(false)
+  const [share, setShare] = useState<{ open: boolean; intro?: string }>({ open: false })
   const [confirmClose, setConfirmClose] = useState(false)
   const header = useRef<HTMLElement>(null)
   const [headerHeight, setHeaderHeight] = useState(57)
@@ -269,6 +272,8 @@ function BuilderEditor({ survey, onReload }: { survey: SurveyDetail; onReload: (
             ? `Published. Employees can respond from ${shortDate(opens)}.`
             : 'Published. Employees can respond now.',
         )
+        // First publish: hand over the link to send out straight away.
+        setShare({ open: true, intro: 'Published. Send this link to your audience.' })
       }
     } catch (error) {
       if (
@@ -348,6 +353,22 @@ function BuilderEditor({ survey, onReload }: { survey: SurveyDetail; onReload: (
               }
             : null
         }
+        onShare={
+          status === 'published'
+            ? () => {
+                setShare({ open: true })
+              }
+            : null
+        }
+      />
+      <BuilderShareDialog
+        surveyId={survey.id}
+        openToAllAtLoad={survey.open_to_all}
+        open={share.open}
+        intro={share.intro}
+        onOpenChange={(open) => {
+          setShare({ open })
+        }}
       />
       {mode === 'edit' ? (
         <div className="border-b bg-card">
@@ -447,3 +468,42 @@ function BuilderEditor({ survey, onReload }: { survey: SurveyDetail; onReload: (
     </div>
   )
 }
+
+/** The share dialog with the builder's current title and dates, and the audience setting. */
+function BuilderShareDialog({
+  surveyId,
+  openToAllAtLoad,
+  open,
+  intro,
+  onOpenChange,
+}: {
+  surveyId: string
+  openToAllAtLoad: boolean
+  open: boolean
+  intro?: string
+  onOpenChange: (open: boolean) => void
+}) {
+  const title = useBuilderStore((s) => s.draft.title)
+  const opensAt = useBuilderStore((s) => s.draft.settings.opens_at)
+  const closesAt = useBuilderStore((s) => s.draft.settings.closes_at)
+  // "Open to all" can change in the Audience tab, so read it fresh when the dialog opens.
+  const audience = useQuery({
+    queryKey: audienceKeys.list(surveyId, FIRST_AUDIENCE_PAGE),
+    queryFn: ({ signal }) => listAudience(surveyId, FIRST_AUDIENCE_PAGE, signal),
+    enabled: open,
+  })
+  return (
+    <ShareSurveyDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      surveyId={surveyId}
+      title={title}
+      opensAt={opensAt}
+      closesAt={closesAt}
+      openToAll={audience.data?.open_to_all ?? openToAllAtLoad}
+      intro={intro}
+    />
+  )
+}
+
+const FIRST_AUDIENCE_PAGE: AudienceQuery = { search: '', department: null, page: 1 }

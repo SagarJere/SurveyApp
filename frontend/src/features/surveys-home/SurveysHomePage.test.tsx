@@ -223,4 +223,42 @@ describe('Surveys home', () => {
       expect.stringContaining('Draft idea'),
     ])
   })
+
+  it('shares the survey link to copy or email, for published surveys the user can edit', async () => {
+    vi.spyOn(surveysApi, 'listSurveys').mockResolvedValue([
+      item({
+        status: 'published',
+        version_no: 1,
+        can_delete: false,
+        opens_at: null,
+        closes_at: '2026-11-24',
+      }),
+      item({ id: 'v', title: 'Viewer only', status: 'published', can_edit: false }),
+      item({ id: 'd', title: 'Still a draft' }),
+    ])
+    const user = userEvent.setup()
+    renderRoute('/admin/surveys', { user: TEST_USERS.hr })
+
+    await user.click(await screen.findByRole('button', { name: 'Share Workplace pulse, Q4 2026' }))
+    expect(screen.queryByRole('button', { name: 'Share Viewer only' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Share Still a draft' })).not.toBeInTheDocument()
+
+    const dialog = await screen.findByRole('dialog', { name: 'Share “Workplace pulse, Q4 2026”' })
+    const link = `${window.location.origin}/s/${SURVEY_ID}`
+    expect(within(dialog).getByLabelText('Survey link')).toHaveValue(link)
+
+    await user.click(within(dialog).getByRole('button', { name: 'Copy link' }))
+    expect(await navigator.clipboard.readText()).toBe(link)
+    expect(await within(dialog).findByRole('button', { name: 'Copied' })).toBeInTheDocument()
+
+    const email = within(dialog).getByRole('link', { name: 'Email' })
+    const href = email.getAttribute('href') ?? ''
+    expect(href.startsWith('mailto:?subject=')).toBe(true)
+    const body = decodeURIComponent(href.split('&body=')[1] ?? '')
+    expect(decodeURIComponent(href.split('&body=')[0] ?? '')).toBe(
+      'mailto:?subject=Survey: Workplace pulse, Q4 2026',
+    )
+    expect(body).toContain(link)
+    expect(body).toContain(`Please respond by ${shortDate('2026-11-24')}.`)
+  })
 })

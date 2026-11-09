@@ -34,6 +34,9 @@ const SCREENS: Record<string, LucideIcon> = {
   SURVEY_CLOSED: CalendarXIcon,
 }
 
+/** Where everyone lands after signing in: their surveys, including any still to answer. */
+const HOME_LINK = { to: '/', label: 'Go to My surveys' }
+
 function retryable(failures: number, error: unknown): boolean {
   return failures < 2 && error instanceof ApiError && (error.isNetworkError || error.isServerError)
 }
@@ -164,6 +167,7 @@ function LiveSurvey({ survey, onReload }: { survey: RespondentSurvey; onReload: 
       status={SAVE_LABELS[autosave.state] || undefined}
       canEditAfterSubmit={allowed.canEdit}
       canRespondAgain={allowed.canRespondAgain}
+      homeLink={HOME_LINK}
       onSubmit={submit}
     />
   )

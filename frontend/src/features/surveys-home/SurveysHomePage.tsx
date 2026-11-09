@@ -10,6 +10,7 @@ import {
   PlusIcon,
   SearchIcon,
   SearchXIcon,
+  Share2Icon,
   Trash2Icon,
   TriangleAlertIcon,
 } from 'lucide-react'
@@ -42,6 +43,7 @@ import {
   listSurveys,
   surveyKeys,
 } from '@/features/surveys/api'
+import { ShareSurveyDialog } from '@/features/surveys/ShareSurveyDialog'
 import { StatusPill } from '@/features/surveys/StatusPill'
 import { UNTITLED_SURVEY, type SurveyListItem } from '@/features/surveys/types'
 import { relativeTime, shortDate } from '@/lib/format'
@@ -230,6 +232,7 @@ function SurveyRow({ survey }: { survey: SurveyListItem }) {
   const queryClient = useQueryClient()
   const [confirming, setConfirming] = useState(false)
   const [confirmingClose, setConfirmingClose] = useState(false)
+  const [sharing, setSharing] = useState(false)
   const title = survey.title.trim() || UNTITLED_SURVEY
   const published = survey.status !== 'draft'
   const closes = closingSoon(survey)
@@ -323,6 +326,30 @@ function SurveyRow({ survey }: { survey: SurveyListItem }) {
         )
       ) : null}
       <div className="flex flex-wrap gap-1.5">
+        {survey.status === 'published' && survey.can_edit ? (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label={`Share ${title}`}
+              onClick={() => {
+                setSharing(true)
+              }}
+            >
+              <Share2Icon aria-hidden="true" />
+              Share
+            </Button>
+            <ShareSurveyDialog
+              open={sharing}
+              onOpenChange={setSharing}
+              surveyId={survey.id}
+              title={survey.title}
+              opensAt={survey.opens_at}
+              closesAt={survey.closes_at}
+              openToAll={survey.open_to_all}
+            />
+          </>
+        ) : null}
         {published ? (
           <Button variant="outline" size="sm" asChild>
             <Link to={`/admin/surveys/${survey.id}/results`} aria-label={`Results for ${title}`}>

@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, Loader2Icon, LockIcon, MoreHorizontalIcon } from 'lucide-react'
+import { ArrowLeftIcon, Loader2Icon, LockIcon, MoreHorizontalIcon, Share2Icon } from 'lucide-react'
 import { forwardRef } from 'react'
 import { Link } from 'react-router'
 
@@ -40,6 +40,8 @@ interface BuilderTopBarProps {
   publishing: boolean
   onPublish: () => void
   onClose: (() => void) | null
+  /** Show the survey link to share (published surveys only). */
+  onShare: (() => void) | null
 }
 
 export const BuilderTopBar = forwardRef<HTMLElement, BuilderTopBarProps>(function BuilderTopBar(
@@ -55,6 +57,7 @@ export const BuilderTopBar = forwardRef<HTMLElement, BuilderTopBarProps>(functio
     publishing,
     onPublish,
     onClose,
+    onShare,
   },
   ref,
 ) {
@@ -105,6 +108,18 @@ export const BuilderTopBar = forwardRef<HTMLElement, BuilderTopBarProps>(functio
             </button>
           ))}
         </div>
+        {onShare ? (
+          // On phones it lives in the "More actions" menu, so the title keeps its room.
+          <Button
+            variant="outline"
+            className="hidden shrink-0 px-3.5 sm:inline-flex"
+            aria-label="Share survey link"
+            onClick={onShare}
+          >
+            <Share2Icon aria-hidden="true" />
+            Share
+          </Button>
+        ) : null}
         <Button
           className="shrink-0 px-3 sm:px-4"
           aria-label={publishLabel}
@@ -118,7 +133,7 @@ export const BuilderTopBar = forwardRef<HTMLElement, BuilderTopBarProps>(functio
         <div className="hidden sm:block">
           <ThemeToggle />
         </div>
-        {onClose ? (
+        {onClose || onShare ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="More actions">
@@ -126,10 +141,18 @@ export const BuilderTopBar = forwardRef<HTMLElement, BuilderTopBarProps>(functio
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={onClose}>
-                <LockIcon aria-hidden="true" />
-                Close survey…
-              </DropdownMenuItem>
+              {onShare ? (
+                <DropdownMenuItem className="sm:hidden" onSelect={onShare}>
+                  <Share2Icon aria-hidden="true" />
+                  Share survey link…
+                </DropdownMenuItem>
+              ) : null}
+              {onClose ? (
+                <DropdownMenuItem onSelect={onClose}>
+                  <LockIcon aria-hidden="true" />
+                  Close survey…
+                </DropdownMenuItem>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}

@@ -136,6 +136,11 @@ describe('answering', () => {
       [Q[5]!]: NOT_MANAGER,
     })
     expect(await screen.findByRole('heading', { name: 'Response recorded' })).toBeInTheDocument()
+    // A way back to their home page.
+    const home = screen.getByRole('link', { name: 'Go to My surveys' })
+    expect(home).toHaveAttribute('href', '/')
+    await user.click(home)
+    expect(await screen.findByRole('heading', { level: 1, name: 'My surveys' })).toBeVisible()
   })
 
   it('shows problems from the server next to the question', async () => {
