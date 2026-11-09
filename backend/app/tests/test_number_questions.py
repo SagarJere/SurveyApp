@@ -314,3 +314,44 @@ def test_distribution_groups_many_values_into_five_ranges() -> None:
     assert labels == ["0–1", "1–2", "2–3", "3–4", "4–5"]  # noqa: RUF001
     assert sum(r["n"] for r in number_distribution(decimals, 11)) == 11
     assert number_distribution([], 0) == []
+
+
+@pytest.mark.parametrize(
+    ("op", "val", "shown_for"),
+    [
+        ("gt", 3, [4]),
+        ("lt", 3, [2]),
+        ("is", 3, [3]),
+        ("not", 3, [2, 4]),
+    ],
+)
+async def test_every_comparison_is_applied_on_submit(
+    client: AsyncClient,
+    engine: AsyncEngine,
+    hr: Headers,
+    person: Callable[[str], Headers],
+    op: str,
+    val: int,
+    shown_for: list[int],
+) -> None:
+    body = draft()
+    body["questions"][1]["condition"] = {"src": PEOPLE, "op": op, "val": val}
+    survey_id = await publish(client, hr, body)
+
+    kept: list[int] = []
+    for people in (2, 3, 4):
+        response = await submit(
+            client, person(f"W{people}"), survey_id, {PEOPLE: people, FOLLOW_UP: "Yes"}
+        )
+        assert response.status_code == 200, response.text
+    async with engine.connect() as conn:
+        rows = await conn.execute(
+            text(
+                "SELECT r.employee_id FROM response_answers a"
+                " JOIN survey_responses r ON r.id = a.response_id"
+                " WHERE a.value_text = 'Yes' ORDER BY r.employee_id"
+            )
+        )
+        kept = [int(row[0][1:]) for row in rows.all()]
+    # The follow-up answer survives only where its condition was met.
+    assert kept == shown_for

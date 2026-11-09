@@ -37,7 +37,7 @@ class Condition(_Model):
     """Show the item only when an earlier answer matches. `val` is an option key or a number."""
 
     src: UUID
-    op: Literal["is", "not", "gte", "lte"]
+    op: Literal["is", "not", "gte", "lte", "gt", "lt"]
     val: UUID | float | None
 
     @field_validator("val", mode="before")

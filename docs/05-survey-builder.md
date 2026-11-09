@@ -58,11 +58,11 @@ Editable title (large) and description. Accent-coloured top border.
 | Single choice | option list | radio cards | yes | is, is not |
 | Checkboxes | option list | checkbox cards | yes | is (= includes), is not |
 | Dropdown | option list | select | yes | is, is not |
-| Rating 1–5 | preview of scale | 5 buttons, labels "Very unsatisfied" … "Very satisfied" | yes | is at least, is at most |
+| Rating 1–5 | preview of scale | 5 buttons, labels "Very unsatisfied" … "Very satisfied" | yes | is at least, is at most, is greater than, is less than, is equal to, is not equal to |
 | Short answer | preview line | text input (max 2,000) | no | — |
 | Paragraph | preview area | textarea (max 10,000) | no | — |
-| Money | currency, min, max, decimals | formatted amount + words | yes | is at least, is at most |
-| Number | lowest, highest, decimals, unit | number box + unit | yes | is at least, is at most |
+| Money | currency, min, max, decimals | formatted amount + words | yes | is at least, is at most, is greater than, is less than, is equal to, is not equal to |
+| Number | lowest, highest, decimals, unit | number box + unit | yes | is at least, is at most, is greater than, is less than, is equal to, is not equal to |
 
 **Option list editor:** marker (circle/square/number by type), inline text input per option, remove button (disabled when only one left), "Add option" focuses the new input. Options must be non-empty and unique to publish.
 
@@ -99,11 +99,11 @@ For counts and measures that aren't money: "How many people are coming?", "How f
 
 **Storage:** `response_answers.value_num` (`numeric(14,2)`), like money. Shared helpers in TS and Python: `formatNumber(value, unit)`, `numberRangeError(config, value)`, tested with `shared/test-cases/number.json`.
 
-**Conditions:** is at least / is at most a number (negatives allowed); default value 1.
+**Conditions:** is at least, at most, greater than, less than, equal to or not equal to a number (negatives allowed); default "is at least 1".
 
 ## Conditions
 
-**Shape:** `{ "src": "<question key>", "op": "is" | "not" | "gte" | "lte", "val": "<option key>" | number }`
+**Shape:** `{ "src": "<question key>", "op": "is" | "not" | "gte" | "lte" | "gt" | "lt", "val": "<option key>" | number }`
 
 One condition per question or section in v1. (Later: several conditions with "all"/"any".)
 
@@ -136,12 +136,14 @@ section_visible(section) =
 
 matches(c):
     a = answer[c.src]; if not answered(a): false
-    rating/money: gte → a >= val ; lte → a <= val
+    rating/money/number: gte → a >= val ; lte → a <= val ; gt → a > val ; lt → a < val ;
+                         is → a == val ; not → a != val   (compared in hundredths: 2 decimals)
     choice: hit = (a is list ? val in a : a == val); is → hit ; not → !hit
 ```
 
 Notes:
-- "is not" is **false when the source is unanswered**.
+- "is not" and "is not equal to" are **false when the source is unanswered**.
+- For numeric sources the default comparison is "is at least" (greater than, less than, equal to and not equal to added 2026-11-09).
 - Evaluate in display order so a hidden source hides everything that depends on it (chains).
 - Broken conditions don't hide things in preview (fail open); publishing is blocked anyway.
 - After evaluation, discard answers of hidden questions.

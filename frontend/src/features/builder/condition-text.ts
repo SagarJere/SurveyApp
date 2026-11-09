@@ -1,14 +1,24 @@
 /** Words for conditions: tags on cards and explanations of broken conditions. */
-import type { ConditionProblem } from '@/features/survey-logic/conditions'
+import { NUMERIC_TYPES, type ConditionProblem } from '@/features/survey-logic/conditions'
 import { formatAmount } from '@/features/survey-logic/money'
 import { formatNumber } from '@/features/survey-logic/numbers'
 import type { Condition, ConditionOp, Currency, Draft } from '@/features/survey-logic/types'
 
-export const OP_LABELS: Record<ConditionOp, string> = {
-  is: 'is',
-  not: 'is not',
+const CHOICE_OP_LABELS: Partial<Record<ConditionOp, string>> = { is: 'is', not: 'is not' }
+
+const NUMBER_OP_LABELS: Record<ConditionOp, string> = {
   gte: 'is at least',
   lte: 'is at most',
+  gt: 'is greater than',
+  lt: 'is less than',
+  is: 'is equal to',
+  not: 'is not equal to',
+}
+
+/** "is" / "is not" for choices; "is at least", "is greater than", "is equal to"… for numbers. */
+export function opLabel(op: ConditionOp, sourceType: string): string {
+  if (NUMERIC_TYPES.includes(sourceType)) return NUMBER_OP_LABELS[op]
+  return CHOICE_OP_LABELS[op] ?? NUMBER_OP_LABELS[op]
 }
 
 /** "Shown when Q2 is “Hybrid”" · "Shown when Q1 is at least 4" · "… is at least ₹50,000". */
@@ -16,7 +26,7 @@ export function conditionSummary(draft: Draft, condition: Condition): string {
   const index = draft.questions.findIndex((q) => q.key === condition.src)
   const source = draft.questions[index]
   if (!source) return ''
-  const prefix = `Shown when Q${index + 1} ${OP_LABELS[condition.op]}`
+  const prefix = `Shown when Q${index + 1} ${opLabel(condition.op, source.type)}`
   if (source.type === 'money') {
     const currency: Currency = source.config.currency ?? 'INR'
     return typeof condition.val === 'number'

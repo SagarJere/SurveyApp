@@ -2,7 +2,7 @@
 
 export type QuestionType =
   'single' | 'multi' | 'dropdown' | 'rating' | 'short' | 'long' | 'money' | 'number'
-export type ConditionOp = 'is' | 'not' | 'gte' | 'lte'
+export type ConditionOp = 'is' | 'not' | 'gte' | 'lte' | 'gt' | 'lt'
 export type Currency = 'INR' | 'USD' | 'EUR' | 'GBP' | 'AED'
 export type Layout = 'all' | 'section' | 'step'
 export type BackgroundStyle = 'none' | 'color' | 'image'

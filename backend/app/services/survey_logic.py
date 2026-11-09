@@ -15,7 +15,7 @@ from app.services.money import MAX_AMOUNT
 from app.services.numbers import MAX_NUMBER
 
 QuestionType = Literal["single", "multi", "dropdown", "rating", "short", "long", "money", "number"]
-ConditionOp = Literal["is", "not", "gte", "lte"]
+ConditionOp = Literal["is", "not", "gte", "lte", "gt", "lt"]
 ConditionProblem = Literal[
     "source_missing",  # the question it depended on was deleted
     "source_after",  # the source now comes after this question
@@ -32,6 +32,10 @@ class QuestionTypeSpec:
     condition_ops: tuple[ConditionOp, ...]  # empty: can't be a condition source
 
 
+# Numeric sources: at least, at most, greater than, less than, equal to, not equal to.
+# The first is the default for a new condition.
+NUMERIC_OPS: tuple[ConditionOp, ...] = ("gte", "lte", "gt", "lt", "is", "not")
+
 # Backend mirror of the frontend question type registry (docs/02-architecture.md).
 QUESTION_TYPES: dict[QuestionType, QuestionTypeSpec] = {
     "single": QuestionTypeSpec("Single choice", has_options=True, condition_ops=("is", "not")),
@@ -40,12 +44,12 @@ QUESTION_TYPES: dict[QuestionType, QuestionTypeSpec] = {
     "rating": QuestionTypeSpec(
         "Rating 1–5",  # noqa: RUF001 - en dash, as in the docs
         has_options=False,
-        condition_ops=("gte", "lte"),
+        condition_ops=NUMERIC_OPS,
     ),
     "short": QuestionTypeSpec("Short answer", has_options=False, condition_ops=()),
     "long": QuestionTypeSpec("Paragraph", has_options=False, condition_ops=()),
-    "money": QuestionTypeSpec("Money", has_options=False, condition_ops=("gte", "lte")),
-    "number": QuestionTypeSpec("Number", has_options=False, condition_ops=("gte", "lte")),
+    "money": QuestionTypeSpec("Money", has_options=False, condition_ops=NUMERIC_OPS),
+    "number": QuestionTypeSpec("Number", has_options=False, condition_ops=NUMERIC_OPS),
 }
 NUMERIC_TYPES = ("rating", "money", "number")
 
@@ -178,6 +182,20 @@ def section_condition_problem(draft: DraftDict, section_key: str) -> ConditionPr
     return _problem(index, condition, question_pos=None, section_pos=index.section_pos[section_key])
 
 
+def _compare(number: float, op: str, val: float) -> bool:
+    """Numbers have at most 2 decimals, so equality is compared in hundredths."""
+    a, b = round(number * 100), round(val * 100)
+    comparisons = {
+        "gte": a >= b,
+        "lte": a <= b,
+        "gt": a > b,
+        "lt": a < b,
+        "is": a == b,
+        "not": a != b,
+    }
+    return comparisons.get(op, False)
+
+
 def _matches(source: QuestionDict, condition: ConditionDict, answers: Answers) -> bool:
     answer = answers.get(source["key"])
     if not is_answered(answer):
@@ -185,9 +203,9 @@ def _matches(source: QuestionDict, condition: ConditionDict, answers: Answers) -
     op, val = condition["op"], condition["val"]
     if source["type"] in NUMERIC_TYPES:
         number = _number(answer)
-        if number is None:
+        if number is None or not _is_number(val):
             return False
-        return number >= float(val) if op == "gte" else number <= float(val)
+        return _compare(number, op, float(val))
     hit = val in answer if isinstance(answer, list) else answer == val
     return hit if op == "is" else not hit
 

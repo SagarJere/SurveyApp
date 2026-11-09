@@ -1772,6 +1772,746 @@
       ],
       "kept_answers": {},
       "missing_required": []
+    },
+    {
+      "name": "10a: number 'is greater than 3': 4 shows",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": true,
+              "number_unit": ""
+            },
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "gt",
+              "val": 3
+            }
+          }
+        ]
+      },
+      "answers": {
+        "a": 4,
+        "b": "Yes"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "a",
+        "b"
+      ],
+      "kept_answers": {
+        "a": 4,
+        "b": "Yes"
+      },
+      "missing_required": []
+    },
+    {
+      "name": "10b: number 'is greater than 3': 3 does not",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": true,
+              "number_unit": ""
+            },
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "gt",
+              "val": 3
+            }
+          }
+        ]
+      },
+      "answers": {
+        "a": 3,
+        "b": "Yes"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "a"
+      ],
+      "kept_answers": {
+        "a": 3
+      },
+      "missing_required": []
+    },
+    {
+      "name": "10c: number 'is less than 0': -0.5 shows",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": true,
+              "number_unit": ""
+            },
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "lt",
+              "val": 0
+            }
+          }
+        ]
+      },
+      "answers": {
+        "a": -0.5,
+        "b": "Yes"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "a",
+        "b"
+      ],
+      "kept_answers": {
+        "a": -0.5,
+        "b": "Yes"
+      },
+      "missing_required": []
+    },
+    {
+      "name": "10d: number 'is less than 3': 3 does not",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": true,
+              "number_unit": ""
+            },
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "lt",
+              "val": 3
+            }
+          }
+        ]
+      },
+      "answers": {
+        "a": 3,
+        "b": "Yes"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "a"
+      ],
+      "kept_answers": {
+        "a": 3
+      },
+      "missing_required": []
+    },
+    {
+      "name": "10e: number 'is equal to 2.5': 2.5 shows",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": true,
+              "number_unit": ""
+            },
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "is",
+              "val": 2.5
+            }
+          }
+        ]
+      },
+      "answers": {
+        "a": 2.5,
+        "b": "Yes"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "a",
+        "b"
+      ],
+      "kept_answers": {
+        "a": 2.5,
+        "b": "Yes"
+      },
+      "missing_required": []
+    },
+    {
+      "name": "10f: number 'is equal to 2': 2.01 does not",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": true,
+              "number_unit": ""
+            },
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "is",
+              "val": 2
+            }
+          }
+        ]
+      },
+      "answers": {
+        "a": 2.01,
+        "b": "Yes"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "a"
+      ],
+      "kept_answers": {
+        "a": 2.01
+      },
+      "missing_required": []
+    },
+    {
+      "name": "10g: number 'is not equal to 2': 3 shows",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": true,
+              "number_unit": ""
+            },
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "not",
+              "val": 2
+            }
+          }
+        ]
+      },
+      "answers": {
+        "a": 3,
+        "b": "Yes"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "a",
+        "b"
+      ],
+      "kept_answers": {
+        "a": 3,
+        "b": "Yes"
+      },
+      "missing_required": []
+    },
+    {
+      "name": "10h: number 'is not equal to 2': 2 does not",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": true,
+              "number_unit": ""
+            },
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "not",
+              "val": 2
+            }
+          }
+        ]
+      },
+      "answers": {
+        "a": 2,
+        "b": "Yes"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "a"
+      ],
+      "kept_answers": {
+        "a": 2
+      },
+      "missing_required": []
+    },
+    {
+      "name": "10i: number 'is not equal to 2': unanswered does not",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": true,
+              "number_unit": ""
+            },
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "not",
+              "val": 2
+            }
+          }
+        ]
+      },
+      "answers": {
+        "b": "Yes"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "a"
+      ],
+      "kept_answers": {},
+      "missing_required": []
+    },
+    {
+      "name": "10j: rating 'is equal to 5': 5 shows",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "rating",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "is",
+              "val": 5
+            }
+          }
+        ]
+      },
+      "answers": {
+        "a": 5,
+        "b": "Yes"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "a",
+        "b"
+      ],
+      "kept_answers": {
+        "a": 5,
+        "b": "Yes"
+      },
+      "missing_required": []
+    },
+    {
+      "name": "10k: rating 'is greater than 3': 3 does not",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "rating",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "gt",
+              "val": 3
+            }
+          }
+        ]
+      },
+      "answers": {
+        "a": 3,
+        "b": "Yes"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "a"
+      ],
+      "kept_answers": {
+        "a": 3
+      },
+      "missing_required": []
+    },
+    {
+      "name": "10l: money 'is less than 10,000': 9,999.99 shows",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "money",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {
+              "currency": "INR",
+              "min": null,
+              "max": null,
+              "decimals": true
+            },
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "lt",
+              "val": 10000
+            }
+          }
+        ]
+      },
+      "answers": {
+        "a": 9999.99,
+        "b": "Yes"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "a",
+        "b"
+      ],
+      "kept_answers": {
+        "a": 9999.99,
+        "b": "Yes"
+      },
+      "missing_required": []
+    },
+    {
+      "name": "10m: money 'is not equal to 0': 0 does not",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "money",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {
+              "currency": "INR",
+              "min": null,
+              "max": null,
+              "decimals": true
+            },
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "not",
+              "val": 0
+            }
+          }
+        ]
+      },
+      "answers": {
+        "a": 0,
+        "b": "Yes"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "a"
+      ],
+      "kept_answers": {
+        "a": 0
+      },
+      "missing_required": []
     }
   ],
   "problems": [
@@ -2223,7 +2963,7 @@
       "problem": "answer_changed"
     },
     {
-      "name": "choice operator on a rating",
+      "name": "rating compared with a value outside 1-5",
       "survey": {
         "sections": [
           {
@@ -2254,7 +2994,7 @@
             "condition": {
               "src": "q2",
               "op": "is",
-              "val": 3
+              "val": 7
             }
           }
         ]
@@ -2906,6 +3646,143 @@
       },
       "kind": "question",
       "key": "q8",
+      "problem": "answer_changed"
+    },
+    {
+      "name": "healthy number 'is greater than' condition",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": true,
+              "number_unit": ""
+            },
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "gt",
+              "val": 3
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "b",
+      "problem": null
+    },
+    {
+      "name": "healthy rating 'is not equal to' condition",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "rating",
+            "text": "Question a",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "not",
+              "val": 3
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "b",
+      "problem": null
+    },
+    {
+      "name": "'is greater than' doesn't fit a choice question",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "a",
+            "section_key": "s1",
+            "type": "single",
+            "text": "Question a",
+            "required": false,
+            "options": [
+              {
+                "key": "yes",
+                "label": "Yes"
+              },
+              {
+                "key": "no",
+                "label": "No"
+              }
+            ],
+            "config": {},
+            "condition": null
+          },
+          {
+            "key": "b",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question b",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "a",
+              "op": "gt",
+              "val": "yes"
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "b",
       "problem": "answer_changed"
     }
   ],

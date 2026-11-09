@@ -12,7 +12,7 @@ import type { Condition, ConditionOp, Currency, Draft } from '@/features/survey-
 
 import { AmountField } from '@/components/amount-field'
 import { NumberField } from '@/components/number-field'
-import { OP_LABELS, problemMessage } from './condition-text'
+import { opLabel, problemMessage } from './condition-text'
 import { conditionFor, type ConditionTarget } from './draft-ops'
 import { useBuilderStore } from './store'
 
@@ -101,7 +101,7 @@ export function ConditionPanel({ target, condition, problem }: ConditionPanelPro
             >
               {conditionOpsFor(source.type).map((op) => (
                 <option key={op} value={op}>
-                  {OP_LABELS[op]}
+                  {opLabel(op, source.type)}
                 </option>
               ))}
             </NativeSelect>

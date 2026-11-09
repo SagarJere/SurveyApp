@@ -19,15 +19,21 @@ interface TypeRules {
   conditionOps: readonly ConditionOp[]
 }
 
+/**
+ * Numeric sources: at least, at most, greater than, less than, equal to, not equal to.
+ * The first is the default for a new condition.
+ */
+export const NUMERIC_OPS: readonly ConditionOp[] = ['gte', 'lte', 'gt', 'lt', 'is', 'not']
+
 export const TYPE_RULES: Record<QuestionType, TypeRules> = {
   single: { hasOptions: true, conditionOps: ['is', 'not'] },
   multi: { hasOptions: true, conditionOps: ['is', 'not'] },
   dropdown: { hasOptions: true, conditionOps: ['is', 'not'] },
-  rating: { hasOptions: false, conditionOps: ['gte', 'lte'] },
+  rating: { hasOptions: false, conditionOps: NUMERIC_OPS },
   short: { hasOptions: false, conditionOps: [] },
   long: { hasOptions: false, conditionOps: [] },
-  money: { hasOptions: false, conditionOps: ['gte', 'lte'] },
-  number: { hasOptions: false, conditionOps: ['gte', 'lte'] },
+  money: { hasOptions: false, conditionOps: NUMERIC_OPS },
+  number: { hasOptions: false, conditionOps: NUMERIC_OPS },
 }
 
 /** Types answered with a number, compared with "at least" / "at most". */
@@ -140,12 +146,32 @@ export function sectionConditionProblem(draft: LogicDraft, key: string): Conditi
   return index.problem(section.condition, { sectionPos: index.sectionPos.get(key) ?? 0 })
 }
 
+/** Numbers have at most 2 decimals, so equality is compared in hundredths. */
+function compare(answer: number, op: ConditionOp, val: number): boolean {
+  const a = Math.round(answer * 100)
+  const b = Math.round(val * 100)
+  switch (op) {
+    case 'gte':
+      return a >= b
+    case 'lte':
+      return a <= b
+    case 'gt':
+      return a > b
+    case 'lt':
+      return a < b
+    case 'is':
+      return a === b
+    case 'not':
+      return a !== b
+  }
+}
+
 function matches(source: LogicQuestion, condition: Condition, answers: Answers): boolean {
   const answer = answers[source.key]
   if (!isAnswered(answer)) return false // "is not" is also false when unanswered
   if (NUMERIC_TYPES.includes(source.type)) {
     if (!isNumber(answer) || !isNumber(condition.val)) return false
-    return condition.op === 'gte' ? answer >= condition.val : answer <= condition.val
+    return compare(answer, condition.op, condition.val)
   }
   const hit = Array.isArray(answer) ? answer.includes(condition.val) : answer === condition.val
   return condition.op === 'is' ? hit : !hit
