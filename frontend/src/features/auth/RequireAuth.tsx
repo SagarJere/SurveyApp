@@ -10,12 +10,14 @@ import { useAuth } from './use-auth'
 
 /** Route guard: everything below it needs a signed-in user. */
 export function RequireAuth() {
-  const { status, signOutReason, retry } = useAuth()
+  const { status, signOutReason, endedSessionOf, signedOutByChoice, retry } = useAuth()
   const location = useLocation()
 
   if (status === 'signed-out') {
+    // After "Sign out", don't remember the page: the next person to sign in may be someone else.
+    if (signedOutByChoice) return <Navigate to="/login" replace />
     const next = `${location.pathname}${location.search}${location.hash}`
-    return <Navigate to={loginPath(next, signOutReason)} replace />
+    return <Navigate to={loginPath(next, signOutReason, endedSessionOf)} replace />
   }
 
   if (status === 'error') {

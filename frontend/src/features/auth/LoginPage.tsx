@@ -17,7 +17,7 @@ import { env } from '@/lib/env'
 import { login } from './api'
 import { DevPeopleCombobox } from './DevPeopleCombobox'
 import { employeeIdProblem, normalizeEmployeeId } from './employee-id'
-import { safeNextPath } from './redirect'
+import { afterSignIn, safeNextPath } from './redirect'
 import { useAuth } from './use-auth'
 
 const schema = z.object({
@@ -47,7 +47,7 @@ function fieldMessage(error: ApiError, field: string): string | null {
 
 export function LoginPage() {
   usePageTitle('Sign in')
-  const { status, signOutReason, completeSignIn } = useAuth()
+  const { status, user, signOutReason, completeSignIn } = useAuth()
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const next = safeNextPath(params.get('next'))
@@ -63,7 +63,9 @@ export function LoginPage() {
     mutationFn: (employeeId: string) => login(employeeId),
     onSuccess: (response) => {
       completeSignIn(response)
-      void navigate(next, { replace: true })
+      void navigate(afterSignIn(next, params.get('for'), response.user.employee_id), {
+        replace: true,
+      })
     },
     onError: (error) => {
       if (error instanceof ApiError) {
@@ -83,7 +85,9 @@ export function LoginPage() {
   const employeeId = useWatch({ control: form.control, name: 'employeeId' })
   const { ref: fieldRef, ...registration } = form.register('employeeId')
 
-  if (status === 'signed-in') return <Navigate to={next} replace />
+  if (status === 'signed-in' && user) {
+    return <Navigate to={afterSignIn(next, params.get('for'), user.employee_id)} replace />
+  }
 
   const fieldError = form.formState.errors.employeeId?.message
   const rootError = form.formState.errors.root?.message

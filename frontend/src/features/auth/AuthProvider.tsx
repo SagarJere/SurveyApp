@@ -9,7 +9,7 @@ import {
 } from 'react'
 
 import { configureApiHandlers } from '@/lib/api'
-import { isTokenExpired, TOKEN_EXPIRY_MARGIN_MS, tokenExpiresAt } from '@/lib/jwt'
+import { isTokenExpired, TOKEN_EXPIRY_MARGIN_MS, tokenExpiresAt, tokenSubject } from '@/lib/jwt'
 import { tokenStore } from '@/lib/token-store'
 
 import { fetchMe } from './api'
@@ -35,6 +35,12 @@ function initialSignOutReason(): SignOutReason | null {
   return stored && isTokenExpired(stored) ? 'expired' : null
 }
 
+/** Whose session a token left over from an earlier visit belonged to, if it has expired. */
+function initialEndedSessionOf(): string | null {
+  const stored = tokenStore.get()
+  return stored && isTokenExpired(stored) ? tokenSubject(stored) : null
+}
+
 /**
  * Holds the session: the access token (in tokenStore) and the signed-in user (from /auth/me).
  * Signs out automatically when the token expires or the API answers 401.
@@ -44,8 +50,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const token = useSyncExternalStore(subscribe, readToken, () => null)
   // A token left over from an earlier visit may already have expired.
   const [signOutReason, setSignOutReason] = useState<SignOutReason | null>(initialSignOutReason)
+  const [endedSessionOf, setEndedSessionOf] = useState<string | null>(initialEndedSessionOf)
+  const [signedOutByChoice, setSignedOutByChoice] = useState(false)
 
   const usableToken = token && !isTokenExpired(token) ? token : null
+
+  // Remember whose session ends, however it ends (expiry, a 401, another tab), so the page they
+  // were on is only reopened for them. A deliberate "Sign out" forgets the page regardless.
+  useEffect(() => {
+    const stored = tokenStore.get()
+    let owner = stored ? tokenSubject(stored) : null
+    return tokenStore.subscribe((next) => {
+      if (next) {
+        owner = tokenSubject(next)
+        return
+      }
+      setEndedSessionOf(owner)
+      owner = null
+    })
+  }, [])
 
   // Never keep a token we know has expired.
   useEffect(() => {
@@ -99,6 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.clear()
       queryClient.setQueryData(authQueryKeys.me, response.user)
       setSignOutReason(null)
+      setEndedSessionOf(null)
+      setSignedOutByChoice(false)
       tokenStore.set(response.access_token)
     },
     [queryClient],
@@ -106,6 +131,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(() => {
     setSignOutReason(null)
+    setEndedSessionOf(null)
+    // The page they were on is theirs; whoever signs in next starts at the home page.
+    setSignedOutByChoice(true)
     tokenStore.clear()
     queryClient.clear()
   }, [queryClient])
@@ -124,8 +152,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const user = usableToken ? (me.data ?? null) : null
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, signOutReason, completeSignIn, signOut, retry }),
-    [status, user, signOutReason, completeSignIn, signOut, retry],
+    () => ({
+      status,
+      user,
+      signOutReason,
+      endedSessionOf,
+      signedOutByChoice,
+      completeSignIn,
+      signOut,
+      retry,
+    }),
+    [
+      status,
+      user,
+      signOutReason,
+      endedSessionOf,
+      signedOutByChoice,
+      completeSignIn,
+      signOut,
+      retry,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

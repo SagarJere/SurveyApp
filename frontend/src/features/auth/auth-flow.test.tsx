@@ -13,6 +13,21 @@ import { renderRoute } from '@/test/render'
 import { mockRespondDefaults, NOT_AVAILABLE } from '@/test/respond'
 
 import * as authApi from './api'
+import type { AuthUser } from './types'
+
+/** Sign in on the sign-in page as `person` (the login request is mocked). */
+async function signInAs(user: ReturnType<typeof userEvent.setup>, person: AuthUser) {
+  vi.spyOn(authApi, 'fetchDevPeople').mockResolvedValue({ items: [], total: 0 })
+  vi.spyOn(authApi, 'fetchMe').mockResolvedValue(person)
+  vi.spyOn(authApi, 'login').mockResolvedValue({
+    access_token: fakeToken(person),
+    token_type: 'bearer',
+    expires_at: new Date(Date.now() + 3600_000).toISOString(),
+    user: person,
+  })
+  await user.type(await screen.findByLabelText('Employee ID'), person.employee_id)
+  await user.click(screen.getByRole('button', { name: 'Sign in' }))
+}
 
 beforeEach(() => {
   mockRespondDefaults()
@@ -140,6 +155,24 @@ describe('account menu and sign out', () => {
     expect(tokenStore.get()).toBeNull()
   })
 
+  it('forgets the page on sign-out, so the next person starts at their home page', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/admin/surveys', { user: TEST_USERS.hr })
+
+    await user.click(await screen.findByRole('button', { name: 'Account: Vikram Mehta' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Sign out' }))
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/login')
+    })
+    expect(router.state.location.search).toBe('')
+
+    await signInAs(user, TEST_USERS.employee)
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/')
+    })
+    expect(await screen.findByRole('heading', { level: 1, name: 'My surveys' })).toBeVisible()
+  })
+
   it('follows a sign-out in another tab', async () => {
     const { router } = renderRoute('/admin/surveys', { user: TEST_USERS.hr })
     await screen.findByRole('heading', { level: 1, name: 'Surveys' })
@@ -151,10 +184,46 @@ describe('account menu and sign out', () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/login')
     })
+    expect(router.state.location.search).toBe('?next=%2Fadmin%2Fsurveys&for=E1002')
   })
 })
 
 describe('session ending', () => {
+  async function expireOn(path: string) {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    tokenStore.set(fakeToken(TEST_USERS.hr, 30))
+    const rendered = renderRoute(path, { user: TEST_USERS.hr })
+    tokenStore.set(fakeToken(TEST_USERS.hr, 30))
+    await screen.findByRole('heading', { level: 1, name: 'Surveys' })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(31_000)
+    })
+    await waitFor(() => {
+      expect(rendered.router.state.location.pathname).toBe('/login')
+    })
+    vi.useRealTimers()
+    return rendered
+  }
+
+  it('reopens the page when the same person signs back in after their session expired', async () => {
+    const { router } = await expireOn('/admin/surveys')
+    expect(router.state.location.search).toBe('?next=%2Fadmin%2Fsurveys&reason=expired&for=E1002')
+
+    await signInAs(userEvent.setup(), TEST_USERS.hr)
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/admin/surveys')
+    })
+  })
+
+  it("sends someone else to their own home page, not the expired person's page", async () => {
+    const { router } = await expireOn('/admin/surveys')
+
+    await signInAs(userEvent.setup(), TEST_USERS.employee)
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/')
+    })
+  })
+
   it('signs out when the token expires while the page is open', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const { router } = renderRoute('/', { user: TEST_USERS.hr })
@@ -199,7 +268,7 @@ describe('session ending', () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/login')
     })
-    expect(router.state.location.search).toBe('?next=%2Fadmin%2Fsurveys&reason=expired')
+    expect(router.state.location.search).toBe('?next=%2Fadmin%2Fsurveys&reason=expired&for=E1002')
     expect(tokenStore.get()).toBeNull()
     expect(screen.getByText('Your session has expired. Please sign in again.')).toBeInTheDocument()
   })
