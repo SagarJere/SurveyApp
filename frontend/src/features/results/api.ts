@@ -188,10 +188,24 @@ function query(filters: ResultFilters): string {
   return text ? `?${text}` : ''
 }
 
-export function downloadExport(id: string, filters: ResultFilters, title: string): Promise<void> {
+export type ExportKind = 'responses' | 'analytics'
+
+const EXPORT_NAMES: Record<ExportKind, string> = {
+  responses: 'responses',
+  analytics: 'results with analytics',
+}
+
+/** `responses`: one row per response. `analytics`: summary with charts, participation, etc. */
+export function downloadExport(
+  id: string,
+  filters: ResultFilters,
+  title: string,
+  kind: ExportKind,
+): Promise<void> {
+  const search = query(filters)
   return downloadFile(
-    `${base(id)}/export.xlsx${query(filters)}`,
-    `${title || 'Survey'} - results.xlsx`,
+    `${base(id)}/export.xlsx${search}${search ? '&' : '?'}kind=${kind}`,
+    `${title || 'Survey'} - ${EXPORT_NAMES[kind]}.xlsx`,
   )
 }
 

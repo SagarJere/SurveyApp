@@ -43,7 +43,7 @@ Percentages are out of **the people who were shown the question**, not all respo
 
 ## Anonymity and small groups
 
-- **Minimum group size: 5.** If the current filters leave fewer than 5 responses, show only participation figures (responses, invited, rate). Hide all answer widgets, comments and averages, and show a notice: "Fewer than 5 people in this group have responded, so their answers are hidden to protect anonymity."
+- **Minimum group size: 5, for anonymous surveys only.** Named surveys already show who answered, so they show every answer however few there are (agreed 2026-11-09). For an anonymous survey, if the current filters leave fewer than 5 responses, show only participation figures (responses, invited, rate). Hide all answer widgets, comments and averages, and show a notice: "Fewer than 5 people in this group have responded, so their answers are hidden to protect anonymity."
 - Apply the rule on the **server** (`small_group: true`, no answer data in the payload), not just in the UI.
 - Anonymous surveys: no individual responses tab, no names anywhere, `submitted_at` rounded to the hour.
 - Department-scoped viewers (later phase) get the same rule.
@@ -111,7 +111,11 @@ Generate amount words on the server so exports and dashboard match.
 
 ## Exports
 
-**Excel (`export.xlsx`)**
+**Excel (`export.xlsx?kind=responses|analytics`)**. The results page has a Download menu with both.
+
+- *Responses* (`kind=responses`): the Responses sheet below, on its own.
+- *Responses with analytics* (`kind=analytics`, the default): Summary with a native Excel bar chart per choice, rating and money question; Participation by department with a chart; Responses per day with a chart; Responses; Comments.
+
 - *Summary* sheet: the same figures as the dashboard, one block per question.
 - *Responses* sheet: one row per response. Columns: Response ID, Submitted at, Department, Location, then one column per question ("Q2. Which work mode…"). Checkboxes are joined with "; ". Money gets two columns: amount (numeric, formatted ₹ #,##,##0) and "Q5 in words". For non-anonymous surveys, add Employee ID and Name after Response ID.
 - *Comments* sheet.

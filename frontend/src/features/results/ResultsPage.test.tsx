@@ -397,17 +397,27 @@ describe('Results dashboard', () => {
     ).toBeInTheDocument()
   })
 
-  it('exports the current filters to Excel', async () => {
+  it.each([
+    ['Responses (Excel)', 'responses'],
+    ['Responses with analytics (Excel)', 'analytics'],
+  ] as const)('downloads %s with the current filters', async (label, kind) => {
     mockResults()
     const download = vi.spyOn(resultsApi, 'downloadExport').mockResolvedValue()
     const user = userEvent.setup()
     renderRoute(`${URL}?location=Pune`, { user: TEST_USERS.hr })
 
-    await user.click(await screen.findByRole('button', { name: 'Export to Excel' }))
+    await user.click(await screen.findByRole('button', { name: 'Download' }))
+    expect(screen.getByText("Downloads use the filters you've set.")).toBeInTheDocument()
+    await user.click(
+      screen.getByRole('menuitem', { name: new RegExp(`^${label.replace(/[()]/g, '\\$&')}`) }),
+    )
+
     expect(download).toHaveBeenCalledWith(
       SURVEY_ID,
       expect.objectContaining({ location: 'Pune', department: null }),
       'Workplace pulse',
+      kind,
     )
+    expect(await screen.findByText(`${label} downloaded.`)).toBeInTheDocument()
   })
 })

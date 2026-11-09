@@ -203,8 +203,12 @@ async def _count(session: AsyncSession, scope: Scope) -> int:
     return await session.scalar(select(func.count()).select_from(ids)) or 0
 
 
-def is_small(count: int) -> bool:
-    return count < MIN_GROUP
+def is_small(scope: Scope, count: int) -> bool:
+    """The small-group rule protects anonymity, so it applies only to anonymous surveys.
+
+    Named surveys already show who answered, so every answer is shown however few there are.
+    """
+    return scope.anonymous and count < MIN_GROUP
 
 
 async def _invited(session: AsyncSession, scope: Scope) -> int | None:
@@ -314,7 +318,7 @@ async def summary(session: AsyncSession, scope: Scope) -> dict[str, Any]:
     responses = await _count(session, scope)
     invited = await _invited(session, scope)
     respondents = await _respondents(session, scope)
-    small = is_small(responses)
+    small = is_small(scope, responses)
     rating = next(iter(_question_keys(scope, ("rating",))), None)
     money = next(iter(_question_keys(scope, ("money",))), None)
     headline = None
@@ -460,7 +464,7 @@ def _range_label(index: int, currency: Currency) -> str:
 async def questions(session: AsyncSession, scope: Scope) -> dict[str, Any]:
     count = await _count(session, scope)
     content = scope.version.content
-    if is_small(count):
+    if is_small(scope, count):
         return {"small_group": True, "responses": count, "sections": []}
 
     ids = filtered_responses(scope).subquery()
@@ -609,7 +613,7 @@ async def comments(
     page: int,
 ) -> dict[str, Any]:
     count = await _count(session, scope)
-    if is_small(count):
+    if is_small(scope, count):
         return {
             "small_group": True,
             "total": 0,

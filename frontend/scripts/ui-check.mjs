@@ -184,11 +184,12 @@ async function main() {
     await shot('results-desktop', results_, { wait: resultsReady })
     await shot('results-375', results_, { width: 375, height: 812, wait: resultsReady })
     await shot('results-dark', results_, { dark: true, wait: resultsReady })
-    // Nobody is "not recorded", so this shows the small-group notice.
-    await shot('results-small-group-375', `${results_}?department=`, {
+    // Nobody is "not recorded", so this is an empty group. The sample isn't anonymous, so it
+    // shows empty widgets rather than the small-group notice (anonymous surveys only).
+    await shot('results-empty-group-375', `${results_}?department=`, {
       width: 375,
       height: 812,
-      wait: 'text=Fewer than 5 people',
+      wait: resultsReady,
     })
 
     // Lighthouse accessibility, as HR.

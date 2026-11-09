@@ -22,7 +22,12 @@ from app.schemas.results import (
 )
 from app.services import results as service
 from app.services import surveys as survey_service
-from app.services.exports import build_export, export_filename, non_responders_workbook
+from app.services.exports import (
+    ExportKind,
+    build_export,
+    export_filename,
+    non_responders_workbook,
+)
 from app.services.results_cache import results_cache
 
 router = APIRouter(prefix="/surveys/{survey_id}/results", tags=["results"])
@@ -295,12 +300,18 @@ def _filters_text(filters: service.Filters, scope: service.Scope) -> str:
 
 @router.get("/export.xlsx", response_class=Response, responses=_ERRORS)
 async def export(
+    *,
     survey_id: uuid.UUID,
     request: Request,
     user: CurrentUser,
     session: SessionDep,
     filters: FiltersDep,
+    kind: Annotated[ExportKind, Query(description="responses, or analytics (the default)")] = (
+        "analytics"
+    ),
 ) -> Response:
+    """Excel download. `responses`: one row per response. `analytics`: summary with charts,
+    participation, responses per day, responses and comments."""
     scope, _ = await _scope(request, session, user, survey_id, filters)
     summary_data = await service.summary(session, scope)
     data: dict[str, Any] = {
@@ -313,9 +324,16 @@ async def export(
             {**q, "number": i} for i, q in enumerate(scope.version.content["questions"], start=1)
         ],
     }
+    if kind == "analytics":
+        data["participation"] = await service.participation(session, scope)
+        data["timeline"] = await service.timeline(session, scope)
     if not summary_data["small_group"]:
-        data["questions"] = await service.questions(session, scope)
         data["responses"] = await service.all_responses(session, scope)
         data["answers"] = await service.all_answers(session, scope)
-        data["comments"] = await service.text_answers_for_export(session, scope)
-    return _xlsx(build_export(data), export_filename(data["title"], data["exported_at"], "results"))
+        if kind == "analytics":
+            data["questions"] = await service.questions(session, scope)
+            data["comments"] = await service.text_answers_for_export(session, scope)
+    suffix = "responses" if kind == "responses" else "results with analytics"
+    return _xlsx(
+        build_export(data, kind), export_filename(data["title"], data["exported_at"], suffix)
+    )

@@ -119,8 +119,8 @@ Uploaded and gallery images are stored as WebP under `FILE_STORAGE_PATH`. Browse
 
 - **Dashboard:** open a published survey's **Results** from the surveys home, or go to `/admin/surveys/<survey id>/results`. Filters (department, location, dates, version) live in the URL, so a filtered view can be shared.
 - **Percentages** are out of the people who were shown each question.
-- **Small groups:** when filters leave fewer than 5 responses, the API sends no answer data and the page shows only participation figures.
-- **Exports:** "Export to Excel" gives Summary, Responses and Comments sheets for the current filters. Owners and co-owners can download the people who haven't responded yet.
+- **Small groups (anonymous surveys only):** when filters leave fewer than 5 responses, the API sends no answer data and the page shows only participation figures. Named surveys show every answer, however few.
+- **Downloads:** the Download menu has **Responses (Excel)**, with one row per person and one column per question, and **Responses with analytics (Excel)**, which adds a summary with a chart per question, participation by department and responses per day. Both use the current filters. Owners and co-owners can also download the people who haven't responded yet.
 - **Individual responses** are listed only for surveys that aren't anonymous.
 - **Test data:** to fill a published survey with generated responses in development (refused when `APP_ENV=production`):
 

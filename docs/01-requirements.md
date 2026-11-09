@@ -85,7 +85,7 @@ Survey-level access: each survey has an **owner** and optional **co-owners** (fu
 ## Anonymity
 
 - When **Anonymous** is on, answers are stored without the employee ID. A separate **participation** record still prevents responding twice.
-- Reports never show names for anonymous surveys and hide any breakdown with **fewer than 5 responses**.
+- Reports never show names for anonymous surveys. For anonymous surveys they also hide any breakdown with **fewer than 5 responses**. Named surveys show every answer however few there are, because HR already sees who answered (agreed 2026-11-09).
 - Warn in the builder if an anonymous survey's audience is under ~10 people.
 
 ## Reports and dashboards
@@ -96,7 +96,7 @@ See `07-reports-dashboard.md`. Summary:
 - Per-survey results dashboard: headline figures, responses over time, participation by department, one widget per question grouped by section, comments.
 - Filters by department and location (from the audience upload), plus a "non-responders" download.
 - Percentages use **people shown the question** as the denominator.
-- Excel export (summary + raw), Money amounts also in words.
+- Excel export in two kinds: **Responses** (one row per person, one column per question) and **Responses with analytics** (summary with a chart per question, participation, responses per day, responses, comments). Money amounts also in words.
 
 ## Non-functional
 

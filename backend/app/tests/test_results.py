@@ -300,17 +300,21 @@ async def check_filters_and_small_group(ctx: Ctx) -> None:
         f"SELECT count(DISTINCT a.response_id) {ANSWERS} AND r.department = 'Engineering'", k=Q[1]
     )
 
-    # Legal has 3 responses: answers are left out of the API payload itself.
+    # Legal has 3 responses. This survey isn't anonymous, so the small-group rule doesn't apply:
+    # HR already sees who answered, and every answer is reported however few there are.
     legal_summary = await ctx.get("summary", department="Legal")
     legal_questions = await ctx.get("questions", department="Legal")
     legal_comments = await ctx.get("comments", department="Legal")
     assert legal_summary["responses"] == 3
-    assert legal_summary["small_group"] is True
-    assert legal_summary["headline"] is None
-    assert legal_summary["money"] is None
-    assert legal_questions == {"small_group": True, "responses": 3, "sections": []}
-    assert legal_comments["items"] == []
-    # Participation figures stay visible for small groups.
+    assert legal_summary["small_group"] is False
+    assert legal_questions["small_group"] is False
+    legal_q2 = next(
+        q for sec in legal_questions["sections"] for q in sec["questions"] if q["key"] == Q[1]
+    )
+    assert legal_q2["answered"] == await ctx.one(
+        f"SELECT count(DISTINCT a.response_id) {ANSWERS} AND r.department = 'Legal'", k=Q[1]
+    )
+    assert legal_comments["small_group"] is False
     assert legal_summary["invited"] == await ctx.one(
         "SELECT count(*) FROM survey_audience WHERE survey_id = :s AND department = 'Legal'"
     )
@@ -319,7 +323,19 @@ async def check_filters_and_small_group(ctx: Ctx) -> None:
 async def check_export(ctx: Ctx, responses: int, texts: int) -> None:
     export = await ctx.client.get(f"/api/surveys/{ctx.s}/results/export.xlsx", headers=ctx.hr)
     workbook = load_workbook(io.BytesIO(export.content))
-    assert workbook.sheetnames == ["Summary", "Responses", "Comments"]
+    assert workbook.sheetnames == [
+        "Summary",
+        "Participation",
+        "Responses per day",
+        "Responses",
+        "Comments",
+    ]
+    # A bar chart for every choice, rating and money question, plus participation and daily.
+    charted = sum(1 for q in PULSE["questions"] if q["type"] not in ("short", "long"))
+    assert len(workbook["Summary"]._charts) == charted
+    assert len(workbook["Participation"]._charts) == 1
+    assert len(workbook["Responses per day"]._charts) == 1
+    assert "analytics" in export.headers["content-disposition"]
     sheet = workbook["Responses"]
     header = [c.value for c in sheet[1]]
     money_col = header.index(f"Q5. {PULSE['questions'][4]['text']}")
@@ -336,10 +352,28 @@ async def check_export(ctx: Ctx, responses: int, texts: int) -> None:
     assert words.endswith("only")
     assert workbook["Comments"].max_row == texts + 1
 
-    legal = await ctx.client.get(
-        f"/api/surveys/{ctx.s}/results/export.xlsx", headers=ctx.hr, params={"department": "Legal"}
+    # Responses only: one sheet, the same rows and columns as the analytics file's Responses.
+    plain = await ctx.client.get(
+        f"/api/surveys/{ctx.s}/results/export.xlsx", headers=ctx.hr, params={"kind": "responses"}
     )
-    assert load_workbook(io.BytesIO(legal.content)).sheetnames == ["Summary"]
+    plain_book = load_workbook(io.BytesIO(plain.content))
+    assert plain_book.sheetnames == ["Responses"]
+    assert [c.value for c in plain_book["Responses"][1]] == header
+    assert plain_book["Responses"].max_row == responses + 1
+    assert "responses" in plain.headers["content-disposition"]
+
+    # A named survey exports every answer even for a group of 3.
+    legal = await ctx.client.get(
+        f"/api/surveys/{ctx.s}/results/export.xlsx",
+        headers=ctx.hr,
+        params={"department": "Legal", "kind": "responses"},
+    )
+    assert load_workbook(io.BytesIO(legal.content))["Responses"].max_row == 3 + 1
+
+    bad = await ctx.client.get(
+        f"/api/surveys/{ctx.s}/results/export.xlsx", headers=ctx.hr, params={"kind": "pdf"}
+    )
+    assert bad.status_code == 422
 
 
 async def check_non_responders_and_home(ctx: Ctx, totals: dict[str, int]) -> None:
@@ -398,19 +432,64 @@ async def test_filter_by_answer_and_dates(
     assert recent["days"][0]["day"] == since.isoformat()
 
 
-async def test_small_survey_hides_answers_until_five_responses(
+async def test_anonymous_survey_hides_answers_until_five_responses(
     client: AsyncClient, engine: AsyncEngine, app: FastAPI, hr: Headers, gallery: list[str]
 ) -> None:
-    survey_id = await make_survey(client, hr)
+    survey_id = await make_survey(client, hr, {"anonymous": True})
     await seed(app, survey_id, 4)
 
     before = await get(client, hr, survey_id, "questions")
+    summary = await get(client, hr, survey_id, "summary")
+    comments = await get(client, hr, survey_id, "comments")
+    analytics = load_workbook(
+        io.BytesIO(
+            (await client.get(f"/api/surveys/{survey_id}/results/export.xlsx", headers=hr)).content
+        )
+    )
+    plain = load_workbook(
+        io.BytesIO(
+            (
+                await client.get(
+                    f"/api/surveys/{survey_id}/results/export.xlsx",
+                    headers=hr,
+                    params={"kind": "responses"},
+                )
+            ).content
+        )
+    )
     await seed(app, survey_id, 1, seed=99)
     after = await get(client, hr, survey_id, "questions")  # submit cleared the cache
 
-    assert before["small_group"] is True
+    # Answers are left out of the API payload itself, and out of both exports.
+    assert before == {"small_group": True, "responses": 4, "sections": []}
+    assert summary["small_group"] is True
+    assert summary["headline"] is None
+    assert summary["money"] is None
+    assert comments["items"] == []
+    assert analytics.sheetnames == ["Summary", "Participation", "Responses per day"]
+    assert plain.sheetnames == ["Responses"]
+    assert "Fewer than 5 people" in str(plain["Responses"]["A4"].value)
     assert after["small_group"] is False
     assert after["responses"] == 5
+
+
+async def test_named_survey_shows_answers_from_the_first_response(
+    client: AsyncClient, engine: AsyncEngine, app: FastAPI, hr: Headers, gallery: list[str]
+) -> None:
+    survey_id = await make_survey(client, hr)
+    await seed(app, survey_id, 2)
+
+    questions = await get(client, hr, survey_id, "questions")
+    export = await client.get(
+        f"/api/surveys/{survey_id}/results/export.xlsx", headers=hr, params={"kind": "responses"}
+    )
+    sheet = load_workbook(io.BytesIO(export.content))["Responses"]
+
+    assert questions["small_group"] is False
+    assert questions["responses"] == 2
+    assert questions["sections"]
+    assert sheet.max_row == 2 + 1
+    assert sheet["B1"].value == "Employee ID"
 
 
 async def test_anonymous_results_show_no_names(

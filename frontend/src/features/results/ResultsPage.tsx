@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   ArrowLeftIcon,
   BarChart3Icon,
+  ChevronDownIcon,
   DownloadIcon,
   Loader2Icon,
   PencilIcon,
@@ -13,6 +14,12 @@ import { toast } from 'sonner'
 
 import { EmptyState } from '@/components/empty-state'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -31,6 +38,7 @@ import {
   getSummary,
   getTimeline,
   resultKeys,
+  type ExportKind,
   type ResultFilters,
   type ResultsSummary,
 } from './api'
@@ -43,6 +51,20 @@ import { ResponsesTab } from './ResponsesTab'
 import { SmallGroupNotice } from './SmallGroupNotice'
 import { takeaway } from './takeaway'
 import { useResultFilters, type ResultsTab } from './use-result-filters'
+
+const EXPORTS: { kind: ExportKind; label: string; description: string }[] = [
+  {
+    kind: 'responses',
+    label: 'Responses (Excel)',
+    description: 'One row per person, one column per question.',
+  },
+  {
+    kind: 'analytics',
+    label: 'Responses with analytics (Excel)',
+    description:
+      'Summary with a chart per question, participation, daily responses, all responses and comments.',
+  },
+]
 
 const SURVEY_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -257,29 +279,48 @@ function ResultsHeader({
               </Link>
             </Button>
           ) : null}
-          <Button
-            disabled={exporting}
-            onClick={() => {
-              setExporting(true)
-              downloadExport(surveyId, filters, title)
-                .then(() => {
-                  toast.success('Excel export downloaded.')
-                })
-                .catch(() => {
-                  // The API client already showed what went wrong.
-                })
-                .finally(() => {
-                  setExporting(false)
-                })
-            }}
-          >
-            {exporting ? (
-              <Loader2Icon className="animate-spin" aria-hidden="true" />
-            ) : (
-              <DownloadIcon aria-hidden="true" />
-            )}
-            Export to Excel
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button disabled={exporting}>
+                {exporting ? (
+                  <Loader2Icon className="animate-spin" aria-hidden="true" />
+                ) : (
+                  <DownloadIcon aria-hidden="true" />
+                )}
+                Download
+                <ChevronDownIcon aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72">
+              {EXPORTS.map((option) => (
+                <DropdownMenuItem
+                  key={option.kind}
+                  className="flex flex-col items-start gap-0.5"
+                  onSelect={() => {
+                    setExporting(true)
+                    downloadExport(surveyId, filters, title, option.kind)
+                      .then(() => {
+                        toast.success(`${option.label} downloaded.`)
+                      })
+                      .catch(() => {
+                        // The API client already showed what went wrong.
+                      })
+                      .finally(() => {
+                        setExporting(false)
+                      })
+                  }}
+                >
+                  <span className="font-medium">{option.label}</span>
+                  <span className="text-xs text-muted-foreground">{option.description}</span>
+                </DropdownMenuItem>
+              ))}
+              {filtered ? (
+                <p className="px-2 pt-1 pb-1.5 text-xs text-muted-foreground">
+                  Downloads use the filters you&apos;ve set.
+                </p>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       {!summary.compatible_versions && summary.versions.length > 1 && filters.version === null ? (

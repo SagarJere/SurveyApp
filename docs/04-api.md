@@ -105,8 +105,8 @@ All take the same filter query params: `department`, `location`, `from`, `to`, `
 | GET | `/surveys/{id}/results/comments?question_key=&search=&page=` | member | Text answers with department (never names for anonymous) |
 | GET | `/surveys/{id}/results/responses?page=` | member | Individual responses. **403 for anonymous surveys** |
 | GET | `/surveys/{id}/results/non-responders.xlsx` | owner/co-owner | Audience members who haven't submitted. Allowed for anonymous surveys too, because it uses participation only and never shows answers |
-| GET | `/surveys/{id}/results/export.xlsx` | member | Sheets: Summary, Responses (raw), Comments. Money columns include an "in words" column |
+| GET | `/surveys/{id}/results/export.xlsx?kind=responses\|analytics` | member | `responses`: one Responses sheet. `analytics` (default): Summary with charts, Participation, Responses per day, Responses, Comments. Money columns include an "in words" column |
 
-**Small-group rule:** if a filter leaves fewer than 5 responses, return headline counts only, with `small_group: true` and no answer data.
+**Small-group rule (anonymous surveys only):** if a filter leaves fewer than 5 responses, return headline counts only, with `small_group: true` and no answer data.
 
 Cache results endpoints for 60 seconds per survey + filter combination. Invalidate on submit.
