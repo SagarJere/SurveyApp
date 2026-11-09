@@ -32,7 +32,7 @@ from app.services.answers import (
     clean_value,
     invalid_message,
     is_invalid,
-    money_range_error,
+    range_error,
 )
 from app.services.results_cache import results_cache
 from app.services.survey_logic import evaluate, is_answered
@@ -209,6 +209,9 @@ async def response_answers(
             answers[ref.key] = int(row.value_num)
         elif ref.type == "money" and row.value_num is not None:
             answers[ref.key] = float(row.value_num)
+        elif ref.type == "number" and row.value_num is not None:
+            value = float(row.value_num)
+            answers[ref.key] = int(value) if value.is_integer() else value
         elif row.value_text is not None:
             answers[ref.key] = row.value_text
     for ref in version.questions.values():  # checkboxes in display order
@@ -337,7 +340,7 @@ def check_answers(
             problems.append({"question_key": key, "message": invalid[key]})
         elif key in visibility.missing_required:
             problems.append({"question_key": key, "message": REQUIRED_MESSAGE})
-        elif key in valid and (error := money_range_error(ref, valid[key])):
+        elif key in valid and (error := range_error(ref, valid[key])):
             problems.append({"question_key": key, "message": error})
     kept = {k: v for k, v in visibility.kept_answers.items() if k in visible and is_answered(v)}
     return kept, visibility.visible_questions, problems
@@ -446,7 +449,7 @@ async def submit(
             answer_rows.extend({**base, "option_id": ref.option_ids[k]} for k in value)
         elif ref.type in ("single", "dropdown"):
             answer_rows.append({**base, "option_id": ref.option_ids[value]})
-        elif ref.type in ("rating", "money"):
+        elif ref.type in ("rating", "money", "number"):
             answer_rows.append({**base, "value_num": Decimal(str(value))})
         else:
             answer_rows.append({**base, "value_text": value})

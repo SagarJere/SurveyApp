@@ -1,12 +1,13 @@
 import json
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import Any, get_args
 
 import pytest
 
 from app.services.survey_logic import (
     QUESTION_TYPES,
+    QuestionType,
     evaluate,
     is_answered,
     question_condition_problem,
@@ -49,7 +50,7 @@ def test_is_answered(value: object, expected: bool) -> None:
     assert is_answered(value) is expected
 
 
-def test_registry_covers_all_seven_types() -> None:
+def test_registry_covers_all_eight_types() -> None:
     assert set(QUESTION_TYPES) == {
         "single",
         "multi",
@@ -58,5 +59,7 @@ def test_registry_covers_all_seven_types() -> None:
         "short",
         "long",
         "money",
+        "number",
     }
+    assert set(get_args(QuestionType)) == set(QUESTION_TYPES)
     assert [t for t, spec in QUESTION_TYPES.items() if not spec.condition_ops] == ["short", "long"]

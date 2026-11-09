@@ -17,6 +17,7 @@ export type IssueCode =
   | 'options_empty'
   | 'options_duplicate'
   | 'money_range'
+  | 'number_range'
   | 'condition_broken'
   | 'dates_order'
   /** Server-only checks (they need the database). */
@@ -85,6 +86,15 @@ export function validateDraft(draft: LogicDraft): Issue[] {
           issue('options_duplicate', `Q${n} has two options with the same text.`, {
             question: key,
           }),
+        )
+      }
+    }
+    if (question.type === 'number') {
+      const low = numberOrNull(question.config?.number_min)
+      const high = numberOrNull(question.config?.number_max)
+      if (low !== null && high !== null && low > high) {
+        issues.push(
+          issue('number_range', `Q${n} has a minimum larger than its maximum.`, { question: key }),
         )
       }
     }

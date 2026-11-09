@@ -1,0 +1,26 @@
+{
+  "_comment": "Number question formatting and answer checks. Used by backend/app/tests/test_numbers.py and frontend/src/features/survey-logic/numbers.test.ts. Grouping is Indian (12,34,567), like INR amounts. Expected values are written by hand.",
+  "format": [
+    { "value": 0, "expected": "0" },
+    { "value": 7, "expected": "7" },
+    { "value": 1234, "expected": "1,234" },
+    { "value": 1234567, "expected": "12,34,567" },
+    { "value": 2.5, "expected": "2.5" },
+    { "value": 2.25, "expected": "2.25" },
+    { "value": 2.1, "expected": "2.1" },
+    { "value": 1000.5, "expected": "1,000.5" },
+    { "value": -3, "expected": "-3" },
+    { "value": -1234.75, "expected": "-1,234.75" },
+    { "value": 999999999999.99, "expected": "9,99,99,99,99,999.99" },
+    { "value": 3, "unit": "people", "expected": "3 people" },
+    { "value": 1, "unit": "people", "expected": "1 people" }
+  ],
+  "range_errors": [
+    { "name": "no limits", "config": {}, "value": -50, "expected": null },
+    { "name": "below the minimum", "config": { "number_min": 1 }, "value": 0, "expected": "Enter at least 1." },
+    { "name": "above the maximum", "config": { "number_max": 10 }, "value": 11, "expected": "Enter 10 or less." },
+    { "name": "between", "config": { "number_min": 1, "number_max": 10 }, "value": 0.5, "expected": "Enter a number from 1 to 10." },
+    { "name": "on the limits", "config": { "number_min": 1, "number_max": 10 }, "value": 10, "expected": null },
+    { "name": "grouped limits", "config": { "number_min": -1500, "number_max": 250000 }, "value": 300000, "expected": "Enter a number from -1,500 to 2,50,000." }
+  ]
+}

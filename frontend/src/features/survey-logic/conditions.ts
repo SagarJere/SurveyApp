@@ -3,6 +3,7 @@
  * Both must pass every case in shared/test-cases/survey-logic.json.
  */
 import { MAX_AMOUNT } from './money'
+import { MAX_NUMBER } from './numbers'
 import type { Answers, Condition, ConditionOp, Draft, Question, QuestionType } from './types'
 
 export type ConditionProblem =
@@ -26,7 +27,11 @@ export const TYPE_RULES: Record<QuestionType, TypeRules> = {
   short: { hasOptions: false, conditionOps: [] },
   long: { hasOptions: false, conditionOps: [] },
   money: { hasOptions: false, conditionOps: ['gte', 'lte'] },
+  number: { hasOptions: false, conditionOps: ['gte', 'lte'] },
 }
+
+/** Types answered with a number, compared with "at least" / "at most". */
+export const NUMERIC_TYPES: readonly string[] = ['rating', 'money', 'number']
 
 export const RATING_VALUES = [1, 2, 3, 4, 5] as const
 
@@ -83,6 +88,7 @@ function valueFits(source: LogicQuestion, op: string, val: unknown): boolean {
   if (source.type === 'rating') {
     return isNumber(val) && (RATING_VALUES as readonly number[]).includes(val)
   }
+  if (source.type === 'number') return isNumber(val) && Math.abs(val) <= MAX_NUMBER
   return isNumber(val) && val >= 0 && val <= MAX_AMOUNT
 }
 
@@ -137,7 +143,7 @@ export function sectionConditionProblem(draft: LogicDraft, key: string): Conditi
 function matches(source: LogicQuestion, condition: Condition, answers: Answers): boolean {
   const answer = answers[source.key]
   if (!isAnswered(answer)) return false // "is not" is also false when unanswered
-  if (source.type === 'rating' || source.type === 'money') {
+  if (NUMERIC_TYPES.includes(source.type)) {
     if (!isNumber(answer) || !isNumber(condition.val)) return false
     return condition.op === 'gte' ? answer >= condition.val : answer <= condition.val
   }

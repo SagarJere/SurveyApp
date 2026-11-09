@@ -38,10 +38,11 @@ Survey-level access: each survey has an **owner** and optional **co-owners** (fu
 ## Survey content
 
 - **Sections:** at least one per survey. Each has a title, optional description, and optional condition. Questions belong to a section.
-- **Question types (v1):** Single choice, Checkboxes (multi choice), Dropdown, Rating 1–5, Short answer, Paragraph, **Money**.
-- **Later types:** Likert matrix, Date, Number, File upload, Ranking, Yes/No, eNPS (0–10).
+- **Question types (v1):** Single choice, Checkboxes (multi choice), Dropdown, Rating 1–5, Short answer, Paragraph, **Money**, **Number** (Number added 2026-11-09).
+- **Later types:** Likert matrix, Date, File upload, Ranking, Yes/No, eNPS (0–10).
 - **Per question:** text, optional help text, required toggle, type-specific settings, optional condition.
 - **Conditions (dependent questions):** a question or section can be shown only when an earlier answer matches. See `05-survey-builder.md`.
+- **Number type:** a number answer, such as a headcount or a distance. Lowest and highest allowed, whole numbers or up to 2 decimals, and an optional unit ("people", "km"). Can drive conditions (is at least / is at most). See `05-survey-builder.md`.
 - **Money type:** number input that formats while typing and shows the amount in words; currency, min/max and decimals settings. See `05-survey-builder.md`.
 
 ## Survey settings

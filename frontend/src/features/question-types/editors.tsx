@@ -3,6 +3,8 @@ import { PlusIcon, XIcon } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { NativeSelect } from '@/components/ui/native-select'
 import { AmountField } from '@/components/amount-field'
+import { NumberField } from '@/components/number-field'
+import { Input } from '@/components/ui/input'
 import { useBuilderStore } from '@/features/builder/store'
 import { DEFAULT_MONEY_CONFIG } from '@/features/builder/draft-ops'
 import {
@@ -11,7 +13,12 @@ import {
   CURRENCY_CODES,
   formatAmount,
 } from '@/features/survey-logic/money'
-import type { MoneyConfig } from '@/features/survey-logic/types'
+import {
+  DEFAULT_NUMBER_CONFIG,
+  formatNumber,
+  MAX_UNIT_LENGTH,
+} from '@/features/survey-logic/numbers'
+import type { MoneyConfig, NumberConfig } from '@/features/survey-logic/types'
 import { cn } from '@/lib/utils'
 
 import { RATING_END_LABELS } from './constants'
@@ -199,6 +206,89 @@ export function MoneyEditor({ question }: EditorProps) {
       </div>
       <p className="mt-1.5 text-xs text-muted-foreground italic">
         Example: {amountInWords(125000, config.currency)}
+      </p>
+    </div>
+  )
+}
+
+export function NumberEditor({ question }: EditorProps) {
+  const update = useBuilderStore((s) => s.updateNumberConfig)
+  const config: NumberConfig = { ...DEFAULT_NUMBER_CONFIG, ...question.config }
+  const id = (part: string) => `number-${part}-${question.key}`
+  const unit = config.number_unit.trim()
+  const example = config.number_decimals ? 2.5 : 3
+
+  return (
+    <div className="mt-3">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+        <div className="flex flex-col gap-1">
+          <label className={FIELD_LABEL} htmlFor={id('min')}>
+            Lowest allowed
+          </label>
+          <NumberField
+            id={id('min')}
+            value={config.number_min}
+            allowDecimals={config.number_decimals}
+            allowNegative
+            placeholder="No lowest"
+            onValueChange={(value) => {
+              update(question.key, { number_min: value })
+            }}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className={FIELD_LABEL} htmlFor={id('max')}>
+            Highest allowed
+          </label>
+          <NumberField
+            id={id('max')}
+            value={config.number_max}
+            allowDecimals={config.number_decimals}
+            allowNegative
+            placeholder="No highest"
+            onValueChange={(value) => {
+              update(question.key, { number_max: value })
+            }}
+          />
+        </div>
+        <div className="col-span-2 flex flex-col gap-1 sm:col-span-1">
+          <label className={FIELD_LABEL} htmlFor={id('unit')}>
+            Unit (optional)
+          </label>
+          <Input
+            id={id('unit')}
+            className="h-10"
+            value={config.number_unit}
+            maxLength={MAX_UNIT_LENGTH}
+            placeholder="e.g. people, km, years"
+            onChange={(event) => {
+              update(question.key, { number_unit: event.target.value })
+            }}
+          />
+        </div>
+        <Switch
+          className="col-span-full"
+          checked={config.number_decimals}
+          onCheckedChange={(decimals) => {
+            update(question.key, { number_decimals: decimals })
+          }}
+          label="Allow decimals (up to 2 places)"
+        />
+      </div>
+      <div
+        className="mt-3 flex max-w-72 items-center gap-2 rounded-[10px] border px-3 py-2 font-semibold text-muted-foreground"
+        aria-hidden="true"
+      >
+        {formatNumber(example, unit)}
+      </div>
+      <p className="mt-1.5 text-xs text-muted-foreground italic">
+        {config.number_min !== null && config.number_max !== null
+          ? `People answer with a number from ${formatNumber(config.number_min)} to ${formatNumber(config.number_max)}.`
+          : config.number_min !== null
+            ? `People answer with a number of at least ${formatNumber(config.number_min)}.`
+            : config.number_max !== null
+              ? `People answer with a number up to ${formatNumber(config.number_max)}.`
+              : 'People can answer with any number.'}
       </p>
     </div>
   )

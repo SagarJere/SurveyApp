@@ -25,6 +25,7 @@ const Q = {
   tools: '00000000-0000-4000-8000-000000000003',
   budget: '00000000-0000-4000-8000-000000000004',
   comment: '00000000-0000-4000-8000-000000000005',
+  people: '00000000-0000-4000-8000-000000000006',
 }
 const REMOTE = '00000000-0000-4000-8000-0000000000a3'
 
@@ -155,6 +156,31 @@ const questions: QuestionsResult = {
           ranges: [{ label: 'Under ₹10,000', n: 34, share: 0.1133 }],
         },
         {
+          key: Q.people,
+          number: 6,
+          type: 'number',
+          text: 'How many people are coming?',
+          required: false,
+          condition: null,
+          shown: 412,
+          answered: 400,
+          unit: 'people',
+          stats: {
+            total: 1012,
+            average: 2.53,
+            median: 2,
+            min: 1,
+            max: 6,
+            average_words: null,
+            median_words: null,
+          },
+          ranges: [
+            { label: '1 people', n: 120, share: 0.3 },
+            { label: '2 people', n: 150, share: 0.375 },
+            { label: '6 people', n: 130, share: 0.325 },
+          ],
+        },
+        {
           key: Q.comment,
           number: 5,
           type: 'long',
@@ -251,6 +277,18 @@ describe('Results dashboard', () => {
       within(money).getByText('Thirty-five thousand two hundred four rupees only'),
     ).toBeInTheDocument()
     expect(within(money).getByText('Under ₹10,000')).toBeInTheDocument()
+
+    // Number: figures with the unit, and a bar per answer out of the people who answered.
+    const people = screen.getByRole('article', { name: /How many people/ })
+    expect(within(people).getByText(/^Number ·/)).toBeInTheDocument()
+    expect(within(people).getByText('1,012 people')).toBeInTheDocument()
+    expect(within(people).getByText('2.53 people')).toBeInTheDocument()
+    const bars = within(people).getByRole('list', { name: 'Answers to question 6' })
+    expect(
+      within(bars)
+        .getAllByRole('listitem')
+        .map((r) => r.textContent),
+    ).toEqual(['1 people30% · 120', '2 people38% · 150', '6 people33% · 130'])
 
     // Paragraph: count of comments and the list.
     const comment = screen.getByRole('article', { name: /Anything else/ })

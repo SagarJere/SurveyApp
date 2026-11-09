@@ -4,6 +4,7 @@
  */
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 
+import { NumberField } from '@/components/number-field'
 import { RATING_END_LABELS } from '@/features/question-types/constants'
 import { TEXT_LIMITS } from '@/features/survey-logic/answers'
 import {
@@ -271,6 +272,40 @@ function Money({
   )
 }
 
+function NumberAnswer({
+  question,
+  value,
+  onChange,
+  labelledBy,
+  describedBy,
+  unitId,
+}: InputProps & { unitId: string }) {
+  const unit = question.config.number_unit?.trim() ?? ''
+  const min = question.config.number_min
+  return (
+    <div className="flex max-w-[340px] items-center gap-3">
+      <NumberField
+        value={typeof value === 'number' ? value : null}
+        onValueChange={onChange}
+        allowDecimals={question.config.number_decimals === true}
+        allowNegative={typeof min !== 'number' || min < 0}
+        placeholder="0"
+        aria-labelledby={labelledBy}
+        aria-describedby={
+          [unit ? unitId : null, describedBy].filter(Boolean).join(' ') || undefined
+        }
+        aria-required={question.required || undefined}
+        className={cn(FIELD, 'h-auto flex-1 text-lg font-semibold focus-visible:ring-0')}
+      />
+      {unit ? (
+        <span id={unitId} className="shrink-0 font-semibold text-muted-foreground">
+          {unit}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
 /** Amount in words under a money input, announced politely as it changes. */
 export function MoneyWords({
   question,
@@ -293,7 +328,7 @@ export function MoneyWords({
   )
 }
 
-export function QuestionInput(props: InputProps & { wordsId: string }) {
+export function QuestionInput(props: InputProps & { wordsId: string; unitId: string }) {
   switch (props.question.type) {
     case 'single':
       return <ChoiceCards {...props} multiple={false} />
@@ -308,5 +343,7 @@ export function QuestionInput(props: InputProps & { wordsId: string }) {
       return <Text {...props} />
     case 'money':
       return <Money {...props} />
+    case 'number':
+      return <NumberAnswer {...props} />
   }
 }

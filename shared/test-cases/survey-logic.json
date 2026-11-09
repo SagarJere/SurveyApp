@@ -1547,6 +1547,231 @@
       ],
       "kept_answers": {},
       "missing_required": []
+    },
+    {
+      "name": "9a: number 3 meets 'at least 3'",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q7",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question q7",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": false,
+              "number_unit": "people"
+            },
+            "condition": null
+          },
+          {
+            "key": "q8",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q8",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q7",
+              "op": "gte",
+              "val": 3
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q7": 3,
+        "q8": "Car park"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q7",
+        "q8"
+      ],
+      "kept_answers": {
+        "q7": 3,
+        "q8": "Car park"
+      },
+      "missing_required": []
+    },
+    {
+      "name": "9b: number 2 does not meet 'at least 3', so its follow-up answer is dropped",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q7",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question q7",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": false,
+              "number_unit": "people"
+            },
+            "condition": null
+          },
+          {
+            "key": "q8",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q8",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q7",
+              "op": "gte",
+              "val": 3
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q7": 2,
+        "q8": "Car park"
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q7"
+      ],
+      "kept_answers": {
+        "q7": 2
+      },
+      "missing_required": []
+    },
+    {
+      "name": "9c: negative numbers work with 'at most'",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q7",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question q7",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": false,
+              "number_unit": "people"
+            },
+            "condition": null
+          },
+          {
+            "key": "q8",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q8",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q7",
+              "op": "lte",
+              "val": 0
+            }
+          }
+        ]
+      },
+      "answers": {
+        "q7": -2.5
+      },
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q7",
+        "q8"
+      ],
+      "kept_answers": {
+        "q7": -2.5
+      },
+      "missing_required": []
+    },
+    {
+      "name": "9d: an unanswered number hides the follow-up",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q7",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question q7",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": false,
+              "number_unit": "people"
+            },
+            "condition": null
+          },
+          {
+            "key": "q8",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q8",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q7",
+              "op": "lte",
+              "val": 10
+            }
+          }
+        ]
+      },
+      "answers": {},
+      "visible_sections": [
+        "s1"
+      ],
+      "visible_questions": [
+        "q7"
+      ],
+      "kept_answers": {},
+      "missing_required": []
     }
   ],
   "problems": [
@@ -2544,6 +2769,144 @@
       "kind": "section",
       "key": "s2",
       "problem": "source_missing"
+    },
+    {
+      "name": "healthy number condition with a negative value",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q7",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question q7",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": false,
+              "number_unit": "people"
+            },
+            "condition": null
+          },
+          {
+            "key": "q8",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q8",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q7",
+              "op": "gte",
+              "val": -10
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q8",
+      "problem": null
+    },
+    {
+      "name": "number value missing",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q7",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question q7",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": false,
+              "number_unit": "people"
+            },
+            "condition": null
+          },
+          {
+            "key": "q8",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q8",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q7",
+              "op": "gte",
+              "val": null
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q8",
+      "problem": "answer_changed"
+    },
+    {
+      "name": "number value too large",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "q7",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question q7",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": null,
+              "number_max": null,
+              "number_decimals": false,
+              "number_unit": "people"
+            },
+            "condition": null
+          },
+          {
+            "key": "q8",
+            "section_key": "s1",
+            "type": "short",
+            "text": "Question q8",
+            "required": false,
+            "options": [],
+            "config": {},
+            "condition": {
+              "src": "q7",
+              "op": "gte",
+              "val": 1000000000000
+            }
+          }
+        ]
+      },
+      "kind": "question",
+      "key": "q8",
+      "problem": "answer_changed"
     }
   ],
   "validation": [
@@ -3054,6 +3417,74 @@
           "opens_at": "2026-11-10",
           "closes_at": "2026-11-24"
         }
+      },
+      "issues": []
+    },
+    {
+      "name": "number min above max",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "n",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question n",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": 10,
+              "number_max": -5,
+              "number_decimals": false,
+              "number_unit": ""
+            },
+            "condition": null
+          }
+        ]
+      },
+      "issues": [
+        {
+          "code": "number_range",
+          "message": "Q1 has a minimum larger than its maximum.",
+          "question_key": "n",
+          "section_key": null,
+          "problem": null
+        }
+      ]
+    },
+    {
+      "name": "number min equal to max is fine",
+      "survey": {
+        "sections": [
+          {
+            "key": "s1",
+            "title": "Section s1",
+            "condition": null
+          }
+        ],
+        "questions": [
+          {
+            "key": "n",
+            "section_key": "s1",
+            "type": "number",
+            "text": "Question n",
+            "required": false,
+            "options": [],
+            "config": {
+              "number_min": 4,
+              "number_max": 4,
+              "number_decimals": true,
+              "number_unit": ""
+            },
+            "condition": null
+          }
+        ]
       },
       "issues": []
     }

@@ -12,8 +12,9 @@ from math import isfinite
 from typing import Any, Literal, NotRequired, TypedDict
 
 from app.services.money import MAX_AMOUNT
+from app.services.numbers import MAX_NUMBER
 
-QuestionType = Literal["single", "multi", "dropdown", "rating", "short", "long", "money"]
+QuestionType = Literal["single", "multi", "dropdown", "rating", "short", "long", "money", "number"]
 ConditionOp = Literal["is", "not", "gte", "lte"]
 ConditionProblem = Literal[
     "source_missing",  # the question it depended on was deleted
@@ -44,7 +45,9 @@ QUESTION_TYPES: dict[QuestionType, QuestionTypeSpec] = {
     "short": QuestionTypeSpec("Short answer", has_options=False, condition_ops=()),
     "long": QuestionTypeSpec("Paragraph", has_options=False, condition_ops=()),
     "money": QuestionTypeSpec("Money", has_options=False, condition_ops=("gte", "lte")),
+    "number": QuestionTypeSpec("Number", has_options=False, condition_ops=("gte", "lte")),
 }
+NUMERIC_TYPES = ("rating", "money", "number")
 
 RATING_VALUES = (1, 2, 3, 4, 5)
 
@@ -113,6 +116,8 @@ def _condition_value_fits(source: QuestionDict, op: str, val: object) -> bool:
         return isinstance(val, str) and any(o["key"] == val for o in source.get("options", []))
     if source["type"] == "rating":
         return _is_number(val) and val in RATING_VALUES
+    if source["type"] == "number":
+        return _is_number(val) and abs(float(val)) <= float(MAX_NUMBER)  # type: ignore[arg-type]
     return _is_number(val) and 0 <= float(val) <= float(MAX_AMOUNT)  # type: ignore[arg-type]
 
 
@@ -178,7 +183,7 @@ def _matches(source: QuestionDict, condition: ConditionDict, answers: Answers) -
     if not is_answered(answer):
         return False  # "is not" is also false when the source is unanswered
     op, val = condition["op"], condition["val"]
-    if source["type"] in ("rating", "money"):
+    if source["type"] in NUMERIC_TYPES:
         number = _number(answer)
         if number is None:
             return False
@@ -270,6 +275,7 @@ IssueCode = Literal[
     "options_empty",
     "options_duplicate",
     "money_range",
+    "number_range",
     "condition_broken",
     "dates_order",
     "theme_image_missing",  # server-only checks (need the database), see services/publish.py
@@ -325,6 +331,13 @@ def _question_issues(index: _Index, position: int, question: QuestionDict) -> li
         low, high = _number(config.get("min")), _number(config.get("max"))
         if low is not None and high is not None and low > high:
             issues.append(Issue("money_range", f"Q{n} has a minimum larger than its maximum.", key))
+    if question["type"] == "number":
+        config = question.get("config", {})
+        low, high = _number(config.get("number_min")), _number(config.get("number_max"))
+        if low is not None and high is not None and low > high:
+            issues.append(
+                Issue("number_range", f"Q{n} has a minimum larger than its maximum.", key)
+            )
     condition = question.get("condition")
     if condition:
         problem = _problem(index, condition, question_pos=position, section_pos=None)

@@ -2,6 +2,7 @@ import {
   AlignLeftIcon,
   BanknoteIcon,
   CircleDotIcon,
+  HashIcon,
   ListIcon,
   SquareCheckIcon,
   StarIcon,
@@ -14,6 +15,7 @@ import type { QuestionType } from '@/features/survey-logic/types'
 import {
   LongTextEditor,
   MoneyEditor,
+  NumberEditor,
   OptionListEditor,
   RatingEditor,
   ShortTextEditor,
@@ -48,6 +50,7 @@ export const QUESTION_TYPES: Record<QuestionType, QuestionTypeDef> = {
   short: define({ type: 'short', label: 'Short answer', icon: TextIcon, Editor: ShortTextEditor }),
   long: define({ type: 'long', label: 'Paragraph', icon: AlignLeftIcon, Editor: LongTextEditor }),
   money: define({ type: 'money', label: 'Money', icon: BanknoteIcon, Editor: MoneyEditor }),
+  number: define({ type: 'number', label: 'Number', icon: HashIcon, Editor: NumberEditor }),
 }
 
 export const QUESTION_TYPE_LIST = Object.values(QUESTION_TYPES)

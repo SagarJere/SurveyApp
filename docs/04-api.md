@@ -35,7 +35,8 @@ Roles: **E** = employee, **H** = HR, **A** = admin. "Member" = owner/co-owner of
 - At least one question.
 - Every question has text. Choice types have at least 2 non-empty options with unique labels.
 - Money: if both set, `min <= max`.
-- Conditions: the source exists, comes **earlier** (questions: earlier in order; sections: in an earlier section), is a valid source type, the operator fits the type, and the value exists (option key) or is numeric (rating, money).
+- Number: if both set, `number_min <= number_max`.
+- Conditions: the source exists, comes **earlier** (questions: earlier in order; sections: in an earlier section), is a valid source type, the operator fits the type, and the value exists (option key) or is numeric (rating, money, number).
 - Opens date before closes date if both set.
 - Audience not empty unless `open_to_all`.
 - Anonymous with audience < 10: return a **warning** (not blocking).
@@ -85,6 +86,7 @@ Roles: **E** = employee, **H** = HR, **A** = admin. "Member" = owner/co-owner of
     "<question_key>": ["<option_key>", "<option_key>"],// multi
     "<question_key>": 4,                                // rating
     "<question_key>": 125000.00,                        // money
+    "<question_key>": 3,                                // number (whole, or up to 2 decimals)
     "<question_key>": "free text"                       // short, long
   }
 }

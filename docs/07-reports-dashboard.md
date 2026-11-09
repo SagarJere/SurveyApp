@@ -31,6 +31,7 @@
 | Checkboxes | same bars, % of people shown the question. Note: "They could pick more than one, so shares add up to more than 100%." |
 | Rating | average (large) + distribution bars for 1–5 |
 | Money | stat boxes: Total, Average (+ words), Median (+ words), Lowest, Highest; then range bars (Under ₹10,000 / ₹10,000–25,000 / ₹25,000–50,000 / ₹50,000–1,00,000 / ₹1,00,000 and above) |
+| Number | stat boxes: Total, Average, Median, Lowest, Highest (with the unit); then bars out of the people who answered: one per value when there are 10 or fewer different answers ("2 people"), otherwise 5 equal ranges from the lowest to the highest answer ("1–4 km"). Export: a numeric column (`#,##0` or `#,##0.00`) with the unit in the heading |
 | Short / Paragraph | "N of M people left a comment", search box, scrollable list with department (never names for anonymous surveys). Later: keyword frequency |
 
 ## The denominator rule

@@ -100,10 +100,26 @@ async function main() {
   const existing = (await api('GET', '/surveys', token)).find((s) => s.title === SAMPLE_TITLE)
   const sampleId = existing?.id ?? (await surveyWith(token, pulse))
   await publishSample(token, sampleId)
+  // The step survey opens with a Number question, so the one-question audit covers its input.
+  const stepQuestions = [
+    {
+      key: crypto.randomUUID(),
+      section_key: pulse.sections[0].key,
+      type: 'number',
+      text: 'How many days a month do you travel for work?',
+      help: '',
+      required: false,
+      options: [],
+      config: { number_min: 0, number_max: 31, number_decimals: false, number_unit: 'days' },
+      condition: null,
+    },
+    ...pulse.questions,
+  ]
   const stepId = await surveyWith(token, {
     ...pulse,
     title: 'UI check (one question at a time)',
     settings: { ...pulse.settings, layout: 'step', show_navigator: true },
+    questions: stepQuestions,
   })
 
   const profile = path.join(os.tmpdir(), `pulse-ui-check-${process.pid}`)

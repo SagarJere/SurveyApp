@@ -1,4 +1,5 @@
 import { formatAmount } from '@/features/survey-logic/money'
+import { formatNumber } from '@/features/survey-logic/numbers'
 import type { Currency } from '@/features/survey-logic/types'
 
 import type { QuestionResult } from './api'
@@ -106,6 +107,33 @@ export function MoneyWidget({ question }: { question: QuestionResult }) {
         label={`Amount ranges for question ${String(question.number)}`}
         items={(question.ranges ?? []).map((r) => ({ key: r.label, ...r }))}
       />
+    </div>
+  )
+}
+
+export function NumberWidget({ question }: { question: QuestionResult }) {
+  const stats = question.stats
+  const unit = question.unit ?? null
+  const show = (value: number | null | undefined) =>
+    value === null || value === undefined ? '–' : formatNumber(value, unit)
+  return (
+    <div className="flex flex-col gap-4">
+      <dl className="grid grid-cols-2 gap-2 lg:grid-cols-5">
+        <Stat label="Total" value={show(stats?.total)} />
+        <Stat label="Average" value={show(stats?.average)} />
+        <Stat label="Median" value={show(stats?.median)} />
+        <Stat label="Lowest" value={show(stats?.min)} />
+        <Stat label="Highest" value={show(stats?.max)} />
+      </dl>
+      {question.answered > 0 ? (
+        <ShareBars
+          label={`Answers to question ${String(question.number)}`}
+          items={(question.ranges ?? []).map((r) => ({ key: r.label, ...r }))}
+        />
+      ) : (
+        <p className="text-sm text-muted-foreground">Nobody in this group answered.</p>
+      )}
+      <p className="text-sm text-muted-foreground">Shares are out of the people who answered.</p>
     </div>
   )
 }

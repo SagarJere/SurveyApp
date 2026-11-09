@@ -175,7 +175,7 @@ async def publish(session: AsyncSession, access: SurveyAccess, published_by: str
     option_rows: list[dict[str, Any]] = []
     for order, question in enumerate(data["questions"]):
         question_id = uuid.uuid4()
-        is_money = question["type"] == "money"
+        has_settings = question["type"] in ("money", "number")
         question_rows.append(
             {
                 "id": question_id,
@@ -187,8 +187,8 @@ async def publish(session: AsyncSession, access: SurveyAccess, published_by: str
                 "text": question["text"],
                 "help": question["help"],
                 "required": question["required"],
-                # Only money settings matter in a published version.
-                "config": question["config"] if is_money else {},
+                # Only money and number settings matter in a published version.
+                "config": _own_settings(question) if has_settings else {},
                 "condition": question["condition"],
             }
         )
@@ -245,3 +245,12 @@ async def close(session: AsyncSession, access: SurveyAccess) -> Survey:
     await session.commit()
     await session.refresh(survey)
     return survey
+
+
+def _own_settings(question: dict[str, Any]) -> dict[str, Any]:
+    """This type's settings only: a Number question doesn't publish leftover Money settings."""
+    prefix = "number_" if question["type"] == "number" else None
+    config: dict[str, Any] = question["config"]
+    if prefix:
+        return {k: v for k, v in config.items() if k.startswith(prefix)}
+    return {k: v for k, v in config.items() if not k.startswith("number_")}

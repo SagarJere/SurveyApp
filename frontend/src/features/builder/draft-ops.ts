@@ -9,10 +9,12 @@ import {
   eligibleSourcesForSection,
   TYPE_RULES,
 } from '@/features/survey-logic/conditions'
+import { DEFAULT_NUMBER_CONFIG } from '@/features/survey-logic/numbers'
 import type {
   Condition,
   Draft,
   MoneyConfig,
+  NumberConfig,
   Option,
   Question,
   QuestionType,
@@ -27,6 +29,9 @@ export const DEFAULT_MONEY_CONFIG: MoneyConfig = {
   max: null,
   decimals: false,
 }
+
+/** Starting settings for a number question; the lowest value 0 gives phones the number pad. */
+export { DEFAULT_NUMBER_CONFIG }
 
 /** Default value when a money condition is added (docs/05-survey-builder.md). */
 export const DEFAULT_MONEY_CONDITION = 50_000
@@ -44,7 +49,12 @@ export function newQuestion(type: QuestionType, sectionKey: string): Question {
     help: '',
     required: false,
     options: TYPE_RULES[type].hasOptions ? [newOption('Option 1'), newOption('Option 2')] : [],
-    config: type === 'money' ? { ...DEFAULT_MONEY_CONFIG } : {},
+    config:
+      type === 'money'
+        ? { ...DEFAULT_MONEY_CONFIG }
+        : type === 'number'
+          ? { ...DEFAULT_NUMBER_CONFIG }
+          : {},
     condition: null,
   }
 }
@@ -87,7 +97,7 @@ export function updateQuestion(draft: Draft, key: string, patch: QuestionPatch):
   return mapQuestion(draft, key, (q) => ({ ...q, ...patch }))
 }
 
-/** Change type, keeping options and money settings so changing back restores them. */
+/** Change type, keeping options and money or number settings so changing back restores them. */
 export function changeType(draft: Draft, key: string, type: QuestionType): Draft {
   return mapQuestion(draft, key, (q) => {
     if (q.type === type) return q
@@ -95,12 +105,21 @@ export function changeType(draft: Draft, key: string, type: QuestionType): Draft
       TYPE_RULES[type].hasOptions && q.options.length === 0
         ? [newOption('Option 1'), newOption('Option 2')]
         : q.options
-    const config =
-      type === 'money' && q.config.currency === undefined
-        ? { ...q.config, ...DEFAULT_MONEY_CONFIG }
-        : q.config
+    let config = q.config
+    if (type === 'money' && q.config.currency === undefined) {
+      config = { ...q.config, ...DEFAULT_MONEY_CONFIG }
+    } else if (type === 'number' && q.config.number_decimals === undefined) {
+      config = { ...q.config, ...DEFAULT_NUMBER_CONFIG }
+    }
     return { ...q, type, options, config }
   })
+}
+
+export function updateNumberConfig(draft: Draft, key: string, patch: Partial<NumberConfig>): Draft {
+  return mapQuestion(draft, key, (q) => ({
+    ...q,
+    config: { ...DEFAULT_NUMBER_CONFIG, ...q.config, ...patch },
+  }))
 }
 
 export function updateMoneyConfig(draft: Draft, key: string, patch: Partial<MoneyConfig>): Draft {
@@ -295,6 +314,7 @@ export function conditionFor(source: Question): Condition {
   let val: Condition['val']
   if (source.type === 'money') val = DEFAULT_MONEY_CONDITION
   else if (source.type === 'rating') val = 1
+  else if (source.type === 'number') val = 1
   else val = source.options[0]?.key ?? null
   return { src: source.key, op, val }
 }

@@ -59,7 +59,7 @@ export interface ParticipationResult {
 export interface QuestionResult {
   key: string
   number: number
-  type: 'single' | 'multi' | 'dropdown' | 'rating' | 'short' | 'long' | 'money'
+  type: 'single' | 'multi' | 'dropdown' | 'rating' | 'short' | 'long' | 'money' | 'number'
   text: string
   required: boolean
   condition: { src: string; op: string; val: unknown } | null
@@ -69,6 +69,8 @@ export interface QuestionResult {
   average?: number | null
   distribution?: { value: number; n: number; share: number }[] | null
   currency?: string | null
+  /** Number questions: e.g. "people". */
+  unit?: string | null
   stats?: {
     total: number | null
     average: number | null

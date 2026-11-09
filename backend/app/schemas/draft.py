@@ -13,6 +13,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.services.money import MAX_AMOUNT, Currency
+from app.services.numbers import MAX_NUMBER, MAX_UNIT_LENGTH
 
 ACCENT_COLOURS = ("#0E7A6A", "#2457A6", "#6447C2", "#B42F5B", "#9A5B00", "#3A7D2C")
 BACKGROUND_COLOURS = ("#E8EEF3", "#F2ECE3", "#E4EFEA", "#ECE7F6", "#1E2833", "#13302C")
@@ -60,7 +61,17 @@ class MoneyConfig(_Model):
     decimals: bool = False
 
 
-QuestionType = Literal["single", "multi", "dropdown", "rating", "short", "long", "money"]
+class NumberConfig(_Model):
+    # Prefixed keys, so a question switched between Money and Number keeps both settings.
+    number_min: Annotated[float, Field(ge=-float(MAX_NUMBER), le=float(MAX_NUMBER))] | None = None
+    number_max: Annotated[float, Field(ge=-float(MAX_NUMBER), le=float(MAX_NUMBER))] | None = None
+    number_decimals: bool = False
+    number_unit: Annotated[str, Field(max_length=MAX_UNIT_LENGTH)] = ""
+
+
+TYPE_CONFIGS: dict[str, type[_Model]] = {"money": MoneyConfig, "number": NumberConfig}
+
+QuestionType = Literal["single", "multi", "dropdown", "rating", "short", "long", "money", "number"]
 
 
 class Question(_Model):
@@ -78,9 +89,13 @@ class Question(_Model):
 
     @model_validator(mode="after")
     def _check_config(self) -> "Question":
-        if self.type == "money":
-            self.config = MoneyConfig.model_validate(self.config).model_dump()
-        elif len(repr(self.config)) > 1000:  # noqa: PLR2004 - leftover settings stay small
+        model = TYPE_CONFIGS.get(self.type)
+        if model is not None:
+            # Check this type's settings; keep other types' settings so changing back restores
+            # them (they're checked again if the question changes back).
+            own = {k: v for k, v in self.config.items() if k in model.model_fields}
+            self.config = {**self.config, **model.model_validate(own).model_dump()}
+        if len(repr(self.config)) > 1000:  # noqa: PLR2004 - settings stay small
             msg = "Question settings are too large"
             raise ValueError(msg)
         return self

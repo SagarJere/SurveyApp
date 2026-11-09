@@ -62,6 +62,7 @@ Editable title (large) and description. Accent-coloured top border.
 | Short answer | preview line | text input (max 2,000) | no | — |
 | Paragraph | preview area | textarea (max 10,000) | no | — |
 | Money | currency, min, max, decimals | formatted amount + words | yes | is at least, is at most |
+| Number | lowest, highest, decimals, unit | number box + unit | yes | is at least, is at most |
 
 **Option list editor:** marker (circle/square/number by type), inline text input per option, remove button (disabled when only one left), "Add option" focuses the new input. Options must be non-empty and unique to publish.
 
@@ -85,6 +86,21 @@ Editable title (large) and description. Accent-coloured top border.
 
 Shared helpers needed in both TS and Python: `formatAmount(value, currency)`, `amountInWords(value, currency)`. Test with: 0, 1, 1.5, 10, 100000, 125000, 1234567.5, 10000000, 99999999999.99.
 
+## Number type
+
+For counts and measures that aren't money: "How many people are coming?", "How far do you travel?".
+
+**Settings** (prefixed, so switching a question between Money and Number keeps both types' settings):
+- `number_min`, `number_max`: lowest and highest allowed, optional, from -999,999,999,999.99 to 999,999,999,999.99. New questions start with lowest 0. Publishing needs lowest ≤ highest.
+- `number_decimals`: off = whole numbers only; on = up to 2 decimal places.
+- `number_unit`: optional, up to 30 characters, shown after the answer box, in results and in export headings. Used as written ("1 people"): no plurals.
+
+**Respondent input:** a text box that accepts only what the question allows (digits, a minus sign when negatives are allowed, a decimal point when decimals are on, at most 12 digits before the point). It shows Indian digit grouping (12,34,567) when not being edited. Phones get the number keypad, except when negatives are allowed (the iPhone keypad has no minus key). Range messages: "Enter a number from 1 to 10.", "Enter at least 1.", "Enter 10 or less."
+
+**Storage:** `response_answers.value_num` (`numeric(14,2)`), like money. Shared helpers in TS and Python: `formatNumber(value, unit)`, `numberRangeError(config, value)`, tested with `shared/test-cases/number.json`.
+
+**Conditions:** is at least / is at most a number (negatives allowed); default value 1.
+
 ## Conditions
 
 **Shape:** `{ "src": "<question key>", "op": "is" | "not" | "gte" | "lte", "val": "<option key>" | number }`
@@ -96,7 +112,7 @@ One condition per question or section in v1. (Later: several conditions with "al
 > Show this **question** only when **[Q2: Which work mode… ▾]** **[is ▾]** **[Hybrid ▾]**
 
 - The source list contains only **earlier** eligible questions (for sections: questions in earlier sections).
-- The operator list depends on the source type. The value is a dropdown of that question's options, a 1–5 dropdown for rating, or an amount input for money.
+- The operator list depends on the source type. The value is a dropdown of that question's options, a 1–5 dropdown for rating, an amount input for money, or a number box for number questions.
 - Default on "Add condition": the nearest earlier eligible question, its first operator and first value (money default: 50,000).
 - If there is no eligible source: "Add a choice or rating question above this one. Then you can show this question based on its answer."
 - Conditional questions are indented with a coloured connector line and a tag: "Shown when Q2 is “Hybrid”".

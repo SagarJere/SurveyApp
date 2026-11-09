@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
 
-import { moneyRangeError } from '@/features/survey-logic/answers'
+import { rangeError } from '@/features/survey-logic/answers'
 import type { Question } from '@/features/survey-logic/types'
 import { cn } from '@/lib/utils'
 
@@ -21,14 +21,14 @@ interface QuestionBlockProps {
   className?: string
 }
 
-/** One question with its label, help text, input, amount in words and range error. */
+/** One question with its label, help text, input, amount in words, unit and range error. */
 export const QuestionBlock = forwardRef<HTMLHeadingElement, QuestionBlockProps>(
   function QuestionBlock(
     { question, number, value, onChange, serverError, reveal, large, headingLevel, className },
     headingRef,
   ) {
     const id = (part: string) => `q-${part}-${question.key}`
-    const error = serverError ?? moneyRangeError(question, value)
+    const error = serverError ?? rangeError(question, value)
     const describedBy =
       [
         question.help.trim() ? id('help') : null,
@@ -81,6 +81,7 @@ export const QuestionBlock = forwardRef<HTMLHeadingElement, QuestionBlockProps>(
             labelledBy={id('title')}
             describedBy={describedBy}
             wordsId={id('words')}
+            unitId={id('unit')}
           />
         </div>
         {question.type === 'money' ? (

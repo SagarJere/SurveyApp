@@ -11,6 +11,7 @@ import {
 import type { Condition, ConditionOp, Currency, Draft } from '@/features/survey-logic/types'
 
 import { AmountField } from '@/components/amount-field'
+import { NumberField } from '@/components/number-field'
 import { OP_LABELS, problemMessage } from './condition-text'
 import { conditionFor, type ConditionTarget } from './draft-ops'
 import { useBuilderStore } from './store'
@@ -38,8 +39,8 @@ export function ConditionPanel({ target, condition, problem }: ConditionPanelPro
       <div className="mt-3 rounded-xl border border-logic/25 bg-logic-soft px-3.5 py-3 text-sm">
         <p>
           {target.kind === 'question'
-            ? 'Add a choice or rating question above this one. Then you can show this question based on its answer.'
-            : 'Add a choice or rating question in an earlier section. Then you can show this section based on its answer.'}
+            ? 'Add a choice, rating, money or number question above this one. Then you can show this question based on its answer.'
+            : 'Add a choice, rating, money or number question in an earlier section. Then you can show this section based on its answer.'}
         </p>
         <button type="button" className="min-h-10 font-semibold text-logic" onClick={closePrompt}>
           Close
@@ -163,6 +164,24 @@ function ValueInput({
         allowDecimals={source.config.decimals === true}
         onValueChange={onChange}
       />
+    )
+  }
+
+  if (source.type === 'number') {
+    const unit = source.config.number_unit?.trim() ?? ''
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <NumberField
+          id={inputId}
+          aria-label={unit ? `Number (${unit})` : 'Number'}
+          className="w-28 bg-card font-normal text-foreground"
+          value={typeof condition.val === 'number' ? condition.val : null}
+          allowDecimals={source.config.number_decimals === true}
+          allowNegative
+          onValueChange={onChange}
+        />
+        {unit ? <span className="font-normal text-muted-foreground">{unit}</span> : null}
+      </span>
     )
   }
 

@@ -32,6 +32,7 @@ from app.models import (
     VersionQuestion,
 )
 from app.services.money import Currency, amount_in_words, format_amount, group_digits
+from app.services.numbers import format_number
 from app.services.respond import today
 from app.services.version_content import VersionContent, load_version
 
@@ -41,6 +42,10 @@ COMMENTS_PAGE = 20
 RESPONSES_PAGE = 25
 CHOICE_TYPES = ("single", "multi", "dropdown")
 TEXT_TYPES = ("short", "long")
+# Number questions: one bar per value when there are this many different answers or fewer,
+# otherwise this many equal ranges between the lowest and highest answer.
+NUMBER_VALUE_BARS = 10
+NUMBER_RANGES = 5
 MONEY_BUCKETS = (10_000, 25_000, 50_000, 100_000)
 
 
@@ -527,6 +532,7 @@ async def questions(session: AsyncSession, scope: Scope) -> dict[str, Any]:
     range_counts: dict[str, dict[int, int]] = defaultdict(dict)
     for q_key, index, n in range_rows.all():
         range_counts[str(q_key)][int(index)] = n
+    number_values = await _number_values(session, in_scope)
 
     sections_out: list[dict[str, Any]] = []
     by_section: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -590,6 +596,9 @@ async def questions(session: AsyncSession, scope: Scope) -> dict[str, Any]:
                 }
                 for i in range(len(MONEY_BUCKETS) + 1)
             ]
+        elif kind == "number":
+            stats = await _numeric_stats(session, scope, key)
+            item.update(_number_item(question, stats, number_values.get(key, []), q_answered))
         by_section[question["section_key"]].append(item)
     for section in content["sections"]:
         sections_out.append(
@@ -749,21 +758,107 @@ async def all_responses(session: AsyncSession, scope: Scope) -> list[dict[str, A
     return await _response_rows(session, scope)
 
 
+async def _number_values(
+    session: AsyncSession, in_scope: Any
+) -> dict[str, list[tuple[Decimal, int]]]:
+    """(value, count) pairs per number question, lowest value first."""
+    rows = await session.execute(
+        select(VersionQuestion.key, ResponseAnswer.value_num, func.count())
+        .select_from(ResponseAnswer)
+        .join(VersionQuestion, VersionQuestion.id == ResponseAnswer.question_id)
+        .join(SurveyResponse, SurveyResponse.id == ResponseAnswer.response_id)
+        .where(in_scope, VersionQuestion.type == "number", ResponseAnswer.value_num.is_not(None))
+        .group_by(VersionQuestion.key, ResponseAnswer.value_num)
+        .order_by(ResponseAnswer.value_num)
+    )
+    out: dict[str, list[tuple[Decimal, int]]] = defaultdict(list)
+    for q_key, value, n in rows.all():
+        if value is not None:
+            out[str(q_key)].append((value, n))
+    return out
+
+
+def _number_item(
+    question: dict[str, Any],
+    stats: dict[str, Any],
+    values: list[tuple[Decimal, int]],
+    answered: int,
+) -> dict[str, Any]:
+    unit = str(question["config"].get("number_unit") or "").strip()
+    return {
+        "unit": unit or None,
+        "stats": {
+            **{k: stats[k] for k in ("total", "average", "median", "min", "max")},
+            "average_words": None,
+            "median_words": None,
+        },
+        "ranges": number_distribution(values, answered, unit),
+    }
+
+
+def number_distribution(
+    values: list[tuple[Decimal, int]], answered: int, unit: str = ""
+) -> list[dict[str, Any]]:
+    """Bars for a number question, from (value, count) pairs in ascending order.
+
+    Up to NUMBER_VALUE_BARS different answers: one bar per value ("3 people"). More: the span
+    from the lowest to the highest answer split into NUMBER_RANGES equal ranges ("1 to 20",
+    written with an en dash).
+    Shares are out of the people who answered.
+    """
+
+    def share(n: int) -> float:
+        return round(n / answered, 4) if answered else 0
+
+    if not values:
+        return []
+    if len(values) <= NUMBER_VALUE_BARS:
+        return [
+            {"label": format_number(float(v), unit), "n": n, "share": share(n)} for v, n in values
+        ]
+    low, high = values[0][0], values[-1][0]
+    whole = all(v == v.to_integral_value() for v, _ in values)
+    if whole:
+        width = -(-(high - low + 1) // NUMBER_RANGES)  # ceiling division
+        edges = [low + i * width for i in range(NUMBER_RANGES)]
+        uppers = [min(edge + width - 1, high) for edge in edges]
+    else:
+        width = (high - low) / NUMBER_RANGES
+        edges = [low + i * width for i in range(NUMBER_RANGES)]
+        uppers = [*edges[1:], high]
+    counts = [0] * NUMBER_RANGES
+    for value, n in values:
+        index = min(int((value - low) // width), NUMBER_RANGES - 1) if width else 0
+        counts[index] += n
+    out = []
+    for i, edge in enumerate(edges):
+        if whole and edge > high:
+            break
+        label = f"{format_number(float(edge))}–{format_number(float(uppers[i]))}"  # noqa: RUF001
+        if unit:
+            label = f"{label} {unit}"
+        out.append({"label": label, "n": counts[i], "share": share(counts[i])})
+    return out
+
+
 def display_answer(question: dict[str, Any], value: Any) -> str:
-    """An answer as people read it: option labels, "4 / 5", "₹1,25,000"."""
+    """An answer as people read it: option labels, "4 / 5", "₹1,25,000", "3 people"."""
     if value is None:
         return ""
-    labels = {o["key"]: o["label"] for o in question.get("options", [])}
     kind = question["type"]
-    if kind == "multi":
-        return "; ".join(labels.get(v, "") for v in value)
-    if kind in ("single", "dropdown"):
+    if kind in CHOICE_TYPES:
+        labels = {o["key"]: o["label"] for o in question.get("options", [])}
+        if kind == "multi":
+            return "; ".join(labels.get(v, "") for v in value)
         return str(labels.get(value, ""))
-    if kind == "rating":
-        return f"{value} / 5"
-    if kind == "money":
-        return format_amount(value, question["config"].get("currency", "INR"))
-    return str(value)
+    config = question.get("config", {})
+    formatters: dict[str, Any] = {
+        "rating": lambda v: f"{v} / 5",
+        "money": lambda v: format_amount(v, config.get("currency", "INR")),
+        "number": lambda v: format_number(v, config.get("number_unit")),
+    }
+    formatter = formatters.get(kind)
+    return formatter(value) if formatter else str(value)
 
 
 async def response_detail(
@@ -913,7 +1008,7 @@ async def all_answers(session: AsyncSession, scope: Scope) -> dict[uuid.UUID, di
             out[response_id][key] = str(o_key)
         elif kind == "rating" and num is not None:
             out[response_id][key] = int(num)
-        elif kind == "money" and isinstance(num, Decimal):
+        elif kind in ("money", "number") and isinstance(num, Decimal):
             out[response_id][key] = float(num)
         else:
             out[response_id][key] = text

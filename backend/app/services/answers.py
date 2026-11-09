@@ -1,6 +1,6 @@
 """Checking respondent answers against a published version.
 
-Mirrors frontend/src/features/survey-logic/answers.ts (money range wording) and the input
+Mirrors frontend/src/features/survey-logic/answers.ts (money and number range wording) and the input
 limits of the respondent form. The server is the authority: anything the browser sends is
 checked again here.
 """
@@ -11,6 +11,7 @@ from math import isfinite
 from typing import Any
 
 from app.services.money import MAX_AMOUNT, Currency, format_amount
+from app.services.numbers import MAX_NUMBER, number_range_error
 from app.services.version_content import QuestionRef
 
 TEXT_LIMITS = {"short": 2000, "long": 10_000}
@@ -59,6 +60,16 @@ def _money(question: QuestionRef, value: Any) -> Any:
     return float(Decimal(str(number)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 
+def _number_answer(question: QuestionRef, value: Any) -> Any:
+    number = _number(value)
+    if number is None or abs(number) > float(MAX_NUMBER):
+        return _Invalid("Enter a number.")
+    if not question.config.get("number_decimals") and not number.is_integer():
+        return _Invalid("Enter a whole number.")
+    rounded = float(Decimal(str(number)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+    return int(rounded) if rounded.is_integer() else rounded
+
+
 def _text(question: QuestionRef, value: Any) -> Any:
     if not isinstance(value, str):
         return _Invalid("Enter text.")
@@ -75,6 +86,7 @@ _CLEANERS: dict[str, Callable[[QuestionRef, Any], Any]] = {
     "multi": _checkboxes,
     "rating": _rating,
     "money": _money,
+    "number": _number_answer,
     "short": _text,
     "long": _text,
 }
@@ -98,9 +110,14 @@ def invalid_message(value: Any) -> str:
     return value.message if isinstance(value, _Invalid) else ""
 
 
-def money_range_error(question: QuestionRef, value: Any) -> str | None:
-    """Same wording as the respondent form: "Enter ₹5,00,000 or less."."""
-    if question.type != "money" or not isinstance(value, float | int):
+def range_error(question: QuestionRef, value: Any) -> str | None:
+    """Money or number outside the question's limits, worded as on the respondent form:
+    "Enter ₹5,00,000 or less." / "Enter a number from 1 to 10."."""
+    if not isinstance(value, float | int) or isinstance(value, bool):
+        return None
+    if question.type == "number":
+        return number_range_error(question.config, float(value))
+    if question.type != "money":
         return None
     currency: Currency = question.config.get("currency", "INR")
     low, high = question.config.get("min"), question.config.get("max")

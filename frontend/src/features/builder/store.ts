@@ -9,6 +9,7 @@ import type {
   Condition,
   Draft,
   MoneyConfig,
+  NumberConfig,
   QuestionType,
   SurveySettings,
   Theme,
@@ -49,6 +50,7 @@ interface BuilderState {
   updateQuestion: (key: string, patch: ops.QuestionPatch) => void
   changeType: (key: string, type: QuestionType) => void
   updateMoneyConfig: (key: string, patch: Partial<MoneyConfig>) => void
+  updateNumberConfig: (key: string, patch: Partial<NumberConfig>) => void
   addOption: (key: string) => void
   updateOption: (key: string, optionKey: string, label: string) => void
   removeOption: (key: string, optionKey: string) => void
@@ -181,6 +183,9 @@ export const useBuilderStore = create<BuilderState>()((set, get) => {
     },
     updateMoneyConfig: (key, patch) => {
       edit(ops.updateMoneyConfig(get().draft, key, patch))
+    },
+    updateNumberConfig: (key, patch) => {
+      edit(ops.updateNumberConfig(get().draft, key, patch))
     },
     addOption: (key) => {
       const [draft, option] = ops.addOption(get().draft, key)

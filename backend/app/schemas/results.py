@@ -118,6 +118,7 @@ class QuestionResult(BaseModel):
     average: float | None = None
     distribution: list[RatingCount] | None = None
     currency: str | None = None
+    unit: str | None = None
     stats: MoneyStats | None = None
     ranges: list[RangeCount] | None = None
 

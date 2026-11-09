@@ -6,6 +6,7 @@ import { sharedCases } from '@/test/shared-cases'
 
 import {
   addOption,
+  conditionFor,
   addQuestion,
   addSection,
   changeType,
@@ -21,6 +22,7 @@ import {
   restoreQuestion,
   setCondition,
   updateMoneyConfig,
+  updateNumberConfig,
   updateQuestion,
 } from './draft-ops'
 
@@ -49,6 +51,35 @@ describe('adding and editing questions', () => {
     const [, question] = addQuestion(draft, 'money', draft.sections[0]!.key)
 
     expect(question.config).toEqual({ currency: 'INR', min: null, max: null, decimals: false })
+  })
+
+  it('adds number questions with default settings (lowest 0 gives phones the number pad)', () => {
+    const draft = emptyDraft()
+    const [, question] = addQuestion(draft, 'number', draft.sections[0]!.key)
+
+    expect(question.config).toEqual({
+      number_min: 0,
+      number_max: null,
+      number_decimals: false,
+      number_unit: '',
+    })
+  })
+
+  it('keeps money and number settings side by side when switching between them', () => {
+    const asNumber = updateNumberConfig(changeType(pulse, q(5), 'number'), q(5), {
+      number_min: -5,
+      number_unit: 'km',
+    })
+    const backToMoney = changeType(asNumber, q(5), 'money')
+
+    expect(asNumber.questions[4]!.config).toMatchObject({ number_min: -5, number_unit: 'km' })
+    expect(backToMoney.questions[4]!.config).toMatchObject(pulse.questions[4]!.config)
+    expect(changeType(backToMoney, q(5), 'number').questions[4]!.config.number_unit).toBe('km')
+  })
+
+  it('starts a condition on a number question at 1', () => {
+    const asNumber = changeType(pulse, q(5), 'number')
+    expect(conditionFor(asNumber.questions[4]!)).toEqual({ src: q(5), op: 'gte', val: 1 })
   })
 
   it('keeps questions grouped when adding to an earlier section', () => {

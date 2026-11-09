@@ -331,9 +331,41 @@ describe('builder with the sample loaded', () => {
 
     expect(
       screen.getByText(
-        'Add a choice or rating question above this one. Then you can show this question based on its answer.',
+        'Add a choice, rating, money or number question above this one. Then you can show this question based on its answer.',
       ),
     ).toBeInTheDocument()
+  })
+
+  it('adds a number question with limits, decimals and a unit', async () => {
+    const user = userEvent.setup()
+    const { saveDraft } = await openBuilder(pulseDraft())
+
+    await user.click(screen.getAllByRole('button', { name: 'Add question' })[0]!)
+    await user.click(screen.getByRole('button', { name: 'Number' }))
+    await fill(user, await screen.findByLabelText('Lowest allowed'), '1')
+    await fill(user, screen.getByLabelText('Highest allowed'), '25000')
+    await fill(user, screen.getByLabelText('Unit (optional)'), 'people')
+
+    // Grouped once the field is left (focus moved on to the unit).
+    expect(screen.getByLabelText('Highest allowed')).toHaveValue('25,000')
+    expect(screen.getByText('3 people')).toBeInTheDocument()
+    expect(screen.getByText('People answer with a number from 1 to 25,000.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('switch', { name: 'Allow decimals (up to 2 places)' }))
+    expect(screen.getByText('2.5 people')).toBeInTheDocument()
+
+    await waitFor(
+      () => {
+        const saved = lastSavedDraft(saveDraft).questions.find((q) => q.type === 'number')
+        expect(saved?.config).toEqual({
+          number_min: 1,
+          number_max: 25000,
+          number_decimals: true,
+          number_unit: 'people',
+        })
+      },
+      { timeout: 3000 },
+    )
   })
 
   it('shows the money example in the chosen currency', async () => {

@@ -66,6 +66,14 @@ def random_answers(rng: random.Random, content: dict[str, Any]) -> dict[str, Any
             high = float(config.get("max") or 300_000)
             value = min(high, max(low, rng.lognormvariate(10, 0.9)))
             answers[q["key"]] = round(value, 2) if config.get("decimals") else float(round(value))
+        elif kind == "number":
+            config = q["config"]
+            low = config.get("number_min")
+            high = config.get("number_max")
+            low = float(low) if low is not None else 0.0
+            high = float(high) if high is not None else max(low + 10, 10.0)
+            value = rng.triangular(low, high, low + (high - low) / 3)
+            answers[q["key"]] = round(value, 2) if config.get("number_decimals") else round(value)
         else:
             answers[q["key"]] = rng.choice(COMMENTS)
     return answers

@@ -1,6 +1,7 @@
 /** Words for conditions: tags on cards and explanations of broken conditions. */
 import type { ConditionProblem } from '@/features/survey-logic/conditions'
 import { formatAmount } from '@/features/survey-logic/money'
+import { formatNumber } from '@/features/survey-logic/numbers'
 import type { Condition, ConditionOp, Currency, Draft } from '@/features/survey-logic/types'
 
 export const OP_LABELS: Record<ConditionOp, string> = {
@@ -20,6 +21,11 @@ export function conditionSummary(draft: Draft, condition: Condition): string {
     const currency: Currency = source.config.currency ?? 'INR'
     return typeof condition.val === 'number'
       ? `${prefix} ${formatAmount(condition.val, currency)}`
+      : prefix
+  }
+  if (source.type === 'number') {
+    return typeof condition.val === 'number'
+      ? `${prefix} ${formatNumber(condition.val, source.config.number_unit)}`
       : prefix
   }
   if (source.type === 'rating') return `${prefix} ${String(condition.val ?? '')}`
@@ -43,7 +49,7 @@ export function problemMessage(
     case 'source_not_earlier_section':
       return `Q${n} is in this section or a later one. Move it to an earlier section or change the condition.`
     case 'source_ineligible':
-      return `Q${n} is no longer a choice or rating question. Set the condition again.`
+      return `Q${n} can no longer be used in a condition (it's now a text question). Set the condition again.`
     case 'answer_changed':
       return `The answer this condition uses changed in Q${n}. Pick it again.`
   }

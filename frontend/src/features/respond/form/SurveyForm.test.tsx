@@ -263,3 +263,70 @@ describe('empty survey', () => {
     })
   })
 })
+
+describe('number questions', () => {
+  function numberSurvey(): Draft {
+    const draft = survey('all')
+    const section = draft.sections[0]!.key
+    draft.sections = [draft.sections[0]!]
+    draft.questions = [
+      {
+        key: 'people',
+        section_key: section,
+        type: 'number',
+        text: 'How many people are coming?',
+        help: '',
+        required: true,
+        options: [],
+        config: { number_min: 1, number_max: 10, number_decimals: false, number_unit: 'people' },
+        condition: null,
+      },
+      {
+        key: 'parking',
+        section_key: section,
+        type: 'short',
+        text: 'Do you need a car park pass?',
+        help: '',
+        required: false,
+        options: [],
+        config: {},
+        condition: { src: 'people', op: 'gte', val: 3 },
+      },
+    ]
+    return draft
+  }
+
+  it('takes a number with its unit, checks the range and drives conditions', async () => {
+    const user = userEvent.setup()
+    const { onSubmit } = renderForm(numberSurvey())
+    const box = screen.getByRole('textbox', { name: /How many people/ })
+
+    // Whole numbers only: the decimal point is ignored.
+    await user.type(box, '2.5')
+    expect(box).toHaveValue('25')
+    expect(screen.getByText('Enter a number from 1 to 10.')).toBeInTheDocument()
+    expect(box).toHaveAccessibleDescription(/people.*Enter a number from 1 to 10\./)
+
+    await user.clear(box)
+    await user.type(box, '2')
+    expect(screen.queryByText('Enter a number from 1 to 10.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: /car park/ })).not.toBeInTheDocument()
+
+    await user.clear(box)
+    await user.type(box, '4')
+    await user.type(await screen.findByRole('textbox', { name: /car park/ }), 'Yes')
+    await user.click(screen.getByRole('button', { name: 'Submit response' }))
+
+    expect(onSubmit).toHaveBeenCalledWith({ people: 4, parking: 'Yes' })
+  })
+
+  it('offers the full keyboard only when negatives are allowed', () => {
+    const draft = numberSurvey()
+    draft.questions[0]!.config = { number_min: null, number_decimals: true, number_unit: '' }
+    renderForm(draft)
+    expect(screen.getByRole('textbox', { name: /How many people/ })).toHaveAttribute(
+      'inputmode',
+      'text',
+    )
+  })
+})

@@ -81,7 +81,7 @@ Who has elevated roles. Anyone not listed is an employee.
 | text | text | |
 | help | text | |
 | required | boolean | |
-| config | jsonb | type settings, e.g. money `{currency, min, max, decimals}` |
+| config | jsonb | type settings, e.g. money `{currency, min, max, decimals}`, number `{number_min, number_max, number_decimals, number_unit}` |
 | condition | jsonb | null or `{src, op, val}` |
 
 ### `question_options`

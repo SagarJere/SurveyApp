@@ -46,6 +46,14 @@ SMALL_GROUP_NOTE = (
     "to protect anonymity."
 )
 ExportKind = Literal["responses", "analytics"]
+WHOLE_NUMBER_FORMAT = "#,##0"
+DECIMAL_NUMBER_FORMAT = "#,##0.00"
+
+
+def _number_format(config: dict[str, Any]) -> str:
+    return DECIMAL_NUMBER_FORMAT if config.get("number_decimals") else WHOLE_NUMBER_FORMAT
+
+
 CHART_COLOUR = "00826C"  # --chart-1 in the app
 ROW_CM = 0.53  # default Excel row height (15 pt) in centimetres
 
@@ -220,6 +228,32 @@ def _share_rows(
         sheet.cell(row=last, column=1, value=None)
 
 
+def _number_block(sheet: Any, q: dict[str, Any], *, chart_title: str, chart_top: int) -> None:
+    stats = q["stats"]
+    unit = q.get("unit")
+    for label, key in (
+        ("Total", "total"),
+        ("Average", "average"),
+        ("Median", "median"),
+        ("Lowest", "min"),
+        ("Highest", "max"),
+    ):
+        sheet.append([label, stats[key], unit or None])
+        # Averages and medians can have decimals even when the answers are whole numbers.
+        sheet.cell(row=sheet.max_row, column=2).number_format = (
+            DECIMAL_NUMBER_FORMAT if key in ("average", "median") else "#,##0.##"
+        )
+    rows = [(r["label"], r["n"], r["share"]) for r in q["ranges"]]
+    _share_rows(
+        sheet,
+        "Answer",
+        "Share of people answering",
+        rows,
+        chart_title=chart_title,
+        chart_top=chart_top,
+    )
+
+
 def _money_block(sheet: Any, q: dict[str, Any], *, chart_title: str, chart_top: int) -> None:
     currency: Currency = q["currency"]
     fmt = MONEY_FORMATS.get(currency, MONEY_FORMATS["INR"])
@@ -281,8 +315,20 @@ def _question_block(sheet: Any, q: dict[str, Any]) -> None:
         )
     elif kind == "money":
         _money_block(sheet, q, chart_title=chart_title, chart_top=top)
+    elif kind == "number":
+        _number_block(sheet, q, chart_title=chart_title, chart_top=top)
     else:
         sheet.append(["Comments", q["answered"]])
+
+
+def _answer_cells(q: dict[str, Any], value: Any) -> list[Any]:
+    """The cells for one answer: numbers stay numeric; money also gets its amount in words."""
+    if q["type"] == "money":
+        currency: Currency = q["config"].get("currency", "INR")
+        return [value, amount_in_words(value, currency) if value is not None else None]
+    if q["type"] in ("rating", "number"):
+        return [value]
+    return [_safe(display_answer(q, value)) if value is not None else None]
 
 
 def _responses_sheet(sheet: Any, data: dict[str, Any]) -> None:
@@ -294,10 +340,14 @@ def _responses_sheet(sheet: Any, data: dict[str, Any]) -> None:
     header += ["Submitted at", "Department", "Location"]
     fixed_columns = len(header)
     money_columns: list[tuple[int, str]] = []
+    number_columns: list[tuple[int, str]] = []
     for q in questions:
         # Excel table column names are limited to 255 characters; the Q number keeps them unique.
-        title = f"Q{q['number']}. {q['text']}"[:250]
-        header.append(title)
+        unit = str(q["config"].get("number_unit") or "").strip() if q["type"] == "number" else ""
+        title = f"Q{q['number']}. {q['text']}" + (f" ({unit})" if unit else "")
+        header.append(title[:250])
+        if q["type"] == "number":
+            number_columns.append((len(header), _number_format(q["config"])))
         if q["type"] == "money":
             money_columns.append((len(header), q["config"].get("currency", "INR")))
             header.append(f"Q{q['number']} in words")
@@ -310,18 +360,13 @@ def _responses_sheet(sheet: Any, data: dict[str, Any]) -> None:
         values += [row["submitted_at"].replace(tzinfo=None), row["department"], row["location"]]
         answers = data["answers"].get(row["id"], {})
         for q in questions:
-            value = answers.get(q["key"])
-            if q["type"] == "money":
-                currency: Currency = q["config"].get("currency", "INR")
-                values += [value, amount_in_words(value, currency) if value is not None else None]
-            elif q["type"] == "rating":
-                values.append(value)
-            else:
-                values.append(_safe(display_answer(q, value)) if value is not None else None)
+            values += _answer_cells(q, answers.get(q["key"]))
         sheet.append(values)
     date_column = 4 if not anonymous else 2
     for row_number in range(HEADING_ROW + 1, sheet.max_row + 1):
         sheet.cell(row=row_number, column=date_column).number_format = "dd mmm yyyy hh:mm"
+        for column, fmt in number_columns:
+            sheet.cell(row=row_number, column=column).number_format = fmt
         for column, code in money_columns:
             sheet.cell(row=row_number, column=column).number_format = MONEY_FORMATS.get(
                 code, MONEY_FORMATS["INR"]

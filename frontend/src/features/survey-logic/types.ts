@@ -1,6 +1,7 @@
 /** The builder's draft document. Mirrors backend/app/schemas/draft.py (docs/03-data-model.md). */
 
-export type QuestionType = 'single' | 'multi' | 'dropdown' | 'rating' | 'short' | 'long' | 'money'
+export type QuestionType =
+  'single' | 'multi' | 'dropdown' | 'rating' | 'short' | 'long' | 'money' | 'number'
 export type ConditionOp = 'is' | 'not' | 'gte' | 'lte'
 export type Currency = 'INR' | 'USD' | 'EUR' | 'GBP' | 'AED'
 export type Layout = 'all' | 'section' | 'step'
@@ -10,7 +11,7 @@ export interface Condition {
   /** Key of the question this depends on. */
   src: string
   op: ConditionOp
-  /** Option key for choice sources, a number for rating and money sources. */
+  /** Option key for choice sources, a number for rating, money and number sources. */
   val: string | number | null
 }
 
@@ -26,6 +27,15 @@ export interface MoneyConfig {
   decimals: boolean
 }
 
+/** Number settings. Prefixed, so switching between Money and Number keeps both. */
+export interface NumberConfig {
+  number_min: number | null
+  number_max: number | null
+  number_decimals: boolean
+  /** Shown after the answer box and in results, e.g. "people", "km". */
+  number_unit: string
+}
+
 export interface Question {
   key: string
   section_key: string
@@ -34,8 +44,8 @@ export interface Question {
   help: string
   required: boolean
   options: Option[]
-  /** Money settings for money questions. Kept when the type changes, so changing back restores them. */
-  config: Partial<MoneyConfig> & Record<string, unknown>
+  /** Money or number settings. Kept when the type changes, so changing back restores them. */
+  config: Partial<MoneyConfig> & Partial<NumberConfig> & Record<string, unknown>
   condition: Condition | null
 }
 
