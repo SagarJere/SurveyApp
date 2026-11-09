@@ -52,6 +52,8 @@ The Vite dev server proxies `/api` to the backend, so the browser only talks to 
 
 With `AUTH_MODE=dev`, the sign-in page asks for an employee ID only. IDs are trimmed and uppercased, so ` e1002 ` signs in as `E1002`.
 
+The field is also a searchable list of everyone you can sign in as: the test accounts below, HR and admin users, and every person on any survey's audience. Search by name or ID, then pick someone to sign in as them straight away, or type any other ID. People from an audience list sign in with the name they were uploaded with. The list comes from `GET /api/auth/dev-people`, which exists only in dev mode.
+
 | Employee ID | Role | Name |
 |---|---|---|
 | E1001 | Admin | Asha Rao |

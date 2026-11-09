@@ -2,13 +2,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { InfoIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react'
 import { useId } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { z } from 'zod'
 
 import { AppMark } from '@/components/app-mark'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ThemeToggle } from '@/app/theme/ThemeToggle'
 import { usePageTitle } from '@/hooks/use-page-title'
@@ -16,6 +15,7 @@ import { ApiError } from '@/lib/api'
 import { env } from '@/lib/env'
 
 import { login } from './api'
+import { DevPeopleCombobox } from './DevPeopleCombobox'
 import { employeeIdProblem, normalizeEmployeeId } from './employee-id'
 import { safeNextPath } from './redirect'
 import { useAuth } from './use-auth'
@@ -80,6 +80,9 @@ export function LoginPage() {
     },
   })
 
+  const employeeId = useWatch({ control: form.control, name: 'employeeId' })
+  const { ref: fieldRef, ...registration } = form.register('employeeId')
+
   if (status === 'signed-in') return <Navigate to={next} replace />
 
   const fieldError = form.formState.errors.employeeId?.message
@@ -122,20 +125,27 @@ export function LoginPage() {
             >
               <div className="flex flex-col gap-2">
                 <Label htmlFor={ids.field}>Employee ID</Label>
-                <Input
+                <DevPeopleCombobox
                   id={ids.field}
-                  autoComplete="username"
+                  value={employeeId}
+                  autoComplete="off"
                   autoCapitalize="characters"
                   autoCorrect="off"
                   spellCheck={false}
                   enterKeyHint="go"
-                  placeholder="e.g. E12345"
+                  placeholder="Search by name or ID, e.g. E1002"
                   aria-invalid={fieldError ? true : undefined}
                   aria-describedby={fieldError ? `${ids.error} ${ids.hint}` : ids.hint}
                   disabled={pending}
                   // eslint-disable-next-line jsx-a11y/no-autofocus -- the only field on the page
                   autoFocus
-                  {...form.register('employeeId')}
+                  {...registration}
+                  inputRef={fieldRef}
+                  onPick={(id) => {
+                    form.setValue('employeeId', id)
+                    form.clearErrors()
+                    mutation.mutate(id)
+                  }}
                 />
                 {fieldError ? (
                   <p id={ids.error} className="text-sm font-semibold text-destructive" role="alert">
@@ -143,7 +153,8 @@ export function LoginPage() {
                   </p>
                 ) : null}
                 <p id={ids.hint} className="text-sm text-muted-foreground">
-                  This test environment signs you in with your employee ID only.
+                  This test environment signs you in with an employee ID only. Pick anyone from the
+                  list, or type any ID.
                 </p>
               </div>
 

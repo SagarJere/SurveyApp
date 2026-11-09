@@ -32,7 +32,7 @@ describe('LoginPage', () => {
     const field = await screen.findByLabelText('Employee ID')
     expect(field).toHaveFocus()
     expect(field).toHaveAccessibleDescription(
-      'This test environment signs you in with your employee ID only.',
+      'This test environment signs you in with an employee ID only. Pick anyone from the list, or type any ID.',
     )
     expect(document.title).toBe('Sign in · Pulse')
   })

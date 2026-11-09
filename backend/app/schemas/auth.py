@@ -32,3 +32,17 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"  # noqa: S105 - OAuth token type, not a secret
     expires_at: datetime
     user: UserOut
+
+
+class DevPersonOut(BaseModel):
+    employee_id: str
+    name: str | None
+    role: Role
+    department: str | None
+    location: str | None
+    surveys: int = Field(description="How many survey audiences this person is in")
+
+
+class DevPeople(BaseModel):
+    items: list[DevPersonOut]
+    total: int

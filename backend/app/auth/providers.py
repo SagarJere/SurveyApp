@@ -11,6 +11,7 @@ from app.auth.types import AuthenticatedUser, Role
 from app.config import Settings
 from app.models import AppUser
 from app.schemas.auth import LoginRequest
+from app.services.dev_directory import audience_name
 
 
 class AuthProvider(Protocol):
@@ -30,9 +31,8 @@ class DevIdProvider:
             return AuthenticatedUser(
                 employee_id=employee_id, name=elevated.name, role=cast("Role", elevated.role)
             )
-        return AuthenticatedUser(
-            employee_id=employee_id, name=DEV_NAMES.get(employee_id), role="employee"
-        )
+        name = DEV_NAMES.get(employee_id) or await audience_name(self._session, employee_id)
+        return AuthenticatedUser(employee_id=employee_id, name=name, role="employee")
 
 
 def get_auth_provider(settings: Settings, session: AsyncSession) -> AuthProvider:
