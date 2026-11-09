@@ -97,8 +97,8 @@ describe('formatAmountInput (formats while typing)', () => {
     expect(formatAmountInput('0', 1, 'INR', false)).toMatchObject({ display: '0', value: 0 })
   })
 
-  it('limits the whole part to 13 digits', () => {
-    expect(formatAmountInput('12345678901234', 14, 'USD', false).value).toBe(1234567890123)
+  it('limits the whole part to 12 digits', () => {
+    expect(formatAmountInput('1234567890123', 13, 'USD', false).value).toBe(123456789012)
   })
 
   it('returns null for an empty field', () => {

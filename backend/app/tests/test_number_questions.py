@@ -1,5 +1,5 @@
 """Number questions from end to end: settings, publish checks, answers, conditions, results
-and the Excel export."""
+and the Excel export. Also the largest number and money answers the database can store."""
 
 import io
 import uuid
@@ -355,3 +355,42 @@ async def test_every_comparison_is_applied_on_submit(
         kept = [int(row[0][1:]) for row in rows.all()]
     # The follow-up answer survives only where its condition was met.
     assert kept == shown_for
+
+
+@pytest.mark.parametrize(
+    ("question_type", "config"),
+    [
+        ("money", {"currency": "INR", "min": None, "max": None, "decimals": True}),
+        ("number", {"number_min": None, "number_decimals": True}),
+    ],
+)
+async def test_the_largest_allowed_answer_is_stored(
+    client: AsyncClient,
+    engine: AsyncEngine,
+    hr: Headers,
+    person: Callable[[str], Headers],
+    question_type: str,
+    config: dict[str, Any],
+) -> None:
+    """Answers go in numeric(14,2): 12 digits before the point. One more is refused cleanly
+    (it used to reach the database for money and fail with a server error)."""
+    body = draft()
+    body["questions"][2] = {**body["questions"][2], "type": question_type, "config": config}
+    survey_id = await publish(client, hr, body)
+
+    largest = await submit(
+        client, person("W1"), survey_id, {PEOPLE: 1, DISTANCE: 999_999_999_999.99}
+    )
+    too_large = await submit(
+        client, person("W2"), survey_id, {PEOPLE: 1, DISTANCE: 1_000_000_000_000}
+    )
+
+    assert largest.status_code == 200, largest.text
+    assert too_large.status_code == 422
+    expected = "Enter an amount." if question_type == "money" else "Enter a number."
+    assert too_large.json()["error"]["details"]["issues"] == [
+        {"question_key": DISTANCE, "message": expected}
+    ]
+    async with engine.connect() as conn:
+        stored = await conn.scalar(text("SELECT max(value_num) FROM response_answers"))
+    assert stored == Decimal("999999999999.99")

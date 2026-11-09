@@ -4,8 +4,9 @@
  */
 import type { Currency } from './types'
 
-export const MAX_INTEGER_DIGITS = 13
-export const MAX_AMOUNT = 9_999_999_999_999.99
+// Answers are stored in response_answers.value_num, numeric(14,2): 12 digits before the point.
+export const MAX_INTEGER_DIGITS = 12
+export const MAX_AMOUNT = 999_999_999_999.99
 
 interface CurrencyInfo {
   symbol: string
@@ -169,7 +170,7 @@ export interface AmountInputResult {
 /**
  * Format an amount while the person types, keeping the caret after the same digit.
  * Accepts digits and one decimal point (only when decimals are allowed, max 2 places).
- * At most 13 digits before the decimal point.
+ * At most 12 digits before the decimal point.
  */
 export function formatAmountInput(
   raw: string,

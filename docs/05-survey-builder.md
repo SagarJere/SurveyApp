@@ -82,7 +82,7 @@ Editable title (large) and description. Accent-coloured top border.
   - Singular forms: "One rupee", "one paisa", "one cent".
 - Out-of-range values show "Enter ₹5,00,000 or less." and block Next/Submit.
 
-**Storage:** number with 2 decimals (`numeric(14,2)`) plus the currency on the question. Never store the words. Backend generates words with `num2words(amount, lang="en_IN")` for INR and `lang="en"` for others, then adds the currency words.
+**Storage:** number with 2 decimals (`numeric(14,2)`) plus the currency on the question. Amounts go up to 999,999,999,999.99 (12 digits before the decimal point, the column's limit); the input stops at 12 digits and the server refuses anything larger. Never store the words. Backend generates words with `num2words(amount, lang="en_IN")` for INR and `lang="en"` for others, then adds the currency words.
 
 Shared helpers needed in both TS and Python: `formatAmount(value, currency)`, `amountInWords(value, currency)`. Test with: 0, 1, 1.5, 10, 100000, 125000, 1234567.5, 10000000, 99999999999.99.
 

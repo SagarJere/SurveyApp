@@ -1,5 +1,5 @@
 {
-  "_comment": "Golden cases for money formatting and amount in words. Used by backend/app/tests/test_money.py and frontend/src/features/survey-logic/money.test.ts. Amounts are strings so both languages read them exactly. Values from docs/05-survey-builder.md (Money type) plus singular-form edge cases.",
+  "_comment": "Golden cases for money formatting and amount in words. Used by backend/app/tests/test_money.py and frontend/src/features/survey-logic/money.test.ts. Amounts are strings so both languages read them exactly. Values from docs/05-survey-builder.md (Money type) plus singular-form edge cases. The largest case is the maximum amount, 999,999,999,999.99 (12 digits before the decimal point, the size of response_answers.value_num).",
   "cases": [
     {
       "currency": "INR",
@@ -75,9 +75,9 @@
     },
     {
       "currency": "INR",
-      "amount": "9999999999999.99",
-      "formatted": "₹99,99,99,99,99,999.99",
-      "words": "Nine lakh ninety-nine thousand nine hundred ninety-nine crore ninety-nine lakh ninety-nine thousand nine hundred ninety-nine rupees and ninety-nine paise only"
+      "amount": "999999999999.99",
+      "formatted": "₹9,99,99,99,99,999.99",
+      "words": "Ninety-nine thousand nine hundred ninety-nine crore ninety-nine lakh ninety-nine thousand nine hundred ninety-nine rupees and ninety-nine paise only"
     },
     {
       "currency": "USD",
@@ -153,9 +153,9 @@
     },
     {
       "currency": "USD",
-      "amount": "9999999999999.99",
-      "formatted": "$9,999,999,999,999.99",
-      "words": "Nine trillion nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine dollars and ninety-nine cents"
+      "amount": "999999999999.99",
+      "formatted": "$999,999,999,999.99",
+      "words": "Nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine dollars and ninety-nine cents"
     },
     {
       "currency": "EUR",
@@ -231,9 +231,9 @@
     },
     {
       "currency": "EUR",
-      "amount": "9999999999999.99",
-      "formatted": "€9,999,999,999,999.99",
-      "words": "Nine trillion nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine euros and ninety-nine cents"
+      "amount": "999999999999.99",
+      "formatted": "€999,999,999,999.99",
+      "words": "Nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine euros and ninety-nine cents"
     },
     {
       "currency": "GBP",
@@ -309,9 +309,9 @@
     },
     {
       "currency": "GBP",
-      "amount": "9999999999999.99",
-      "formatted": "£9,999,999,999,999.99",
-      "words": "Nine trillion nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine pounds and ninety-nine pence"
+      "amount": "999999999999.99",
+      "formatted": "£999,999,999,999.99",
+      "words": "Nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine pounds and ninety-nine pence"
     },
     {
       "currency": "AED",
@@ -387,9 +387,9 @@
     },
     {
       "currency": "AED",
-      "amount": "9999999999999.99",
-      "formatted": "AED 9,999,999,999,999.99",
-      "words": "Nine trillion nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine dirhams and ninety-nine fils"
+      "amount": "999999999999.99",
+      "formatted": "AED 999,999,999,999.99",
+      "words": "Nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine dirhams and ninety-nine fils"
     }
   ]
 }

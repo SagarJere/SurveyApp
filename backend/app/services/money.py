@@ -12,8 +12,9 @@ from num2words import num2words
 
 Currency = Literal["INR", "USD", "EUR", "GBP", "AED"]
 
-MAX_INTEGER_DIGITS = 13
-MAX_AMOUNT = Decimal("9999999999999.99")
+# Answers are stored in response_answers.value_num, numeric(14,2): 12 digits before the point.
+MAX_INTEGER_DIGITS = 12
+MAX_AMOUNT = Decimal("999999999999.99")
 _CRORE = 10**7
 
 

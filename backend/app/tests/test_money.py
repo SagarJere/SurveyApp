@@ -26,9 +26,9 @@ def test_floats_are_rounded_to_paise() -> None:
     assert amount_in_words(0.005, "INR") == "Zero rupees and one paisa only"
 
 
-@pytest.mark.parametrize("value", [Decimal("-1"), Decimal("10000000000000")])
+@pytest.mark.parametrize("value", [Decimal("-1"), Decimal("1000000000000")])
 def test_out_of_range_amounts_are_rejected(value: Decimal) -> None:
-    with pytest.raises(ValueError, match=r"negative|13 digits"):
+    with pytest.raises(ValueError, match=r"negative|12 digits"):
         format_amount(value, "INR")
 
 
