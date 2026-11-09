@@ -45,6 +45,9 @@ class SurveyResponse(Base):
         UUID(as_uuid=True), ForeignKey("survey_versions.id", ondelete="CASCADE")
     )
     employee_id: Mapped[str | None] = mapped_column(Text)  # null when anonymous
+    # The respondent's name at submit time, from sign-in. Null when anonymous. Reports prefer
+    # the name on the survey's audience list, so this matters for "open to all" surveys.
+    name: Mapped[str | None] = mapped_column(Text)
     department: Mapped[str | None] = mapped_column(Text)
     location: Mapped[str | None] = mapped_column(Text)
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

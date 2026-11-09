@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 from httpx import AsyncClient
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -533,3 +533,57 @@ async def test_closed_surveys_drop_off_unless_you_responded(
     listed = (await client.get("/api/me/surveys", headers=priya)).json()
 
     assert [(s["id"], s["status"], s["open"]) for s in listed] == [(answered, "submitted", False)]
+
+
+# --- respondent names ---------------------------------------------------------------------------
+
+
+async def test_open_to_all_reports_use_the_name_people_signed_in_with(
+    client: AsyncClient,
+    engine: AsyncEngine,
+    hr: Headers,
+    token_for: Callable[..., str],
+    gallery: list[str],
+) -> None:
+    survey_id = await publish(client, hr, open_to_all=True)
+    kavya = bearer(token_for("W2001", "employee", "Kavya Menon"))
+    assert (await submit(client, kavya, survey_id, answers_office())).status_code == 200
+
+    listed = await client.get(f"/api/surveys/{survey_id}/results/responses", headers=hr)
+    export = await client.get(
+        f"/api/surveys/{survey_id}/results/export.xlsx", headers=hr, params={"kind": "responses"}
+    )
+    sheet = load_workbook(io.BytesIO(export.content))["Responses"]
+
+    assert listed.json()["items"][0]["name"] == "Kavya Menon"
+    assert [sheet["B2"].value, sheet["C2"].value] == ["W2001", "Kavya Menon"]
+
+
+async def test_the_audience_list_name_wins_over_the_sign_in_name(
+    client: AsyncClient,
+    engine: AsyncEngine,
+    hr: Headers,
+    token_for: Callable[..., str],
+    gallery: list[str],
+) -> None:
+    survey_id = await publish(client, hr)  # audience: E2001 "Priya Nair"
+    signed_in_as = bearer(token_for("E2001", "employee", "P. Nair"))
+    await submit(client, signed_in_as, survey_id, answers_office())
+
+    listed = await client.get(f"/api/surveys/{survey_id}/results/responses", headers=hr)
+
+    assert listed.json()["items"][0]["name"] == "Priya Nair"
+    assert await rows(engine, "SELECT name FROM survey_responses") == [("P. Nair",)]
+
+
+async def test_anonymous_responses_store_no_name(
+    client: AsyncClient,
+    engine: AsyncEngine,
+    hr: Headers,
+    priya: Headers,
+    gallery: list[str],
+) -> None:
+    survey_id = await publish(client, hr, settings={"anonymous": True})
+    await submit(client, priya, survey_id, answers_office())
+
+    assert await rows(engine, "SELECT employee_id, name FROM survey_responses") == [(None, None)]

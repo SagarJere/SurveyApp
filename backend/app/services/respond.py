@@ -416,7 +416,11 @@ async def submit(
         await session.execute(
             update(SurveyResponse)
             .where(SurveyResponse.id == response_id)
-            .values(version_id=version.version.id, updated_at=now)
+            .values(
+                version_id=version.version.id,
+                updated_at=now,
+                name=None if anonymous else user.name,
+            )
         )
     else:
         response_id = uuid.uuid4()
@@ -426,6 +430,7 @@ async def submit(
                 survey_id=survey_id,
                 version_id=version.version.id,
                 employee_id=None if anonymous else user.employee_id,
+                name=None if anonymous else user.name,
                 department=member.department if member else None,
                 location=member.location if member else None,
                 submitted_at=stamp,

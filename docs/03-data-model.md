@@ -137,6 +137,7 @@ One row per employee per survey. Enforces one response per person, even when ano
 | survey_id | uuid FK | |
 | version_id | uuid FK | |
 | employee_id | text | **null when anonymous** |
+| name | text | name the person signed in with, at submit. **Null when anonymous.** Reports prefer the audience list's name |
 | department, location | text | snapshot at submit |
 | submitted_at | timestamptz | for anonymous surveys, round to the hour |
 | updated_at | timestamptz | |

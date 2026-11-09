@@ -633,6 +633,7 @@ async def comments(
             SurveyResponse.location,
             SurveyResponse.submitted_at,
             SurveyResponse.employee_id,
+            SurveyResponse.name,
         )
         .select_from(ResponseAnswer)
         .join(VersionQuestion, VersionQuestion.id == ResponseAnswer.question_id)
@@ -654,7 +655,7 @@ async def comments(
     )
     names = await _names(session, scope.survey.id)
     items = []
-    for key, text, department, location, submitted_at, employee_id in rows.all():
+    for key, text, department, location, submitted_at, employee_id, name in rows.all():
         items.append(
             {
                 "question_key": str(key),
@@ -666,7 +667,7 @@ async def comments(
                 "submitted_on": submitted_at.astimezone(scope.settings.timezone).date(),
                 "employee": None
                 if scope.anonymous or employee_id is None
-                else {"employee_id": employee_id, "name": names.get(employee_id)},
+                else {"employee_id": employee_id, "name": _display_name(names, employee_id, name)},
             }
         )
     return {
@@ -687,6 +688,13 @@ async def _names(session: AsyncSession, survey_id: uuid.UUID) -> dict[str, str |
     return {row[0]: row[1] for row in rows.all()}
 
 
+def _display_name(
+    names: dict[str, str | None], employee_id: str | None, submitted_name: str | None
+) -> str | None:
+    """The name on the survey's audience list, else the name the person signed in with."""
+    return names.get(employee_id or "") or submitted_name
+
+
 def _response_rows_query(scope: Scope) -> Any:
     ids = filtered_responses(scope).subquery()
     return (
@@ -697,6 +705,7 @@ def _response_rows_query(scope: Scope) -> Any:
             SurveyResponse.location,
             SurveyResponse.submitted_at,
             SurveyVersion.version_no,
+            SurveyResponse.name,
         )
         .join(SurveyVersion, SurveyVersion.id == SurveyResponse.version_id)
         .where(SurveyResponse.id.in_(select(ids.c.id)))
@@ -716,13 +725,13 @@ async def _response_rows(
         {
             "id": rid,
             "employee_id": employee_id,
-            "name": names.get(employee_id or ""),
+            "name": _display_name(names, employee_id, name),
             "department": department,
             "location": location,
             "submitted_at": submitted_at,
             "version_no": version_no,
         }
-        for rid, employee_id, department, location, submitted_at, version_no in rows.all()
+        for rid, employee_id, department, location, submitted_at, version_no, name in rows.all()
     ]
 
 
@@ -797,7 +806,7 @@ async def response_detail(
     return {
         "id": response.id,
         "employee_id": response.employee_id,
-        "name": names.get(response.employee_id or ""),
+        "name": _display_name(names, response.employee_id, response.name),
         "department": response.department,
         "location": response.location,
         "submitted_at": response.submitted_at,
