@@ -2,7 +2,6 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import * as healthApi from '@/features/health/api'
 import * as surveysApi from '@/features/surveys/api'
 import { ApiError } from '@/lib/api'
 import { TEST_USERS } from '@/test/auth'
@@ -15,12 +14,6 @@ beforeEach(() => {
   vi.spyOn(surveysApi, 'getSurvey').mockRejectedValue(
     new ApiError({ status: 404, code: 'NOT_FOUND', message: "We couldn't find that survey." }),
   )
-  vi.spyOn(healthApi, 'fetchHealth').mockResolvedValue({
-    status: 'ok',
-    database: 'ok',
-    environment: 'test',
-    version: '0.1.0',
-  })
 })
 
 describe('routes', () => {
@@ -31,7 +24,6 @@ describe('routes', () => {
     expect(await screen.findByText("You're all caught up.")).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'My surveys' })).toHaveAttribute('aria-current', 'page')
-    expect(await screen.findByText('Connected')).toBeInTheDocument()
     expect(document.title).toBe('My surveys · Pulse')
   })
 

@@ -1,8 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import * as healthApi from '@/features/health/api'
 import * as surveysApi from '@/features/surveys/api'
 import type { SurveyListItem } from '@/features/surveys/types'
 import { shortDate } from '@/lib/format'
@@ -31,15 +30,6 @@ function item(overrides: Partial<SurveyListItem> = {}): SurveyListItem {
     ...overrides,
   }
 }
-
-beforeEach(() => {
-  vi.spyOn(healthApi, 'fetchHealth').mockResolvedValue({
-    status: 'ok',
-    database: 'ok',
-    environment: 'test',
-    version: '0.1.0',
-  })
-})
 
 describe('Surveys home', () => {
   it('lists surveys with status, last edit and dates', async () => {

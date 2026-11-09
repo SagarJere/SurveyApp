@@ -5,7 +5,6 @@ import { canManageSurveys } from '@/features/auth/types'
 import { UserMenu } from '@/features/auth/UserMenu'
 import { useAuth } from '@/features/auth/use-auth'
 import { MAIN_CONTENT_ID, SkipLink } from '@/components/skip-link'
-import { HealthStatus } from '@/features/health/HealthStatus'
 import { cn } from '@/lib/utils'
 
 import { ThemeToggle } from '../theme/ThemeToggle'
@@ -46,7 +45,6 @@ export function AppShell() {
             ))}
           </nav>
           <div className="flex shrink-0 items-center gap-1">
-            <HealthStatus />
             <ThemeToggle />
             <UserMenu />
           </div>

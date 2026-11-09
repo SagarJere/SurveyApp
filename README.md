@@ -46,7 +46,7 @@ cd backend && uv run uvicorn app.main:app --reload --port 8001   # API  -> http:
 cd frontend && npm run dev                                   # web  -> http://localhost:5173
 ```
 
-The Vite dev server proxies `/api` to the backend, so the browser only talks to one origin. The header shows a green dot when the API and database are reachable.
+The Vite dev server proxies `/api` to the backend, so the browser only talks to one origin.
 
 ## Signing in (test environments)
 

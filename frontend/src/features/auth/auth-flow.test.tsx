@@ -2,7 +2,6 @@ import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import * as healthApi from '@/features/health/api'
 import * as surveysApi from '@/features/surveys/api'
 import { AxiosError } from 'axios'
 
@@ -32,12 +31,6 @@ async function signInAs(user: ReturnType<typeof userEvent.setup>, person: AuthUs
 beforeEach(() => {
   mockRespondDefaults()
   vi.spyOn(surveysApi, 'listSurveys').mockResolvedValue([])
-  vi.spyOn(healthApi, 'fetchHealth').mockResolvedValue({
-    status: 'ok',
-    database: 'ok',
-    environment: 'test',
-    version: '0.1.0',
-  })
 })
 
 afterEach(() => {

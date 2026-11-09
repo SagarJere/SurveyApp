@@ -3,7 +3,6 @@ import userEvent, { type UserEvent } from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as audienceApi from '@/features/audience/api'
-import * as healthApi from '@/features/health/api'
 import type { Condition, Draft } from '@/features/survey-logic/types'
 import { ApiError } from '@/lib/api'
 import { TEST_USERS } from '@/test/auth'
@@ -14,15 +13,6 @@ import * as surveysApi from '@/features/surveys/api'
 import { newSection } from './draft-ops'
 
 const PATH = `/admin/surveys/${SURVEY_ID}/edit`
-
-beforeEach(() => {
-  vi.spyOn(healthApi, 'fetchHealth').mockResolvedValue({
-    status: 'ok',
-    database: 'ok',
-    environment: 'test',
-    version: '0.1.0',
-  })
-})
 
 function emptyDraft(): Draft {
   return { ...pulseDraft(), title: '', description: '', sections: [newSection()], questions: [] }

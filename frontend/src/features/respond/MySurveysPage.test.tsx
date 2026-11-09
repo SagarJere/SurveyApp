@@ -1,7 +1,6 @@
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import * as healthApi from '@/features/health/api'
 import { TEST_USERS } from '@/test/auth'
 import { renderRoute } from '@/test/render'
 
@@ -32,12 +31,6 @@ function survey(overrides: Partial<MySurvey>): MySurvey {
 }
 
 function render(items: MySurvey[]) {
-  vi.spyOn(healthApi, 'fetchHealth').mockResolvedValue({
-    status: 'ok',
-    database: 'ok',
-    environment: 'test',
-    version: '0.1.0',
-  })
   vi.spyOn(respondApi, 'listMySurveys').mockResolvedValue(items)
   return renderRoute('/', { user: TEST_USERS.employee })
 }

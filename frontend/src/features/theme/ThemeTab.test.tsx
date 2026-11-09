@@ -2,7 +2,6 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import * as healthApi from '@/features/health/api'
 import * as surveysApi from '@/features/surveys/api'
 import type { ThemeAsset } from '@/features/surveys/types'
 import { ApiError } from '@/lib/api'
@@ -24,12 +23,6 @@ const OCEAN = pulseDraft().theme.cover!
 const GALLERY = [asset(OCEAN, 'Ocean'), asset('dawn-id', 'Dawn')]
 
 beforeEach(() => {
-  vi.spyOn(healthApi, 'fetchHealth').mockResolvedValue({
-    status: 'ok',
-    database: 'ok',
-    environment: 'test',
-    version: '0.1.0',
-  })
   vi.spyOn(surveysApi, 'listGallery').mockResolvedValue(GALLERY)
   vi.spyOn(surveysApi, 'listUploads').mockResolvedValue([])
 })

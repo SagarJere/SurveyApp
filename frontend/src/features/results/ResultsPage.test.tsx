@@ -1,8 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import * as healthApi from '@/features/health/api'
 import { ApiError } from '@/lib/api'
 import { TEST_USERS } from '@/test/auth'
 import { renderRoute } from '@/test/render'
@@ -222,15 +221,6 @@ function mockResults(data: ResultsSummary = summary()) {
     comments: vi.spyOn(resultsApi, 'getComments').mockResolvedValue(comments),
   }
 }
-
-beforeEach(() => {
-  vi.spyOn(healthApi, 'fetchHealth').mockResolvedValue({
-    status: 'ok',
-    database: 'ok',
-    environment: 'test',
-    version: '0.1.0',
-  })
-})
 
 describe('Results dashboard', () => {
   it('shows the takeaway, headline tiles and every widget type', async () => {

@@ -1,8 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import * as healthApi from '@/features/health/api'
 import { ApiError } from '@/lib/api'
 import { TEST_USERS } from '@/test/auth'
 import { mockBuilderApi, pulseDraft, SURVEY_ID } from '@/test/builder'
@@ -71,15 +70,6 @@ const PREVIEW: UploadPreview = {
   ],
   errors_truncated: false,
 }
-
-beforeEach(() => {
-  vi.spyOn(healthApi, 'fetchHealth').mockResolvedValue({
-    status: 'ok',
-    database: 'ok',
-    environment: 'test',
-    version: '0.1.0',
-  })
-})
 
 async function openTab(data: AudienceList = list(), anonymous = false) {
   const draft = pulseDraft()
