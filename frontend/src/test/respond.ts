@@ -9,6 +9,7 @@ export const NOT_AVAILABLE =
 /** Default respondent API for route tests: nothing to take, and survey links refused. */
 export function mockRespondDefaults() {
   vi.spyOn(respondApi, 'listMySurveys').mockResolvedValue([])
+  vi.spyOn(respondApi, 'listMyTrainings').mockResolvedValue([])
   vi.spyOn(respondApi, 'getRespondentSurvey').mockRejectedValue(
     new ApiError({ status: 403, code: 'NOT_IN_AUDIENCE', message: NOT_AVAILABLE }),
   )

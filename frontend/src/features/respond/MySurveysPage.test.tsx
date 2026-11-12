@@ -18,6 +18,8 @@ function survey(overrides: Partial<MySurvey>): MySurvey {
     id: 'a',
     title: 'Workplace pulse',
     description: '',
+    videos_total: 0,
+    videos_done: 0,
     status: 'pending',
     open: true,
     closes_at: iso(20),

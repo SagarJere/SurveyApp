@@ -21,17 +21,20 @@ from app.models import (
 from app.schemas.draft import Draft
 from app.schemas.surveys import (
     CloseResponse,
+    CreateSurveyRequest,
     IssueOut,
     PublishResponse,
     SaveDraftRequest,
     SaveDraftResponse,
     SurveyDetail,
+    SurveyKind,
     SurveyListItem,
     ValidateResponse,
 )
 from app.services import publish as publishing
 from app.services import surveys as service
 from app.services.respond import close_if_expired, today
+from app.services.storage import LocalFileStorage
 
 router = APIRouter(prefix="/surveys", tags=["surveys"])
 
@@ -64,6 +67,7 @@ def _list_item(access: service.SurveyAccess, counts: _Counts) -> SurveyListItem:
     return SurveyListItem(
         id=survey.id,
         title=survey.title,
+        kind=survey.kind,  # type: ignore[arg-type]
         status=survey.status,  # type: ignore[arg-type]
         version_no=counts.version_no,
         response_count=counts.responses,
@@ -160,6 +164,7 @@ def _detail(access: service.SurveyAccess, version_no: int | None) -> SurveyDetai
     return SurveyDetail(
         id=survey.id,
         title=survey.title,
+        kind=survey.kind,  # type: ignore[arg-type]
         status=survey.status,  # type: ignore[arg-type]
         version_no=version_no,
         draft=Draft.model_validate(survey.draft),
@@ -175,10 +180,12 @@ def _detail(access: service.SurveyAccess, version_no: int | None) -> SurveyDetai
     )
 
 
-@router.get("", response_model=list[SurveyListItem], summary="Surveys you can see")
-async def list_surveys(request: Request, user: HrUser, session: SessionDep) -> list[SurveyListItem]:
+@router.get("", response_model=list[SurveyListItem], summary="Surveys (or trainings) you can see")
+async def list_surveys(
+    request: Request, user: HrUser, session: SessionDep, kind: SurveyKind = "survey"
+) -> list[SurveyListItem]:
     settings: Settings = request.app.state.settings
-    accesses = await service.list_surveys(session, user)
+    accesses = await service.list_surveys(session, user, kind)
     for access in accesses:  # surveys past their close date close themselves
         if access.survey.current_version_id is not None and access.survey.status == "published":
             version = await session.get(SurveyVersion, access.survey.current_version_id)
@@ -194,8 +201,11 @@ async def list_surveys(request: Request, user: HrUser, session: SessionDep) -> l
     status_code=status.HTTP_201_CREATED,
     summary="Create an empty draft with one section",
 )
-async def create_survey(user: HrUser, session: SessionDep) -> SurveyDetail:
-    return _detail(await service.create_survey(session, user), None)
+async def create_survey(
+    user: HrUser, session: SessionDep, body: CreateSurveyRequest | None = None
+) -> SurveyDetail:
+    kind = body.kind if body else "survey"
+    return _detail(await service.create_survey(session, user, kind), None)
 
 
 @router.get("/{survey_id}", response_model=SurveyDetail, responses=_ERRORS)
@@ -224,9 +234,12 @@ async def save_draft(
     responses=_ERRORS,
     summary="Check the saved draft for problems that would block publishing",
 )
-async def validate(survey_id: UUID, user: CurrentUser, session: SessionDep) -> ValidateResponse:
+async def validate(
+    survey_id: UUID, request: Request, user: CurrentUser, session: SessionDep
+) -> ValidateResponse:
     access = await service.get_access(session, user, survey_id, "edit")
-    issues = await publishing.publish_issues(session, access.survey)
+    settings: Settings = request.app.state.settings
+    issues = await publishing.publish_issues(session, access.survey, settings)
     warnings = await publishing.publish_warnings(session, access.survey)
     return ValidateResponse(
         issues=[IssueOut(**asdict(issue)) for issue in issues],
@@ -244,9 +257,12 @@ async def validate(survey_id: UUID, user: CurrentUser, session: SessionDep) -> V
     },
     summary="Validate the saved draft and publish it as a new version",
 )
-async def publish(survey_id: UUID, user: CurrentUser, session: SessionDep) -> PublishResponse:
+async def publish(
+    survey_id: UUID, request: Request, user: CurrentUser, session: SessionDep
+) -> PublishResponse:
     access = await service.get_access(session, user, survey_id, "edit")
-    version = await publishing.publish(session, access, user.employee_id)
+    settings: Settings = request.app.state.settings
+    version = await publishing.publish(session, access, user.employee_id, settings)
     return PublishResponse(
         status="published",
         version_no=version.version_no,
@@ -275,9 +291,12 @@ async def close(survey_id: UUID, user: CurrentUser, session: SessionDep) -> Clos
     responses=_ERRORS,
     summary="Copy the current draft into a new survey you own",
 )
-async def duplicate(survey_id: UUID, user: HrUser, session: SessionDep) -> SurveyDetail:
+async def duplicate(
+    survey_id: UUID, request: Request, user: HrUser, session: SessionDep
+) -> SurveyDetail:
     access = await service.get_access(session, user, survey_id, "view")
-    return _detail(await service.duplicate_survey(session, user, access), None)
+    storage: LocalFileStorage = request.app.state.storage
+    return _detail(await service.duplicate_survey(session, user, access, storage), None)
 
 
 @router.delete(
@@ -286,7 +305,10 @@ async def duplicate(survey_id: UUID, user: HrUser, session: SessionDep) -> Surve
     responses={**_ERRORS, status.HTTP_409_CONFLICT: {"model": ErrorResponse}},
     summary="Delete a survey that was never published (owner only)",
 )
-async def delete(survey_id: UUID, user: CurrentUser, session: SessionDep) -> Response:
+async def delete(
+    survey_id: UUID, request: Request, user: CurrentUser, session: SessionDep
+) -> Response:
     access = await service.get_access(session, user, survey_id, "own")
-    await service.delete_survey(session, access)
+    storage: LocalFileStorage = request.app.state.storage
+    await service.delete_survey(session, access, storage)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

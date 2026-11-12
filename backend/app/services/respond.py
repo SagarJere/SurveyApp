@@ -37,6 +37,7 @@ from app.services.answers import (
 from app.services.results_cache import results_cache
 from app.services.survey_logic import evaluate, is_answered
 from app.services.version_content import VersionContent, load_version
+from app.services.videos import Progress, progress_for
 
 Window = Literal["open", "not_open", "closed"]
 ParticipationStatus = Literal["not_started", "in_progress", "submitted"]
@@ -357,6 +358,44 @@ def _hour(moment: datetime) -> datetime:
     return moment.replace(minute=0, second=0, microsecond=0)
 
 
+WATCH_FIRST_MESSAGE = "Watch this section's video to the end before answering."
+
+
+def video_problems(
+    version: VersionContent,
+    visible: list[str],
+    answers: dict[str, Any],
+    progress: dict[str, Progress],
+) -> list[dict[str, str]]:
+    """Trainings: questions in a section whose video isn't finished can't be answered yet.
+
+    Only answered or required questions are reported; an optional question left empty is fine.
+    """
+    unwatched = {
+        section["key"]
+        for section in version.content["sections"]
+        if section.get("video")
+        and not (section["key"] in progress and progress[section["key"]].completed)
+    }
+    if not unwatched:
+        return []
+    section_of = {q["key"]: q["section_key"] for q in version.content["questions"]}
+    required = {q["key"] for q in version.content["questions"] if q["required"]}
+    return [
+        {"question_key": key, "message": WATCH_FIRST_MESSAGE}
+        for key in visible
+        if section_of.get(key) in unwatched and (key in answers or key in required)
+    ]
+
+
+def merge_video_problems(
+    problems: list[dict[str, str]], watch: list[dict[str, str]]
+) -> list[dict[str, str]]:
+    """One message per question: "watch the video first" replaces e.g. "required"."""
+    blocked = {p["question_key"] for p in watch}
+    return [p for p in problems if p["question_key"] not in blocked] + watch
+
+
 async def submit(
     session: AsyncSession,
     settings: Settings,
@@ -367,6 +406,11 @@ async def submit(
     context = await respondent_context(session, settings, user, survey_id)
     version = context.version
     answers, visible, problems = check_answers(version, raw_answers)
+    if context.survey.kind == "training":
+        progress = await progress_for(session, survey_id, user.employee_id)
+        problems = merge_video_problems(
+            problems, video_problems(version, visible, answers, progress)
+        )
     if problems:
         count = len(problems)
         raise AppError(
@@ -505,9 +549,12 @@ async def my_response(
 
 
 async def my_surveys(
-    session: AsyncSession, settings: Settings, user: AuthenticatedUser
+    session: AsyncSession,
+    settings: Settings,
+    user: AuthenticatedUser,
+    kind: Literal["survey", "training"] = "survey",
 ) -> list[dict[str, Any]]:
-    """Surveys this person can take now, plus ones they've completed."""
+    """Surveys (or trainings) this person can take now, plus ones they've completed."""
     in_audience = (
         select(SurveyAudience.employee_id)
         .where(
@@ -526,6 +573,7 @@ async def my_surveys(
             Survey.current_version_id.is_not(None),
             Survey.status.in_(("published", "closed")),
             Survey.open_to_all | in_audience,
+            Survey.kind == kind,
         )
         .order_by(Survey.updated_at.desc())
     )
@@ -546,6 +594,11 @@ async def my_surveys(
             visibility = evaluate(version.logic, draft)
             answered = len(visibility.kept_answers)
         total = len(visibility.visible_questions)
+        video_sections = [s["key"] for s in version.content["sections"] if s.get("video")]
+        videos_done = 0
+        if video_sections:
+            progress = await progress_for(session, survey.id, user.employee_id)
+            videos_done = sum(1 for k in video_sections if k in progress and progress[k].completed)
         items.append(
             {
                 "id": survey.id,
@@ -560,6 +613,8 @@ async def my_surveys(
                 "progress": round(answered / total, 2) if total and not submitted else None,
                 "theme": version.content["theme"],
                 "submitted_at": participation.submitted_at if submitted and participation else None,
+                "videos_total": len(video_sections),
+                "videos_done": videos_done,
             }
         )
     return items

@@ -11,7 +11,7 @@ import { apiUrl } from '@/lib/env'
 import { shortDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-import { listMySurveys, respondKeys, type MySurvey } from './api'
+import { listMySurveys, listMyTrainings, respondKeys, type MySurvey } from './api'
 
 const GROUPS = [
   { status: 'pending', title: 'To do', action: 'Start' },
@@ -66,6 +66,12 @@ function SurveyCard({ survey, action }: { survey: MySurvey; action: string }) {
             {closing ? (
               <span className={cn(soon && 'font-semibold text-warn')}>{closing}</span>
             ) : null}
+            {survey.videos_total > 0 && survey.status !== 'submitted' ? (
+              <span>
+                {survey.videos_done} of {survey.videos_total} video
+                {survey.videos_total === 1 ? '' : 's'} watched
+              </span>
+            ) : null}
             {survey.status === 'submitted' && survey.submitted_at ? (
               <span>Submitted {shortDate(survey.submitted_at.slice(0, 10))}</span>
             ) : null}
@@ -109,19 +115,44 @@ function SurveyCard({ survey, action }: { survey: MySurvey; action: string }) {
   )
 }
 
+const COPY = {
+  survey: {
+    title: 'My surveys',
+    description: "Surveys you've been invited to take.",
+    loading: 'Loading surveys',
+    error: "We couldn't load your surveys",
+    empty: 'When HR sends you a survey, it will appear here.',
+  },
+  training: {
+    title: 'My trainings',
+    description:
+      "Trainings you've been asked to complete: watch each video, then answer its questions.",
+    loading: 'Loading trainings',
+    error: "We couldn't load your trainings",
+    empty: 'When HR assigns you a training, it will appear here.',
+  },
+} as const
+
+/** "My trainings": the same list, for trainings (docs/09-trainings.md). */
+export function MyTrainingsPage() {
+  return <MySurveysPage kind="training" />
+}
+
 /** "My surveys": what to answer, what's half done, and what's finished. */
-export function MySurveysPage() {
-  usePageTitle('My surveys')
+export function MySurveysPage({ kind = 'survey' }: { kind?: 'survey' | 'training' }) {
+  const copy = COPY[kind]
+  usePageTitle(copy.title)
   const surveys = useQuery({
-    queryKey: respondKeys.mine,
-    queryFn: ({ signal }) => listMySurveys(signal),
+    queryKey: kind === 'training' ? respondKeys.trainings : respondKeys.mine,
+    queryFn: ({ signal }) =>
+      kind === 'training' ? listMyTrainings(signal) : listMySurveys(signal),
   })
 
   return (
     <>
-      <PageHeader title="My surveys" description="Surveys you've been invited to take." />
+      <PageHeader title={copy.title} description={copy.description} />
       {surveys.isPending ? (
-        <ul className="flex flex-col gap-3" aria-label="Loading surveys">
+        <ul className="flex flex-col gap-3" aria-label={copy.loading}>
           {[0, 1].map((i) => (
             <li key={i} className="rounded-xl border bg-card p-4">
               <Skeleton className="h-5 w-2/3" />
@@ -132,7 +163,7 @@ export function MySurveysPage() {
       ) : surveys.isError ? (
         <EmptyState
           icon={TriangleAlertIcon}
-          title="We couldn't load your surveys"
+          title={copy.error}
           description="Check your connection, then try again."
           action={<Button onClick={() => void surveys.refetch()}>Try again</Button>}
         />
@@ -143,7 +174,7 @@ export function MySurveysPage() {
           <EmptyState
             icon={PartyPopperIcon}
             title="You're all caught up."
-            description="When HR sends you a survey, it will appear here."
+            description={copy.empty}
           />
           {surveys.data.length ? (
             <div className="mt-8">

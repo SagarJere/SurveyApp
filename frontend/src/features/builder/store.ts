@@ -14,11 +14,14 @@ import type {
   SurveySettings,
   Theme,
 } from '@/features/survey-logic/types'
+import type { SurveyKind } from '@/features/surveys/types'
 
 import * as ops from './draft-ops'
 
 interface BuilderState {
   surveyId: string | null
+  /** "training" switches on video sections (docs/09-trainings.md). */
+  kind: SurveyKind
   /** Identifies one load of a survey (its draft_updated_at), so a reload re-initialises. */
   loadToken: string | null
   draft: Draft
@@ -35,7 +38,7 @@ interface BuilderState {
   /** Issues from the last "Check for issues", or null if not checked since the last edit. */
   issues: Issue[] | null
 
-  load: (surveyId: string, draft: Draft, loadToken: string) => void
+  load: (surveyId: string, draft: Draft, loadToken: string, kind?: SurveyKind) => void
   requestFocus: (selector: string | null) => void
   setOpen: (key: string | null) => void
   toggleCollapsed: (sectionKey: string) => void
@@ -107,6 +110,7 @@ export const useBuilderStore = create<BuilderState>()((set, get) => {
 
   return {
     surveyId: null,
+    kind: 'survey',
     loadToken: null,
     draft: EMPTY_DRAFT,
     revision: 0,
@@ -117,9 +121,10 @@ export const useBuilderStore = create<BuilderState>()((set, get) => {
     focusRequest: null,
     issues: null,
 
-    load: (surveyId, draft, loadToken) => {
+    load: (surveyId, draft, loadToken, kind = 'survey') => {
       set({
         surveyId,
+        kind,
         loadToken,
         draft,
         revision: 0,

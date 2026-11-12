@@ -110,6 +110,7 @@ function SettingRow({
 export function SettingsTab() {
   const settings = useBuilderStore((s) => s.draft.settings)
   const update = useBuilderStore((s) => s.updateSettings)
+  const training = useBuilderStore((s) => s.kind === 'training')
   const set =
     <K extends keyof SurveySettings>(key: K) =>
     (value: SurveySettings[K]) => {
@@ -170,18 +171,27 @@ export function SettingsTab() {
           checked={settings.one_response}
           onChange={set('one_response')}
         />
-        <SettingRow
-          label="Allow editing until the survey closes"
-          description="Employees can reopen the survey and change their answers."
-          checked={settings.allow_edit}
-          onChange={set('allow_edit')}
-        />
-        <SettingRow
-          label="Anonymous responses"
-          description="Reports won’t show who answered. Participation is tracked separately, so no one can respond twice."
-          checked={settings.anonymous}
-          onChange={set('anonymous')}
-        />
+        {training ? (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Trainings are never anonymous, and answers can’t be changed after submitting, so
+            everyone’s result is clear.
+          </p>
+        ) : (
+          <>
+            <SettingRow
+              label="Allow editing until the survey closes"
+              description="Employees can reopen the survey and change their answers."
+              checked={settings.allow_edit}
+              onChange={set('allow_edit')}
+            />
+            <SettingRow
+              label="Anonymous responses"
+              description="Reports won’t show who answered. Participation is tracked separately, so no one can respond twice."
+              checked={settings.anonymous}
+              onChange={set('anonymous')}
+            />
+          </>
+        )}
       </Panel>
 
       <Panel

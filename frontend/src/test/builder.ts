@@ -16,6 +16,7 @@ export function surveyDetail(draft: Draft, overrides: Partial<SurveyDetail> = {}
   return {
     id: SURVEY_ID,
     title: draft.title,
+    kind: 'survey',
     status: 'draft',
     version_no: null,
     draft,

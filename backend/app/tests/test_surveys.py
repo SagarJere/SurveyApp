@@ -136,7 +136,9 @@ async def test_reload_restores_the_whole_sample_survey(
 
     reloaded = (await client.get(f"/api/surveys/{survey['id']}", headers=hr)).json()
 
-    assert reloaded["draft"] == PULSE
+    # Every section now has a "video" field (only trainings fill it in).
+    expected = {**PULSE, "sections": [{**section, "video": None} for section in PULSE["sections"]]}
+    assert reloaded["draft"] == expected
     assert reloaded["title"] == PULSE["title"]
     assert reloaded["draft_updated_at"] == survey["draft_updated_at"]
 

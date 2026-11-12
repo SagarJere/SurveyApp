@@ -102,6 +102,7 @@ async def load_version(session: AsyncSession, version_id: uuid.UUID) -> VersionC
                 "title": s.title,
                 "description": s.description,
                 "condition": s.condition,
+                "video": s.video,
             }
             for s in sections
         ],

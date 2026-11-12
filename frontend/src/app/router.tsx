@@ -5,8 +5,8 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequireRole } from '@/features/auth/RequireRole'
 import { SURVEY_MANAGER_ROLES } from '@/features/auth/types'
-import { MySurveysPage } from '@/features/respond/MySurveysPage'
-import { SurveysHomePage } from '@/features/surveys-home/SurveysHomePage'
+import { MySurveysPage, MyTrainingsPage } from '@/features/respond/MySurveysPage'
+import { SurveysHomePage, TrainingsHomePage } from '@/features/surveys-home/SurveysHomePage'
 
 import { AppShell } from './layouts/AppShell'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -16,8 +16,10 @@ import { RouteErrorPage } from './pages/RouteErrorPage'
  * Route groups (see docs/02-architecture.md):
  *   /login                       sign in (public)
  *   /                            My surveys (everyone signed in)
+ *   /trainings                   My trainings (everyone signed in)
  *   /s/:surveyId                 take a survey (lazy, separate chunk)
  *   /admin/surveys               surveys home (HR/Admin)
+ *   /admin/trainings             trainings home (HR/Admin); trainings share the routes below
  *   /admin/surveys/:id/edit      builder (HR/Admin)
  *   /admin/surveys/:id/results   results dashboard (HR/Admin)
  */
@@ -65,11 +67,13 @@ export const routes: RouteObject[] = [
             Component: AppShell,
             children: [
               { index: true, Component: MySurveysPage },
+              { path: 'trainings', Component: MyTrainingsPage },
               {
                 path: 'admin',
                 element: <RequireRole roles={SURVEY_MANAGER_ROLES} />,
                 children: [
                   { path: 'surveys', Component: SurveysHomePage },
+                  { path: 'trainings', Component: TrainingsHomePage },
                   {
                     path: 'surveys/:surveyId/results',
                     // Its own chunk, so Recharts only loads for people who open results.

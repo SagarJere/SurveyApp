@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Text, func, text
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -15,12 +15,16 @@ class Survey(Base):
     __tablename__ = "surveys"
     __table_args__ = (
         CheckConstraint("status IN ('draft', 'published', 'closed')", name="status_valid"),
+        CheckConstraint("kind IN ('survey', 'training')", name="kind_valid"),
+        Index("ix_surveys_kind_status", "kind", "status"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
     )
     title: Mapped[str] = mapped_column(Text, server_default="")
+    # "survey" or "training" (docs/09-trainings.md). Set at creation, never changes.
+    kind: Mapped[str] = mapped_column(Text, server_default="survey")
     status: Mapped[str] = mapped_column(Text, server_default="draft")
     draft: Mapped[dict[str, Any]] = mapped_column(JSONB)
     draft_updated_at: Mapped[datetime] = mapped_column(

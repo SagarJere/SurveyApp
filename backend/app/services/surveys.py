@@ -19,8 +19,11 @@ from app.auth.types import AuthenticatedUser
 from app.errors import AppError
 from app.models import Survey, SurveyMember
 from app.schemas.draft import Draft, Section
+from app.services import videos
+from app.services.storage import LocalFileStorage
 
 Need = Literal["view", "edit", "own"]
+SurveyKind = Literal["survey", "training"]
 _EDIT_ROLES = frozenset({"owner", "coowner"})
 
 
@@ -88,11 +91,17 @@ async def get_access(
     return access
 
 
-async def list_surveys(session: AsyncSession, user: AuthenticatedUser) -> list[SurveyAccess]:
-    """Surveys the user is a member of; admins see every survey. Newest activity first."""
-    query = select(Survey, SurveyMember.role).outerjoin(
-        SurveyMember,
-        (SurveyMember.survey_id == Survey.id) & (SurveyMember.employee_id == user.employee_id),
+async def list_surveys(
+    session: AsyncSession, user: AuthenticatedUser, kind: SurveyKind = "survey"
+) -> list[SurveyAccess]:
+    """Surveys (or trainings) the user is a member of; admins see all. Newest activity first."""
+    query = (
+        select(Survey, SurveyMember.role)
+        .outerjoin(
+            SurveyMember,
+            (SurveyMember.survey_id == Survey.id) & (SurveyMember.employee_id == user.employee_id),
+        )
+        .where(Survey.kind == kind)
     )
     if not user.is_admin:
         query = query.where(SurveyMember.employee_id.is_not(None))
@@ -100,22 +109,52 @@ async def list_surveys(session: AsyncSession, user: AuthenticatedUser) -> list[S
     return [_access(row[0], row[1], user) for row in rows.all()]
 
 
-async def _insert(session: AsyncSession, user: AuthenticatedUser, draft: Draft) -> Survey:
+async def _insert(
+    session: AsyncSession,
+    user: AuthenticatedUser,
+    draft: Draft,
+    kind: SurveyKind = "survey",
+    *,
+    commit: bool = True,
+) -> Survey:
     survey = Survey(
         title=draft.title,
-        draft=draft.model_dump(mode="json"),
+        kind=kind,
+        draft=apply_kind_rules(kind, draft).model_dump(mode="json"),
         created_by=user.employee_id,
     )
     session.add(survey)
     await session.flush()
     session.add(SurveyMember(survey_id=survey.id, employee_id=user.employee_id, role="owner"))
-    await session.commit()
-    await session.refresh(survey)
+    if commit:
+        await session.commit()
+        await session.refresh(survey)
     return survey
 
 
-async def create_survey(session: AsyncSession, user: AuthenticatedUser) -> SurveyAccess:
-    survey = await _insert(session, user, new_draft())
+def apply_kind_rules(kind: str, draft: Draft) -> Draft:
+    """Trainings are never anonymous and can't be edited after submitting (scores would
+    change). Only trainings have videos (docs/09-trainings.md)."""
+    if kind == "training":
+        draft.settings.anonymous = False
+        draft.settings.allow_edit = False
+        return draft
+    if any(section.video is not None for section in draft.sections):
+        raise AppError(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            code="VALIDATION_FAILED",
+            message="Only trainings can have videos.",
+            details={
+                "issues": [{"field": "sections", "message": "Only trainings can have videos."}]
+            },
+        )
+    return draft
+
+
+async def create_survey(
+    session: AsyncSession, user: AuthenticatedUser, kind: SurveyKind = "survey"
+) -> SurveyAccess:
+    survey = await _insert(session, user, new_draft(), kind)
     return _access(survey, "owner", user)
 
 
@@ -124,6 +163,7 @@ async def save_draft(
 ) -> datetime:
     """Replace the draft, unless someone else saved since `expected_updated_at` (then 409)."""
     survey = access.survey
+    draft = apply_kind_rules(survey.kind, draft)
     result = await session.execute(
         update(Survey)
         .where(Survey.id == survey.id, Survey.draft_updated_at == expected_updated_at)
@@ -177,21 +217,47 @@ def _rekey(draft: Draft) -> Draft:
 
 
 async def duplicate_survey(
-    session: AsyncSession, user: AuthenticatedUser, access: SurveyAccess
+    session: AsyncSession,
+    user: AuthenticatedUser,
+    access: SurveyAccess,
+    storage: LocalFileStorage,
 ) -> SurveyAccess:
+    """A new draft you own, with fresh keys. A training's uploaded videos are copied too, so
+    the copy keeps working if the original is deleted."""
     source = Draft.model_validate(access.survey.draft)
     copy = _rekey(source)
     copy.title = f"{source.title} (copy)" if source.title.strip() else ""
     copy.title = copy.title[:300]
-    survey = await _insert(session, user, copy)
+    kind = access.survey.kind
+    survey = await _insert(session, user, copy, kind, commit=False)  # type: ignore[arg-type]
+    if kind == "training":
+        mapping = await videos.copy_videos(
+            session,
+            storage,
+            from_survey=access.survey.id,
+            to_survey=survey.id,
+            uploaded_by=user.employee_id,
+        )
+        for section in copy.sections:
+            video = section.video
+            if video is not None and video.asset_id is not None:
+                new_id = mapping.get(str(video.asset_id))
+                video.asset_id = uuid.UUID(new_id) if new_id else None
+        survey.draft = copy.model_dump(mode="json")
+    await session.commit()
+    await session.refresh(survey)
     return _access(survey, "owner", user)
 
 
-async def delete_survey(session: AsyncSession, access: SurveyAccess) -> None:
+async def delete_survey(
+    session: AsyncSession, access: SurveyAccess, storage: LocalFileStorage
+) -> None:
     if access.survey.current_version_id is not None:
         raise AppError(
             status_code=status.HTTP_409_CONFLICT,
             message="Published surveys can't be deleted. Close the survey instead.",
         )
+    uploaded = await videos.list_videos(session, access.survey.id)
     await session.delete(access.survey)
     await session.commit()
+    videos.delete_files(storage, uploaded)  # rows went with the survey; now the files

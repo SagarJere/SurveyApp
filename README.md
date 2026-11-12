@@ -133,6 +133,14 @@ This adds test people T3001 onwards to the survey's audience and submits through
 
 `npm run ui-check` publishes the sample survey (if it's still a draft) with the dev test accounts as its audience, open from today for 30 days, so you can try it as E2001.
 
+## Trainings (video + quiz)
+
+Trainings are surveys where employees watch a video, then answer the questions about it (`docs/09-trainings.md`). HR creates them under **Trainings → New training**; employees find them under **My trainings**.
+
+- **Video sections:** each section can have one video, either uploaded (MP4 or WebM, up to `VIDEO_MAX_MB`, default 200) or linked from your internal video server (an `http(s)://` address of an MP4/WebM; `https://` only in production). Uploads are stored under `FILE_STORAGE_PATH/videos/` and streamed with range requests, so playback and seeking start straight away.
+- **Rules:** a section's questions appear after its video ends. Per video, HR chooses whether people may skip ahead and change the playback speed (both off by default). Finishing a video is remembered, and the server refuses answers for a video section that wasn't finished.
+- Trainings are never anonymous and can't be edited after submitting. Quiz scoring, retakes and the completion report follow in Phase T2 and T3.
+
 ## Browser check
 
 With `make api` and `make web` running:

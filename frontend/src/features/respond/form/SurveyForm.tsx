@@ -3,7 +3,7 @@
  * builder's Preview now and /s/:surveyId in Phase 4. Three layouts, conditions, the question
  * navigator, auto-next, money input and theme.
  */
-import { CheckIcon, HomeIcon, Loader2Icon } from 'lucide-react'
+import { CheckIcon, HomeIcon, Loader2Icon, LockIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 
@@ -13,6 +13,7 @@ import { evaluate, isAnswered } from '@/features/survey-logic/conditions'
 import type { Answers, Draft, Question, Section } from '@/features/survey-logic/types'
 import { shortDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { VideoPlayer } from '@/features/video/VideoPlayer'
 
 import { Navigator } from './Navigator'
 import { QuestionBlock } from './QuestionBlock'
@@ -50,6 +51,20 @@ interface SurveyFormProps {
   canEditAfterSubmit?: boolean
   /** Thank-you screen offers "Start another response". Default: one response is off. */
   canRespondAgain?: boolean
+  /** Trainings: section key -> its video. A section's questions appear after its video ends. */
+  videos?: Record<string, FormVideo>
+  /** Trainings: how far this person got in each section's video. */
+  videoProgress?: Record<string, { furthest_seconds: number; completed: boolean }>
+  /** Trainings: progress while watching (completed = false) and when a video ends (true). */
+  onVideoProgress?: (sectionKey: string, furthestSeconds: number, completed: boolean) => void
+  /** Preview: offer "Skip video" so HR can test the questions without watching. */
+  allowSkipVideos?: boolean
+}
+
+export interface FormVideo {
+  url: string
+  allow_seek: boolean
+  allow_speed: boolean
 }
 
 const AUTO_NEXT_MS = 350
@@ -94,6 +109,10 @@ export function SurveyForm({
   status,
   canEditAfterSubmit,
   canRespondAgain,
+  videos,
+  videoProgress,
+  onVideoProgress,
+  allowSkipVideos = false,
 }: SurveyFormProps) {
   const { settings, theme } = survey
   const layout = settings.layout
@@ -109,6 +128,15 @@ export function SurveyForm({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [revealed, setRevealed] = useState<ReadonlySet<string>>(() => new Set())
+  // Trainings: sections whose video has been watched to the end (their questions are open).
+  const [watched, setWatched] = useState<ReadonlySet<string>>(
+    () =>
+      new Set(
+        Object.entries(videoProgress ?? {})
+          .filter(([, p]) => p.completed)
+          .map(([key]) => key),
+      ),
+  )
   // Set by Next/Back; the next heading to mount takes focus (see focusOnMount).
   const pendingFocus = useRef(false)
   const topRef = useRef<HTMLDivElement>(null)
@@ -130,14 +158,24 @@ export function SurveyForm({
           sectionNumber: index + 1,
           questions: visible.filter((q) => q.section_key === section.key),
         }))
-        .filter((group) => group.questions.length > 0),
-    [survey.sections, visible],
+        .filter(
+          (group) =>
+            group.questions.length > 0 ||
+            (videos?.[group.section.key] !== undefined &&
+              visibility.visibleSections.includes(group.section.key)),
+        ),
+    [survey.sections, visible, videos, visibility],
   )
+  /** A section with a video that hasn't been watched to the end yet. */
+  const locked = (sectionKey: string) =>
+    videos?.[sectionKey] !== undefined && !watched.has(sectionKey)
   const multiSection = survey.sections.length > 1
   const staged =
     theme.background_style === 'color' ||
     (theme.background_style === 'image' && assets(theme.background) !== null)
-  const blocking = (q: Question) => answerProblem(q, answers[q.key]) !== null
+  const blocking = (q: Question) =>
+    locked(q.section_key) || answerProblem(q, answers[q.key]) !== null
+  const lockedCount = visible.filter((q) => locked(q.section_key)).length
   const firstBlocked = visible.findIndex(blocking)
   const anyBlocked = firstBlocked !== -1
 
@@ -176,6 +214,19 @@ export function SurveyForm({
     [],
   )
 
+  const cancelAutoNext = useCallback(() => {
+    window.clearTimeout(autoNextTimer.current)
+  }, [])
+  const scheduleAutoNext = useCallback(
+    (target: number) => {
+      window.clearTimeout(autoNextTimer.current)
+      autoNextTimer.current = window.setTimeout(() => {
+        go(target, 'forward')
+      }, AUTO_NEXT_MS)
+    },
+    [go],
+  )
+
   const answer = (question: Question, value: unknown) => {
     const next = evaluate(survey, { ...answers, [question.key]: value }).keptAnswers
     setAnswers(next)
@@ -189,11 +240,10 @@ export function SurveyForm({
     if (layout === 'step' && settings.auto_next && AUTO_NEXT_TYPES.has(question.type)) {
       const index = visible.indexOf(question)
       const stillVisible = evaluate(survey, next).visibleQuestions
-      window.clearTimeout(autoNextTimer.current)
       if (index < stillVisible.length - 1 && answerProblem(question, value) === null) {
-        autoNextTimer.current = window.setTimeout(() => {
-          go(index + 1, 'forward')
-        }, AUTO_NEXT_MS)
+        scheduleAutoNext(index + 1)
+      } else {
+        cancelAutoNext()
       }
     }
   }
@@ -261,6 +311,65 @@ export function SurveyForm({
     />
   )
 
+  const markWatched = (sectionKey: string, furthestSeconds: number) => {
+    setWatched((current) => new Set(current).add(sectionKey))
+    onVideoProgress?.(sectionKey, furthestSeconds, true)
+  }
+
+  /** A section's video, and while it's unwatched, a note in place of its questions. */
+  const videoBlock = (sectionKey: string, title: string, questionCount: number) => {
+    const video = videos?.[sectionKey]
+    if (!video) return null
+    const isLocked = locked(sectionKey)
+    return (
+      <div className="flex flex-col gap-3 pt-4 pb-2">
+        <VideoPlayer
+          key={sectionKey}
+          src={video.url}
+          title={title}
+          allowSeek={video.allow_seek}
+          allowSpeed={video.allow_speed}
+          completed={!isLocked}
+          startAt={videoProgress?.[sectionKey]?.furthest_seconds ?? 0}
+          onProgress={(seconds) => {
+            onVideoProgress?.(sectionKey, seconds, false)
+          }}
+          onEnded={(seconds) => {
+            markWatched(sectionKey, seconds)
+          }}
+          onSkip={
+            allowSkipVideos
+              ? () => {
+                  markWatched(sectionKey, 0)
+                }
+              : undefined
+          }
+        />
+        {isLocked && questionCount > 0 ? (
+          <p
+            className="flex items-center gap-2.5 rounded-xl border border-dashed bg-muted px-3.5 py-3 text-sm"
+            role="status"
+          >
+            <LockIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <span>
+              <b>
+                {questionCount} question{questionCount === 1 ? '' : 's'}
+              </b>{' '}
+              appear{questionCount === 1 ? 's' : ''} when the video ends.
+            </span>
+          </p>
+        ) : null}
+      </div>
+    )
+  }
+
+  /** A section's name for the video player's label. */
+  const sectionName = (sectionKey: string) => {
+    const index = survey.sections.findIndex((s) => s.key === sectionKey)
+    const title = survey.sections[index]?.title.trim() ?? ''
+    return title.length > 0 ? title : `Section ${String(index + 1)}`
+  }
+
   const sectionHeader = (group: Group, index: number, total: number, focus = false) => (
     <div className="pt-6 pb-1">
       <span className="text-xs font-bold tracking-wider text-(--survey-accent) uppercase dark:brightness-150">
@@ -304,16 +413,19 @@ export function SurveyForm({
     body = groups.map((group, index) => (
       <div key={group.section.key}>
         {multiSection ? sectionHeader(group, index, groups.length) : null}
-        {group.questions.map((q) => block(q))}
+        {videoBlock(group.section.key, sectionName(group.section.key), group.questions.length)}
+        {locked(group.section.key) ? null : group.questions.map((q) => block(q))}
       </div>
     ))
     footer = (
       <>
         {submitButton(missing > 0)}
         <span className="text-sm text-muted-foreground" aria-live="polite">
-          {missing
-            ? `${String(missing)} required question${missing > 1 ? 's' : ''} left`
-            : 'All set'}
+          {lockedCount
+            ? 'Watch each video to see its questions'
+            : missing
+              ? `${String(missing)} required question${missing > 1 ? 's' : ''} left`
+              : 'All set'}
         </span>
       </>
     )
@@ -339,7 +451,10 @@ export function SurveyForm({
         }
       >
         {multiSection ? sectionHeader(group, current, groups.length, true) : null}
-        {onPage.map((q, i) => block(q, { focus: !multiSection && i === 0 }))}
+        {videoBlock(group.section.key, sectionName(group.section.key), onPage.length)}
+        {locked(group.section.key)
+          ? null
+          : onPage.map((q, i) => block(q, { focus: !multiSection && i === 0 }))}
       </div>
     ) : null
     footer = (
@@ -351,9 +466,11 @@ export function SurveyForm({
           }}
         />
         <span className="flex-1 text-center text-sm text-muted-foreground" aria-live="polite">
-          {missingOnPage
-            ? `${String(missingOnPage)} required question${missingOnPage > 1 ? 's' : ''} left on this page`
-            : ''}
+          {group && locked(group.section.key)
+            ? 'Watch the video to continue'
+            : missingOnPage
+              ? `${String(missingOnPage)} required question${missingOnPage > 1 ? 's' : ''} left on this page`
+              : ''}
         </span>
         {last ? (
           submitButton(missingOnPage > 0 || anyBlocked)
@@ -370,6 +487,11 @@ export function SurveyForm({
   } else {
     const question = visible[current]
     const stuck = question ? blocking(question) : false
+    // The video sits on the step of its section's first question; the question waits for it.
+    const firstOfSection =
+      question !== undefined &&
+      (current === 0 || visible[current - 1]?.section_key !== question.section_key)
+    const questionLocked = question !== undefined && locked(question.section_key)
     const last = current >= visible.length - 1
     const sectionTitle =
       question && multiSection
@@ -387,7 +509,14 @@ export function SurveyForm({
             {sectionTitle}
           </p>
         ) : null}
-        {block(question, { large: true, focus: true })}
+        {firstOfSection
+          ? videoBlock(
+              question.section_key,
+              sectionName(question.section_key),
+              visible.filter((q) => q.section_key === question.section_key).length,
+            )
+          : null}
+        {questionLocked ? null : block(question, { large: true, focus: true })}
       </div>
     ) : null
     const reachable = firstBlocked === -1 ? visible.length - 1 : firstBlocked
@@ -400,7 +529,7 @@ export function SurveyForm({
           }}
         />
         <span className="flex-1 text-center text-sm text-muted-foreground" aria-live="polite">
-          {stuck ? 'Answer this to continue' : ''}
+          {questionLocked ? 'Watch the video to continue' : stuck ? 'Answer this to continue' : ''}
         </span>
         {last ? (
           submitButton(stuck || anyBlocked)

@@ -8,6 +8,7 @@ function item(overrides: Partial<SurveyListItem>): SurveyListItem {
   return {
     id: 'a',
     title: 'Survey',
+    kind: 'survey',
     status: 'published',
     version_no: 1,
     response_count: 0,

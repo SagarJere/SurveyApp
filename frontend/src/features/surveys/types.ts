@@ -2,11 +2,13 @@ import type { Draft } from '@/features/survey-logic/types'
 import type { Issue } from '@/features/survey-logic/validation'
 
 export type SurveyStatus = 'draft' | 'published' | 'closed'
+export type SurveyKind = 'survey' | 'training'
 export type MemberRole = 'owner' | 'coowner' | 'viewer'
 
 export interface SurveyListItem {
   id: string
   title: string
+  kind: SurveyKind
   status: SurveyStatus
   version_no: number | null
   response_count: number
@@ -26,6 +28,7 @@ export interface SurveyListItem {
 export interface SurveyDetail {
   id: string
   title: string
+  kind: SurveyKind
   status: SurveyStatus
   version_no: number | null
   draft: Draft
@@ -70,3 +73,17 @@ export interface ValidateResponse {
 }
 
 export const UNTITLED_SURVEY = 'Untitled survey'
+export const UNTITLED_TRAINING = 'Untitled training'
+
+/** An uploaded training video. */
+export interface VideoAsset {
+  id: string
+  file_name: string
+  content_type: string
+  size_bytes: number
+  duration_seconds: number | null
+  /** Signed link: plays in <video> without a token, for about a day. */
+  url: string
+  /** A published version uses it, so it can't be deleted. */
+  published: boolean
+}

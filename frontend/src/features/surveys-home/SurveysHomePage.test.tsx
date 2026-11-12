@@ -13,6 +13,7 @@ function item(overrides: Partial<SurveyListItem> = {}): SurveyListItem {
   return {
     id: SURVEY_ID,
     title: 'Workplace pulse, Q4 2026',
+    kind: 'survey',
     status: 'draft',
     version_no: null,
     response_count: 0,

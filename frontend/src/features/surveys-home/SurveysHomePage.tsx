@@ -45,7 +45,12 @@ import {
 } from '@/features/surveys/api'
 import { ShareSurveyDialog } from '@/features/surveys/ShareSurveyDialog'
 import { StatusPill } from '@/features/surveys/StatusPill'
-import { UNTITLED_SURVEY, type SurveyListItem } from '@/features/surveys/types'
+import {
+  UNTITLED_SURVEY,
+  UNTITLED_TRAINING,
+  type SurveyKind,
+  type SurveyListItem,
+} from '@/features/surveys/types'
 import { relativeTime, shortDate } from '@/lib/format'
 
 import { closingSoon, filterSurveys, homeKpis, type StatusFilter } from './home-stats'
@@ -58,18 +63,48 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'closed', label: 'Closed' },
 ]
 
+const COPY = {
+  survey: {
+    title: 'Surveys',
+    description: 'Surveys you own, co-own or can view results for.',
+    create: 'New survey',
+    loading: 'Loading surveys',
+    error: "We couldn't load your surveys",
+    emptyTitle: 'No surveys yet',
+    emptyText:
+      'Create your first survey. It saves as you go, and nobody sees it until you publish.',
+  },
+  training: {
+    title: 'Trainings',
+    description:
+      'Video trainings with a quiz. Employees watch each video, then answer its questions.',
+    create: 'New training',
+    loading: 'Loading trainings',
+    error: "We couldn't load your trainings",
+    emptyTitle: 'No trainings yet',
+    emptyText:
+      'Create your first training: add videos, then the questions people answer after each one.',
+  },
+} as const
+
+/** Trainings home: the surveys home for trainings (docs/09-trainings.md). */
+export function TrainingsHomePage() {
+  return <SurveysHomePage kind="training" />
+}
+
 /** Surveys home for HR and admins: every survey you can see, plus "New survey". */
-export function SurveysHomePage() {
-  usePageTitle('Surveys')
+export function SurveysHomePage({ kind = 'survey' }: { kind?: SurveyKind }) {
+  const copy = COPY[kind]
+  usePageTitle(copy.title)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const surveys = useQuery({
-    queryKey: surveyKeys.all,
-    queryFn: ({ signal }) => listSurveys(signal),
+    queryKey: surveyKeys.list(kind),
+    queryFn: ({ signal }) => listSurveys(kind, signal),
   })
 
   const create = useMutation({
-    mutationFn: createSurvey,
+    mutationFn: () => createSurvey(kind),
     onSuccess: (survey) => {
       void queryClient.invalidateQueries({ queryKey: surveyKeys.all })
       void navigate(`/admin/surveys/${survey.id}/edit`)
@@ -88,19 +123,19 @@ export function SurveysHomePage() {
       ) : (
         <PlusIcon aria-hidden="true" />
       )}
-      New survey
+      {copy.create}
     </Button>
   )
 
   return (
     <>
       <PageHeader
-        title="Surveys"
-        description="Surveys you own, co-own or can view results for."
+        title={copy.title}
+        description={copy.description}
         actions={surveys.data?.length ? newSurveyButton : undefined}
       />
       {surveys.isPending ? (
-        <ul className="flex flex-col gap-3" aria-label="Loading surveys">
+        <ul className="flex flex-col gap-3" aria-label={copy.loading}>
           {[0, 1, 2].map((i) => (
             <li key={i} className="rounded-xl border bg-card p-4">
               <Skeleton className="h-5 w-2/3" />
@@ -111,25 +146,25 @@ export function SurveysHomePage() {
       ) : surveys.isError ? (
         <EmptyState
           icon={TriangleAlertIcon}
-          title="We couldn't load your surveys"
+          title={copy.error}
           description="Check your connection, then try again."
           action={<Button onClick={() => void surveys.refetch()}>Try again</Button>}
         />
       ) : surveys.data.length === 0 ? (
         <EmptyState
           icon={ClipboardListIcon}
-          title="No surveys yet"
-          description="Create your first survey. It saves as you go, and nobody sees it until you publish."
+          title={copy.emptyTitle}
+          description={copy.emptyText}
           action={newSurveyButton}
         />
       ) : (
-        <SurveyList surveys={surveys.data} />
+        <SurveyList surveys={surveys.data} noun={kind === 'training' ? 'trainings' : 'surveys'} />
       )}
     </>
   )
 }
 
-function SurveyList({ surveys }: { surveys: SurveyListItem[] }) {
+function SurveyList({ surveys, noun }: { surveys: SurveyListItem[]; noun: string }) {
   const [status, setStatus] = useState<StatusFilter>('all')
   const [search, setSearch] = useState('')
   const kpis = homeKpis(surveys)
@@ -137,7 +172,7 @@ function SurveyList({ surveys }: { surveys: SurveyListItem[] }) {
   return (
     <div className="flex flex-col gap-5">
       <dl className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
-        <Kpi label="Live surveys" value={String(kpis.live)} />
+        <Kpi label={`Live ${noun}`} value={String(kpis.live)} />
         <Kpi
           label="Responses this week"
           value={new Intl.NumberFormat().format(kpis.responsesThisWeek)}
@@ -154,13 +189,13 @@ function SurveyList({ surveys }: { surveys: SurveyListItem[] }) {
             aria-hidden="true"
           />
           <label htmlFor="survey-search" className="sr-only">
-            Search surveys
+            Search {noun}
           </label>
           <Input
             id="survey-search"
             type="search"
             className="pl-9"
-            placeholder="Search surveys"
+            placeholder={`Search ${noun}`}
             value={search}
             onChange={(event) => {
               setSearch(event.target.value)
@@ -187,13 +222,13 @@ function SurveyList({ surveys }: { surveys: SurveyListItem[] }) {
       </div>
       <p className="sr-only" role="status">
         {shown.length === surveys.length
-          ? `${String(surveys.length)} surveys`
-          : `${String(shown.length)} of ${String(surveys.length)} surveys match`}
+          ? `${String(surveys.length)} ${noun}`
+          : `${String(shown.length)} of ${String(surveys.length)} ${noun} match`}
       </p>
       {shown.length === 0 ? (
         <EmptyState
           icon={SearchXIcon}
-          title="No surveys match"
+          title={`No ${noun} match`}
           description="Try another search or status."
           action={
             <Button
@@ -203,12 +238,15 @@ function SurveyList({ surveys }: { surveys: SurveyListItem[] }) {
                 setSearch('')
               }}
             >
-              Show all surveys
+              Show all {noun}
             </Button>
           }
         />
       ) : (
-        <ul className="flex flex-col gap-3" aria-label="Surveys">
+        <ul
+          className="flex flex-col gap-3"
+          aria-label={noun === 'trainings' ? 'Trainings' : 'Surveys'}
+        >
           {shown.map((survey) => (
             <SurveyRow key={survey.id} survey={survey} />
           ))}
@@ -233,7 +271,8 @@ function SurveyRow({ survey }: { survey: SurveyListItem }) {
   const [confirming, setConfirming] = useState(false)
   const [confirmingClose, setConfirmingClose] = useState(false)
   const [sharing, setSharing] = useState(false)
-  const title = survey.title.trim() || UNTITLED_SURVEY
+  const title =
+    survey.title.trim() || (survey.kind === 'training' ? UNTITLED_TRAINING : UNTITLED_SURVEY)
   const published = survey.status !== 'draft'
   const closes = closingSoon(survey)
 
@@ -250,7 +289,7 @@ function SurveyRow({ survey }: { survey: SurveyListItem }) {
     mutationFn: () => deleteSurvey(survey.id),
     onSuccess: () => {
       setConfirming(false)
-      queryClient.setQueryData<SurveyListItem[]>(surveyKeys.all, (old) =>
+      queryClient.setQueryData<SurveyListItem[]>(surveyKeys.list(survey.kind), (old) =>
         old?.filter((s) => s.id !== survey.id),
       )
       void queryClient.invalidateQueries({ queryKey: surveyKeys.all })

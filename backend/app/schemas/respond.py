@@ -20,8 +20,23 @@ class Participation(BaseModel):
     draft_updated: bool
 
 
+class SectionVideo(BaseModel):
+    """A training section's video, ready to play (an uploaded file's link is signed)."""
+
+    url: str
+    allow_seek: bool
+    allow_speed: bool
+    duration_seconds: int | None
+
+
+class VideoProgress(BaseModel):
+    furthest_seconds: int
+    completed: bool
+
+
 class RespondentSurvey(BaseModel):
     survey_id: UUID
+    kind: Literal["survey", "training"]
     version_no: int
     title: str
     description: str
@@ -30,6 +45,9 @@ class RespondentSurvey(BaseModel):
     sections: list[dict[str, Any]]
     questions: list[dict[str, Any]]
     assets: dict[str, AssetLinks]
+    # Trainings: section key -> its video, and how far this person got in each.
+    videos: dict[str, SectionVideo] = Field(default_factory=dict)
+    video_progress: dict[str, VideoProgress] = Field(default_factory=dict)
     participation: Participation
 
 
@@ -60,3 +78,6 @@ class MySurvey(BaseModel):
     accent: str
     cover: AssetLinks | None
     submitted_at: datetime | None
+    # Trainings: how many of its section videos this person has finished.
+    videos_total: int = 0
+    videos_done: int = 0

@@ -47,6 +47,8 @@ class Settings(BaseSettings):
     health_db_timeout_seconds: float = Field(default=2.0, gt=0, le=30)
 
     file_storage_path: Path = REPO_ROOT / "data" / "files"
+    # Largest training video upload, in megabytes (docs/09-trainings.md).
+    video_max_mb: int = Field(default=200, ge=1, le=4096)
     # Survey open/close dates are calendar dates in this time zone (an IANA name).
     survey_timezone: str = "Asia/Kolkata"
     cors_origins: Annotated[list[str], NoDecode] = Field(
@@ -123,6 +125,15 @@ class Settings(BaseSettings):
                 )
                 raise ValueError(msg)
         return self
+
+    @property
+    def video_max_bytes(self) -> int:
+        return self.video_max_mb * 1024 * 1024
+
+    @property
+    def video_links_need_https(self) -> bool:
+        """Production serves Pulse over HTTPS, where browsers block http:// videos."""
+        return self.app_env == "production"
 
     @property
     def is_production(self) -> bool:

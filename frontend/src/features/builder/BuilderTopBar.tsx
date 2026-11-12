@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { StatusPill } from '@/features/surveys/StatusPill'
-import { UNTITLED_SURVEY, type SurveyStatus } from '@/features/surveys/types'
+import { UNTITLED_SURVEY, UNTITLED_TRAINING, type SurveyStatus } from '@/features/surveys/types'
 import { cn } from '@/lib/utils'
 
 import { useBuilderStore } from './store'
@@ -62,20 +62,29 @@ export const BuilderTopBar = forwardRef<HTMLElement, BuilderTopBarProps>(functio
   ref,
 ) {
   const title = useBuilderStore((s) => s.draft.title)
+  const training = useBuilderStore((s) => s.kind === 'training')
 
   return (
     <header ref={ref} className="sticky top-0 z-30 border-b bg-card">
       <div className="mx-auto flex max-w-[1040px] items-center gap-2 px-2 py-2 sm:gap-3 sm:px-5 sm:py-2.5">
         <Button variant="ghost" size="icon" asChild>
-          <Link to="/admin/surveys" aria-label="Back to Surveys">
+          <Link
+            to={training ? '/admin/trainings' : '/admin/surveys'}
+            aria-label={training ? 'Back to Trainings' : 'Back to Surveys'}
+          >
             <ArrowLeftIcon aria-hidden="true" />
           </Link>
         </Button>
         <div className="min-w-0 flex-1 sm:border-l sm:pl-3">
           <strong className="block truncate font-semibold">
-            {title.trim() || UNTITLED_SURVEY}
+            {title.trim() || (training ? UNTITLED_TRAINING : UNTITLED_SURVEY)}
           </strong>
           <span className="flex items-center gap-2 text-xs text-muted-foreground">
+            {training ? (
+              <span className="rounded-full border px-2 py-px font-semibold text-foreground">
+                Training
+              </span>
+            ) : null}
             <StatusPill status={status} versionNo={versionNo} />
             <span
               role="status"

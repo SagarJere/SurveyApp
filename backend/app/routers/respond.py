@@ -1,7 +1,7 @@
 """Taking surveys (docs/04-api.md, "Respondent"). Any signed-in employee; access is checked
 per survey (audience, dates) on every call."""
 
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Request, status
@@ -9,8 +9,8 @@ from fastapi import APIRouter, Request, status
 from app.auth.deps import CurrentUser
 from app.config import Settings
 from app.db import SessionDep
-from app.errors import ErrorResponse
-from app.models import ThemeAsset
+from app.errors import AppError, ErrorResponse
+from app.models import ThemeAsset, VideoAsset
 from app.schemas.respond import (
     AnswersBody,
     AssetLinks,
@@ -18,9 +18,13 @@ from app.schemas.respond import (
     MySurvey,
     Participation,
     RespondentSurvey,
+    SectionVideo,
     SubmitResult,
+    VideoProgress,
 )
+from app.schemas.videos import VideoProgressIn, VideoProgressOut
 from app.services import respond as service
+from app.services import videos as video_service
 from app.services.theme_assets import signed_path
 
 router = APIRouter(tags=["respond"])
@@ -54,12 +58,56 @@ async def _assets(
     return links
 
 
+async def _section_videos(
+    request: Request, session: SessionDep, sections: list[dict[str, Any]]
+) -> dict[str, SectionVideo]:
+    """Playable links for a training's section videos (uploads get signed links)."""
+    settings: Settings = request.app.state.settings
+    out: dict[str, SectionVideo] = {}
+    for section in sections:
+        video = section.get("video")
+        if not video:
+            continue
+        url: str | None = None
+        duration: int | None = None
+        if video.get("source") == "upload" and video.get("asset_id"):
+            asset = await session.get(VideoAsset, UUID(video["asset_id"]))
+            if asset is not None:
+                url = video_service.signed_path(settings, asset.id)
+                duration = asset.duration_seconds
+        elif video.get("source") == "link":
+            url = video.get("url")
+        if url:
+            out[section["key"]] = SectionVideo(
+                url=url,
+                allow_seek=bool(video.get("allow_seek")),
+                allow_speed=bool(video.get("allow_speed")),
+                duration_seconds=duration,
+            )
+    return out
+
+
 @router.get(
     "/me/surveys", response_model=list[MySurvey], summary="Surveys you can take or have taken"
 )
 async def my_surveys(request: Request, user: CurrentUser, session: SessionDep) -> list[MySurvey]:
+    return await _mine(request, user, session, "survey")
+
+
+@router.get(
+    "/me/trainings",
+    response_model=list[MySurvey],
+    summary="Trainings you can take or have taken",
+)
+async def my_trainings(request: Request, user: CurrentUser, session: SessionDep) -> list[MySurvey]:
+    return await _mine(request, user, session, "training")
+
+
+async def _mine(
+    request: Request, user: CurrentUser, session: SessionDep, kind: Literal["survey", "training"]
+) -> list[MySurvey]:
     settings: Settings = request.app.state.settings
-    items = await service.my_surveys(session, settings, user)
+    items = await service.my_surveys(session, settings, user, kind)
     result: list[MySurvey] = []
     for item in items:
         theme = item.pop("theme")
@@ -86,16 +134,27 @@ async def get_survey(
     settings: Settings = request.app.state.settings
     view = await service.respondent_view(session, settings, user, survey_id)
     content = view.context.version.content
+    training = view.context.survey.kind == "training"
+    progress = (
+        await video_service.progress_for(session, survey_id, user.employee_id) if training else {}
+    )
     return RespondentSurvey(
         survey_id=survey_id,
+        kind="training" if training else "survey",
         version_no=view.context.version.version.version_no,
         title=content["title"],
         description=content["description"],
         settings=content["settings"],
         theme=content["theme"],
-        sections=content["sections"],
+        # The section's raw video settings stay on the server; `videos` has what's playable.
+        sections=[{k: v for k, v in s.items() if k != "video"} for s in content["sections"]],
         questions=content["questions"],
         assets=await _assets(request, session, content["theme"]),
+        videos=await _section_videos(request, session, content["sections"]) if training else {},
+        video_progress={
+            key: VideoProgress(furthest_seconds=p.furthest_seconds, completed=p.completed)
+            for key, p in progress.items()
+        },
         participation=Participation(
             status=view.status,
             answers=view.answers,
@@ -150,3 +209,39 @@ async def my_response(
 ) -> dict[str, Any]:
     settings: Settings = request.app.state.settings
     return await service.my_response(session, settings, user, survey_id)
+
+
+MAX_VIDEO_SECONDS = 24 * 3600
+
+
+@router.put(
+    "/respond/{survey_id}/videos/{section_key}",
+    response_model=VideoProgressOut,
+    responses={**_ERRORS, status.HTTP_404_NOT_FOUND: {"model": ErrorResponse}},
+    summary="Record how far you got in a section's video, and when you finish it",
+)
+async def video_progress(
+    *,
+    survey_id: UUID,
+    section_key: UUID,
+    body: VideoProgressIn,
+    request: Request,
+    user: CurrentUser,
+    session: SessionDep,
+) -> VideoProgressOut:
+    settings: Settings = request.app.state.settings
+    context = await service.respondent_context(session, settings, user, survey_id)
+    sections = context.version.content["sections"]
+    if context.survey.kind != "training" or not any(
+        s["key"] == str(section_key) and s.get("video") for s in sections
+    ):
+        raise AppError(status_code=status.HTTP_404_NOT_FOUND, message="That video isn't here.")
+    saved = await video_service.record_progress(
+        session,
+        survey_id=survey_id,
+        employee_id=user.employee_id,
+        section_key=section_key,
+        furthest_seconds=max(0, min(body.furthest_seconds, MAX_VIDEO_SECONDS)),
+        completed=body.completed,
+    )
+    return VideoProgressOut(furthest_seconds=saved.furthest_seconds, completed=saved.completed)

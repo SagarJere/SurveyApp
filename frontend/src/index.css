@@ -44,7 +44,7 @@
   --warn-soft: #fbeadb;
   --destructive: #b42318;
   --destructive-foreground: #ffffff;
-  --success: #1f8a4c;
+  --success: #1a7d43; /* 5.2:1 on white, 4.8:1 on muted */
   /* Chart marks (validated with the dataviz palette checks against the card surface). */
   --chart-1: #00826c;
   --chart-low: #b42318;

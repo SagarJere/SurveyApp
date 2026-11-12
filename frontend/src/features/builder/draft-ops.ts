@@ -250,7 +250,7 @@ export function addSection(draft: Draft): [Draft, Section] {
   return [{ ...draft, sections: [...sections, section] }, section]
 }
 
-export type SectionPatch = Partial<Pick<Section, 'title' | 'description'>>
+export type SectionPatch = Partial<Pick<Section, 'title' | 'description' | 'video'>>
 
 export function updateSection(draft: Draft, key: string, patch: SectionPatch): Draft {
   return mapSection(draft, key, (s) => ({ ...s, ...patch }))

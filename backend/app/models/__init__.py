@@ -15,6 +15,7 @@ from app.models.survey import Survey, SurveyMember
 from app.models.theme_asset import ThemeAsset
 from app.models.user import AppUser
 from app.models.version import QuestionOption, SurveyVersion, VersionQuestion, VersionSection
+from app.models.video import VideoAsset, VideoView
 
 __all__ = [
     "AppUser",
@@ -32,4 +33,6 @@ __all__ = [
     "ThemeAsset",
     "VersionQuestion",
     "VersionSection",
+    "VideoAsset",
+    "VideoView",
 ]

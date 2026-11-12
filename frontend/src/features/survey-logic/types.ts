@@ -49,11 +49,24 @@ export interface Question {
   condition: Condition | null
 }
 
+/** Trainings: the video at the top of a section (docs/09-trainings.md). */
+export interface SectionVideo {
+  source: 'upload' | 'link'
+  /** source "upload": the uploaded video's id. */
+  asset_id?: string | null
+  /** source "link": an http(s) address of an MP4/WebM on the internal video server. */
+  url?: string | null
+  allow_seek: boolean
+  allow_speed: boolean
+}
+
 export interface Section {
   key: string
   title: string
   description: string
   condition: Condition | null
+  /** Trainings only. */
+  video?: SectionVideo | null
 }
 
 export interface SurveySettings {

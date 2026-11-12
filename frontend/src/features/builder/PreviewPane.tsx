@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { SurveyForm } from '@/features/respond/form/SurveyForm'
 import { useThemeAssets } from '@/features/theme/use-theme-assets'
+import { useDraftVideos } from '@/features/video/use-videos'
 import { cn } from '@/lib/utils'
 
 import { useBuilderStore } from './store'
@@ -16,6 +17,8 @@ export function PreviewPane({ stickyTop }: { stickyTop: number }) {
   const draft = useBuilderStore((s) => s.draft)
   const surveyId = useBuilderStore((s) => s.surveyId) ?? ''
   const { resolve } = useThemeAssets(surveyId)
+  const training = useBuilderStore((s) => s.kind === 'training')
+  const videos = useDraftVideos(surveyId, draft.sections, training)
   const [phone, setPhone] = useState(false)
   const [run, setRun] = useState(0)
   const reset = () => {
@@ -60,6 +63,8 @@ export function PreviewPane({ stickyTop }: { stickyTop: number }) {
           stickyTop={stickyTop}
           onSubmit={() => undefined}
           onReset={reset}
+          videos={training ? videos : undefined}
+          allowSkipVideos
         />
       </div>
     </>

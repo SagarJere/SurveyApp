@@ -16,7 +16,13 @@ import { Button } from '@/components/ui/button'
 import { usePageTitle } from '@/hooks/use-page-title'
 import { ApiError } from '@/lib/api'
 
-import { getRespondentSurvey, respondKeys, submitAnswers, type RespondentSurvey } from './api'
+import {
+  getRespondentSurvey,
+  respondKeys,
+  saveVideoProgress,
+  submitAnswers,
+  type RespondentSurvey,
+} from './api'
 import { SurveyForm, type SubmitOutcome } from './form/SurveyForm'
 import type { AssetResolver } from './form/theme-utils'
 import { useDraftAutosave, type DraftState } from './use-draft-autosave'
@@ -36,6 +42,7 @@ const SCREENS: Record<string, LucideIcon> = {
 
 /** Where everyone lands after signing in: their surveys, including any still to answer. */
 const HOME_LINK = { to: '/', label: 'Go to My surveys' }
+const TRAININGS_LINK = { to: '/trainings', label: 'Go to My trainings' }
 
 function retryable(failures: number, error: unknown): boolean {
   return failures < 2 && error instanceof ApiError && (error.isNetworkError || error.isServerError)
@@ -167,7 +174,18 @@ function LiveSurvey({ survey, onReload }: { survey: RespondentSurvey; onReload: 
       status={SAVE_LABELS[autosave.state] || undefined}
       canEditAfterSubmit={allowed.canEdit}
       canRespondAgain={allowed.canRespondAgain}
-      homeLink={HOME_LINK}
+      homeLink={survey.kind === 'training' ? TRAININGS_LINK : HOME_LINK}
+      videos={survey.kind === 'training' ? survey.videos : undefined}
+      videoProgress={survey.video_progress}
+      onVideoProgress={(sectionKey, seconds, completed) => {
+        void saveVideoProgress(survey.survey_id, sectionKey, seconds, completed)
+          .then(() => {
+            if (completed) void queryClient.invalidateQueries({ queryKey: respondKeys.trainings })
+          })
+          .catch(() => {
+            // Progress is a convenience; finishing again later records it.
+          })
+      }}
       onSubmit={submit}
     />
   )

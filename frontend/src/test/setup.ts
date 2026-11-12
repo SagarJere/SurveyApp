@@ -17,6 +17,10 @@ window.scrollTo = () => undefined
 Element.prototype.hasPointerCapture = () => false
 Element.prototype.setPointerCapture = () => undefined
 Element.prototype.releasePointerCapture = () => undefined
+// jsdom has no media playback: video elements exist, but load/play/pause do nothing here.
+HTMLMediaElement.prototype.load = () => undefined
+HTMLMediaElement.prototype.play = () => Promise.resolve()
+HTMLMediaElement.prototype.pause = () => undefined
 globalThis.ResizeObserver = class {
   observe() {
     return undefined

@@ -11,7 +11,9 @@ import { ThemeToggle } from '../theme/ThemeToggle'
 
 const NAV_ITEMS = [
   { to: '/', label: 'My surveys', end: true, managersOnly: false },
+  { to: '/trainings', label: 'My trainings', end: true, managersOnly: false },
   { to: '/admin/surveys', label: 'Surveys', end: false, managersOnly: true },
+  { to: '/admin/trainings', label: 'Trainings', end: false, managersOnly: true },
 ] as const
 
 /** Shell for signed-in pages: header with role-based navigation, status, theme and account. */

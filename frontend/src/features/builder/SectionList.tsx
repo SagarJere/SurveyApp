@@ -1,5 +1,7 @@
 import { useShallow } from 'zustand/react/shallow'
 
+import { SectionVideoPanel } from '@/features/video/SectionVideoPanel'
+
 import { AddQuestion, AddSectionButton } from './AddQuestion'
 import { QuestionCard } from './QuestionCard'
 import { SectionHeader } from './SectionHeader'
@@ -14,6 +16,7 @@ function SectionBlock({ sectionKey, index }: { sectionKey: string; index: number
     ),
   )
   const collapsed = useBuilderStore((s) => total > 1 && s.collapsed.has(sectionKey))
+  const training = useBuilderStore((s) => s.kind === 'training')
   if (!section) return null
 
   const multi = total > 1
@@ -31,7 +34,8 @@ function SectionBlock({ sectionKey, index }: { sectionKey: string; index: number
         />
       ) : null}
       {collapsed ? null : (
-        <div id={`section-body-${section.key}`}>
+        <div id={`section-body-${section.key}`} className={multi && training ? 'mt-3' : undefined}>
+          {training ? <SectionVideoPanel section={section} label={label} /> : null}
           {questionKeys.length ? (
             <ol className={multi ? 'mt-3 flex flex-col gap-3' : 'flex flex-col gap-3'}>
               {questionKeys.map((key) => (

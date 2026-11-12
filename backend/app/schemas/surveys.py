@@ -8,12 +8,14 @@ from app.schemas.draft import Draft
 from app.services.survey_logic import ConditionProblem, IssueCode
 
 SurveyStatus = Literal["draft", "published", "closed"]
+SurveyKind = Literal["survey", "training"]
 MemberRole = Literal["owner", "coowner", "viewer"]
 
 
 class SurveyListItem(BaseModel):
     id: UUID
     title: str
+    kind: SurveyKind
     status: SurveyStatus
     version_no: int | None
     response_count: int
@@ -33,6 +35,7 @@ class SurveyListItem(BaseModel):
 class SurveyDetail(BaseModel):
     id: UUID
     title: str
+    kind: SurveyKind
     status: SurveyStatus
     version_no: int | None
     draft: Draft
@@ -45,6 +48,10 @@ class SurveyDetail(BaseModel):
     closed_at: datetime | None
     created_at: datetime
     updated_at: datetime
+
+
+class CreateSurveyRequest(BaseModel):
+    kind: SurveyKind = "survey"
 
 
 class SaveDraftRequest(BaseModel):

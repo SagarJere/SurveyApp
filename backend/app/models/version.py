@@ -60,6 +60,8 @@ class VersionSection(Base):
     title: Mapped[str] = mapped_column(Text)
     description: Mapped[str] = mapped_column(Text)
     condition: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # Trainings: the section's video (docs/03-data-model.md, "Training additions"), or null.
+    video: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 class VersionQuestion(Base):

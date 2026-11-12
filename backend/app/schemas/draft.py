@@ -101,11 +101,40 @@ class Question(_Model):
         return self
 
 
+MAX_VIDEO_URL_LENGTH = 2000
+_VIDEO_URL = re.compile(r"^https?://[^\s]+$", re.IGNORECASE)
+
+
+class SectionVideo(_Model):
+    """Trainings: the video at the top of a section (docs/09-trainings.md)."""
+
+    source: Literal["upload", "link"]
+    asset_id: UUID | None = None  # source = "upload": a video_assets row of this survey
+    url: Annotated[str, Field(max_length=MAX_VIDEO_URL_LENGTH)] | None = None  # source = "link"
+    allow_seek: bool = False
+    allow_speed: bool = False
+
+    @model_validator(mode="after")
+    def _check_source(self) -> "SectionVideo":
+        if self.source == "upload":
+            self.url = None
+        else:
+            self.asset_id = None
+            # A link may be empty while HR is still typing; publish checks it's filled in.
+            if self.url is not None:
+                self.url = self.url.strip() or None
+            if self.url is not None and not _VIDEO_URL.match(self.url):
+                msg = "A video link must start with http:// or https://"
+                raise ValueError(msg)
+        return self
+
+
 class Section(_Model):
     key: UUID
     title: ShortText = ""
     description: Text = ""
     condition: Condition | None = None
+    video: SectionVideo | None = None
 
 
 class Settings(_Model):

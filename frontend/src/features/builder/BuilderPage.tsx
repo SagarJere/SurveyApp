@@ -159,7 +159,7 @@ function BuilderEditor({ survey, onReload }: { survey: SurveyDetail; onReload: (
   usePageTitle(`Edit: ${title.trim() || UNTITLED_SURVEY}`)
 
   useLayoutEffect(() => {
-    load(survey.id, survey.draft, survey.draft_updated_at)
+    load(survey.id, survey.draft, survey.draft_updated_at, survey.kind)
   }, [load, survey])
 
   // Keep sticky elements (the preview's progress bar) just below the top bar.

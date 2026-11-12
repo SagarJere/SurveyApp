@@ -21,6 +21,9 @@ function respondent(
 ): RespondentSurvey {
   return {
     survey_id: SURVEY_ID,
+    kind: 'survey',
+    videos: {},
+    video_progress: {},
     version_no: 1,
     title: draft.title,
     description: draft.description,

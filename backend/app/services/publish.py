@@ -12,6 +12,7 @@ from fastapi import status
 from sqlalchemy import func, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import Settings
 from app.errors import AppError
 from app.models import QuestionOption, Survey, SurveyVersion, VersionQuestion, VersionSection
 from app.schemas.draft import Draft
@@ -20,6 +21,7 @@ from app.services.results_cache import results_cache
 from app.services.survey_logic import Issue, validate_draft
 from app.services.surveys import SurveyAccess
 from app.services.theme_assets import usable_asset_ids
+from app.services.videos import video_issues
 
 CHOICE_TYPES = frozenset({"single", "multi", "dropdown"})
 
@@ -77,13 +79,15 @@ async def publish_warnings(session: AsyncSession, survey: Survey) -> list[Issue]
     return []
 
 
-async def publish_issues(session: AsyncSession, survey: Survey) -> list[Issue]:
+async def publish_issues(session: AsyncSession, survey: Survey, settings: Settings) -> list[Issue]:
     draft = Draft.model_validate(survey.draft)
-    return [
+    issues = [
         *validate_draft(draft.as_logic_dict()),
         *await theme_issues(session, survey.id, draft),
-        *await audience_issues(session, survey),
     ]
+    if survey.kind == "training":
+        issues += await video_issues(session, settings, survey.id, draft)
+    return [*issues, *await audience_issues(session, survey)]
 
 
 def _issues_error(issues: list[Issue]) -> AppError:
@@ -105,7 +109,9 @@ async def current_version_no(session: AsyncSession, survey: Survey) -> int | Non
     )
 
 
-async def publish(session: AsyncSession, access: SurveyAccess, published_by: str) -> SurveyVersion:
+async def publish(
+    session: AsyncSession, access: SurveyAccess, published_by: str, settings: Settings
+) -> SurveyVersion:
     # Lock the survey row so two publishes can't race for the same version number.
     survey = await session.scalar(
         select(Survey).where(Survey.id == access.survey.id).with_for_update()
@@ -124,7 +130,7 @@ async def publish(session: AsyncSession, access: SurveyAccess, published_by: str
             status_code=status.HTTP_409_CONFLICT, message="There are no changes to publish."
         )
 
-    issues = await publish_issues(session, survey)
+    issues = await publish_issues(session, survey, settings)
     if issues:
         await session.rollback()
         raise _issues_error(issues)
@@ -167,6 +173,8 @@ async def publish(session: AsyncSession, access: SurveyAccess, published_by: str
                 "title": section["title"],
                 "description": section["description"],
                 "condition": section["condition"],
+                # Videos only belong to trainings; a survey never publishes one.
+                "video": section.get("video") if survey.kind == "training" else None,
             }
             for order, section in enumerate(data["sections"])
         ],

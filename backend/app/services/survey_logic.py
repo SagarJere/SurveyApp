@@ -297,6 +297,7 @@ IssueCode = Literal[
     "condition_broken",
     "dates_order",
     "theme_image_missing",  # server-only checks (need the database), see services/publish.py
+    "video_missing",
     "audience_empty",
     "audience_small_anonymous",  # a warning: doesn't block publishing
 ]
