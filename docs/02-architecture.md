@@ -40,7 +40,11 @@ survey-app/
 │       │   ├── results.py          # aggregation queries
 │       │   ├── exports.py          # Excel export
 │       │   ├── money.py            # formatting + words (num2words)
-│       │   └── images.py           # theme image processing
+│       │   ├── numbers.py          # number questions: limits, formatting
+│       │   ├── images.py           # theme image processing
+│       │   ├── videos.py           # training video upload, type check, range streaming
+│       │   ├── scoring.py          # trainings: score an attempt, retake rules, answer review
+│       │   └── training_results.py # trainings: completion report, % correct, attempts
 │       └── tests/
 └── frontend/
     ├── package.json
@@ -58,7 +62,10 @@ survey-app/
         │   ├── settings/
         │   ├── audience/
         │   ├── respond/            # respondent experience
-        │   └── results/            # dashboards
+        │   ├── results/            # dashboards
+        │   ├── trainings/          # Trainings home, My trainings, training results
+        │   ├── video/              # video section editor + player with the watch rules
+        │   └── quiz/               # answer keys, Quiz tab, score screen
         └── test/
 ```
 
@@ -88,7 +95,8 @@ AUTH_MODE=dev|sso
 JWT_SECRET=...
 JWT_EXPIRES_MINUTES=480
 DATABASE_URL=postgresql+asyncpg://...
-FILE_STORAGE_PATH=/data/files
+FILE_STORAGE_PATH=/data/files      # images in images/, training videos in videos/
+VIDEO_MAX_MB=200                    # largest training video upload
 CORS_ORIGINS=http://localhost:5173
 ```
 
@@ -114,6 +122,9 @@ CORS_ORIGINS=http://localhost:5173
   - `/admin/surveys` → surveys home (HR/Admin)
   - `/admin/surveys/:id/edit` → builder (tabs: Questions, Theme, Settings, Audience)
   - `/admin/surveys/:id/results` → dashboard
+  - `/trainings` → "My trainings" (everyone)
+  - `/admin/trainings` → trainings home (HR/Admin). Trainings use the same builder (`/admin/surveys/:id/edit`, plus a Quiz tab), respondent route and results route as surveys; the survey's `kind` switches the training parts on
+- Trainings: see `09-trainings.md`. Video playback, the watch rules and the score screen live in the respondent chunk, so My trainings stays light.
 - Filters on the results page live in the URL query string so filtered views can be shared.
 - Respondent routes are lazy-loaded separately from builder and results to keep the respondent bundle small.
 
@@ -123,7 +134,7 @@ Each type is one module in `frontend/src/features/question-types/<type>/` export
 
 ```ts
 export interface QuestionTypeDef<Config, Answer> {
-  type: QuestionType;                 // 'single' | 'multi' | 'dropdown' | 'rating' | 'short' | 'long' | 'money'
+  type: QuestionType;                 // 'single' | 'multi' | 'dropdown' | 'rating' | 'short' | 'long' | 'money' | 'number'
   label: string;                      // "Single choice"
   icon: LucideIcon;
   hasOptions: boolean;
@@ -144,3 +155,4 @@ The backend mirrors it with a `QUESTION_TYPES` dict in `services/survey_logic.py
 - Results use live SQL aggregates with indexes (see `03-data-model.md`). Cache result endpoints for 60 seconds per survey + filter combination.
 - Add materialized views only if a real survey becomes slow.
 - Audience import of 10,000 rows must finish in a few seconds. Use bulk inserts.
+- Training videos are streamed from disk in chunks (never read whole into memory), with HTTP range support so playback and seeking start immediately. Uploads are written to disk as they arrive.

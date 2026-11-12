@@ -93,6 +93,52 @@ Suggested way to work with Claude Code: start each phase with "Read CLAUDE.md an
 - The Excel export opens cleanly, and money columns are numeric with words alongside.
 - Dashboard is usable at 375px wide.
 
+## Phase T — Trainings (video + quiz)
+
+Agreed 2026-11-12, built after Phase 5 and before Phase 6. Spec: `09-trainings.md`. Each step is tested, committed and tagged before the next.
+
+### T1 — Trainings area and video sections
+
+**Build**
+- Migration: `surveys.kind`, `video_assets`, `video_views`; `survey_sections.video`.
+- Draft model: `kind`-aware validation (trainings: never anonymous, no edit-after-submit), section `video`.
+- Video upload (type check from the file's bytes, `VIDEO_MAX_MB`, streamed to disk), delete, and signed streaming with HTTP range requests. Internal links (http/https; https only when served over HTTPS).
+- Respondent: video progress endpoint; submit refuses answers in a section whose video isn't finished.
+- Frontend: Trainings home and "New training", My trainings, the section Video panel, the player with the skip/speed rules and remembered progress, questions after the video in all three layouts, "Skip video" in Preview.
+
+**Done when**
+- HR creates a training with one uploaded video and one linked video, publishes it, and an employee takes it on a phone.
+- The questions stay hidden until each video ends; skipping ahead is blocked when off; leaving and returning doesn't require watching again.
+- A non-video file renamed `.mp4`, and a 201 MB file, are refused. Seeking works on uploaded videos (range requests return 206).
+- A tampered submit with answers for an unwatched video section is rejected by the server.
+
+### T2 — Quiz, scoring and retakes
+
+**Build**
+- Migration: `survey_questions.quiz`; `survey_responses` attempt_no, points, max_points, score, passed; `survey_participation` attempts, best_response_id, best_score, passed, passed_at; `response_answers.correct`.
+- Shared scoring rules with test cases in `shared/test-cases/scoring.json` used by both sides (correct options, checkbox exact match, number ranges, hidden questions excluded, rounding).
+- Builder: correct-answer ticks and points; Quiz tab; publish validation for answer keys and retake rules.
+- Respondent: pass mark before starting, server-side scoring, score screen, answer review by the creator's rule, retakes (videos skipped), best attempt counts.
+- The answer key is never in a respondent payload before it may be shown.
+
+**Done when**
+- Every scoring case passes on both sides.
+- Each retake mode behaves as specified (none, up to N, until pass, until perfect), and the server refuses an extra attempt.
+- The answer review appears only when the creator's rule allows; the API payload has no answer key otherwise.
+
+### T3 — Training results and completion report
+
+**Build**
+- Training results endpoint and widgets: completed, passed, average score, average attempts, attempts needed, % correct per question with "Needs attention", videos watched to the end.
+- Completion report (status, best score, attempts, completed date, late) with status filter and Excel download; Completion sheet in "Responses with analytics".
+- Existing results and exports use best attempts only for trainings.
+- Trainings home KPIs and per-training rings; due dates on My trainings.
+
+**Done when**
+- With a seeded training of 400+ people and mixed attempts, every figure matches hand-written SQL.
+- The completion report lists everyone in the audience, including people who haven't started.
+- The training results page is usable at 375px and scores 100 on Lighthouse accessibility.
+
 ## Phase 6 — Production readiness
 
 **Build**
@@ -109,4 +155,4 @@ Suggested way to work with Claude Code: start each phase with "Read CLAUDE.md an
 
 ## Later backlog (not in v1)
 
-Rule-based audience targeting with an employee master · multiple conditions with all/any · section-skip rules · more question types (Likert matrix, date, number, file upload, ranking, eNPS) · section intro screens in one-question layout · survey templates and reusable question blocks · compare and cross-tab views · PDF export and scheduled reports · department-head scoped results · keyword analysis of comments · translations.
+Rule-based audience targeting with an employee master · multiple conditions with all/any · section-skip rules · more question types (Likert matrix, date, file upload, ranking, eNPS) · section intro screens in one-question layout · survey templates and reusable question blocks · compare and cross-tab views · PDF export and scheduled reports · department-head scoped results · keyword analysis of comments · translations.

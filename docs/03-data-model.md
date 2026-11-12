@@ -9,6 +9,7 @@ All primary keys are UUIDs unless noted. All timestamps are `timestamptz` in UTC
 3. **Participation is separate from answers,** so anonymous surveys can block repeat responses without linking answers to people.
 4. **Answers are normalized:** one row per answer, or one row per selected option for checkboxes. Every report becomes a simple `GROUP BY`.
 5. **Department and location are snapshotted** onto each response at submit time, so later changes don't rewrite history.
+6. **Trainings are surveys** with `kind = 'training'` (see `09-trainings.md`). Their extra data: a video per section, an answer key per question, attempts and scores per response, and which videos each person finished.
 
 ## Tables
 
@@ -28,6 +29,7 @@ Who has elevated roles. Anyone not listed is an employee.
 |---|---|---|
 | id | uuid PK | |
 | title | text | mirrors draft title for listing |
+| kind | text | `survey` \| `training`; set at creation, never changes (default `survey`) |
 | status | text | `draft` \| `published` \| `closed` |
 | draft | jsonb | full builder state (see shape below) |
 | draft_updated_at | timestamptz | for autosave conflict checks |
@@ -53,7 +55,7 @@ Who has elevated roles. Anyone not listed is an employee.
 | version_no | int | 1, 2, 3… unique per survey |
 | title | text | |
 | description | text | |
-| settings | jsonb | layout, navigator, auto_next, one_response, allow_edit, anonymous, opens_at, closes_at |
+| settings | jsonb | layout, navigator, auto_next, one_response, allow_edit, anonymous, opens_at, closes_at; trainings also `quiz` and `due_date` |
 | theme | jsonb | cover, background_style, background, background_color, blur, overlay, accent |
 | published_by | text | |
 | published_at | timestamptz | |
@@ -68,6 +70,7 @@ Who has elevated roles. Anyone not listed is an employee.
 | title | text | |
 | description | text | |
 | condition | jsonb | null or `{src, op, val}` (src = question key) |
+| video | jsonb | trainings only: null or the section's video (see Draft JSON shape) |
 
 ### `survey_questions`
 | Column | Type | Notes |
@@ -77,12 +80,13 @@ Who has elevated roles. Anyone not listed is an employee.
 | section_id | uuid FK → survey_sections | |
 | key | uuid | stable across versions |
 | sort_order | int | global order within the version (Q1…Qn) |
-| type | text | `single` \| `multi` \| `dropdown` \| `rating` \| `short` \| `long` \| `money` |
+| type | text | `single` \| `multi` \| `dropdown` \| `rating` \| `short` \| `long` \| `money` \| `number` |
 | text | text | |
 | help | text | |
 | required | boolean | |
 | config | jsonb | type settings, e.g. money `{currency, min, max, decimals}`, number `{number_min, number_max, number_decimals, number_unit}` |
 | condition | jsonb | null or `{src, op, val}` |
+| quiz | jsonb | trainings only: null (not marked) or the answer key `{points, correct_options}` / `{points, correct_min, correct_max}`. **Never sent to respondents** until the creator's rules allow |
 
 ### `question_options`
 | Column | Type | Notes |
@@ -128,7 +132,12 @@ One row per employee per survey. Enforces one response per person, even when ano
 | draft_answers | jsonb | autosaved answers before submit (keyed by question key) |
 | draft_version_id | uuid | version the draft was started on |
 | started_at, submitted_at, updated_at | timestamptz | |
-| response_id | uuid | **null for anonymous surveys** |
+| response_id | uuid | **null for anonymous surveys**; for trainings, the latest attempt |
+| attempts | int | trainings: attempts submitted (default 0) |
+| best_response_id | uuid FK → survey_responses | trainings: the attempt that counts |
+| best_score | int | trainings: best score in %, null before the first attempt |
+| passed | boolean | trainings: null before the first attempt or when there's no pass mark |
+| passed_at | timestamptz | trainings: when they first passed |
 
 ### `survey_responses`
 | Column | Type | Notes |
@@ -141,6 +150,10 @@ One row per employee per survey. Enforces one response per person, even when ano
 | department, location | text | snapshot at submit |
 | submitted_at | timestamptz | for anonymous surveys, round to the hour |
 | updated_at | timestamptz | |
+| attempt_no | int | 1 for surveys; 1, 2, 3… per person for trainings. Unique with (survey_id, employee_id) when employee_id is set |
+| points, max_points | int | trainings: points earned and available to this person (hidden questions excluded); null for surveys |
+| score | int | trainings: points ÷ max_points as a whole % |
+| passed | boolean | trainings: against the pass mark of this version; null when there's no pass mark |
 
 ### `response_answers`
 | Column | Type | Notes |
@@ -149,8 +162,9 @@ One row per employee per survey. Enforces one response per person, even when ano
 | response_id | uuid FK | |
 | question_id | uuid FK | |
 | option_id | uuid FK | null unless choice type; one row per selected option for `multi` |
-| value_num | numeric(14,2) | rating and money |
+| value_num | numeric(14,2) | rating, money and number |
 | value_text | text | short and long |
+| correct | boolean | trainings: whether this question was answered correctly (set on the question's first answer row); null when not marked. Makes "% correct per question" a simple count |
 
 Rows exist only for **visible, answered** questions. "Shown" counts come from evaluating conditions on each response (see `07-reports-dashboard.md`), or from the optional `response_shown` table below.
 
@@ -175,6 +189,33 @@ Written at submit time from the server's visibility evaluation. Makes "shown to 
 | uploaded_by | text | |
 | created_at | timestamptz | |
 
+### `video_assets`
+Uploaded training videos. Linked videos (internal server) need no row.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| survey_id | uuid FK | deleted with the survey |
+| file_name | text | as uploaded, for display |
+| path | text | under `FILE_STORAGE_PATH/videos/` |
+| content_type | text | `video/mp4` \| `video/webm` (checked from the file's first bytes) |
+| size_bytes | bigint | ≤ `VIDEO_MAX_MB` |
+| duration_seconds | int | as read by the builder's browser; for display only |
+| uploaded_by | text | |
+| created_at | timestamptz | |
+
+### `video_views`
+Which section videos each person has finished, so they don't watch again and the server can enforce "questions after the video".
+
+| Column | Type | Notes |
+|---|---|---|
+| survey_id | uuid FK | PK part |
+| employee_id | text | PK part |
+| section_key | uuid | PK part (stable across versions) |
+| furthest_seconds | int | furthest point reached, for "no skipping ahead" and resuming |
+| completed_at | timestamptz | null until the video ends |
+| updated_at | timestamptz | |
+
 ### `audit_log`
 | Column | Type |
 |---|---|
@@ -196,6 +237,9 @@ CREATE INDEX ON response_answers (response_id);
 CREATE INDEX ON survey_audience (survey_id, department);
 CREATE INDEX ON survey_participation (employee_id, status);
 CREATE INDEX ON survey_questions (version_id, sort_order);
+CREATE INDEX ON surveys (kind, status);
+CREATE INDEX ON response_answers (question_id, correct);
+CREATE UNIQUE INDEX ON survey_responses (survey_id, employee_id, attempt_no) WHERE employee_id IS NOT NULL;
 ```
 
 ## Draft JSON shape (`surveys.draft`)
@@ -226,7 +270,7 @@ The builder sends and receives exactly this. Validate it with a Pydantic model o
     "accent": "#0E7A6A"
   },
   "sections": [
-    { "key": "uuid", "title": "Your work setup", "description": "", "condition": null }
+    { "key": "uuid", "title": "Your work setup", "description": "", "condition": null, "video": null }
   ],
   "questions": [
     {
@@ -256,6 +300,50 @@ The builder sends and receives exactly this. Validate it with a Pydantic model o
 
 `questions` is always stored in display order, grouped by section in section order.
 
+### Training additions
+
+A training's draft has the same shape plus these fields (`09-trainings.md`):
+
+```jsonc
+{
+  "settings": {
+    // …as above; "anonymous" and "allow_edit" are always false
+    "due_date": "2026-11-16",                // or null
+    "quiz": {
+      "pass_mark": 80,                       // 1–100, or null = no pass mark
+      "show_pass_mark": true,
+      "show_score": true,
+      "show_answers": "after_pass_or_last",  // "after_pass_or_last" | "always" | "never"
+      "retakes": "limit",                    // "none" | "limit" | "until_pass" | "until_perfect"
+      "max_attempts": 3                      // 2–10, used when retakes = "limit"
+    }
+  },
+  "sections": [
+    {
+      "key": "uuid", "title": "Preventing fires", "description": "", "condition": null,
+      "video": {
+        "source": "upload",                  // "upload" | "link"
+        "asset_id": "uuid",                  // when source = "upload" (video_assets.id)
+        "url": null,                         // when source = "link": http(s) address of an MP4/WebM
+        "allow_seek": false,
+        "allow_speed": false
+      }
+    }
+  ],
+  "questions": [
+    {
+      "key": "uuid", "section_key": "uuid", "type": "single", "text": "What should you do first?",
+      "options": [ { "key": "uuid-a", "label": "Raise the alarm" } ],
+      "quiz": { "points": 1, "correct_options": ["uuid-a"] }   // or null = not marked
+    },
+    {
+      "key": "uuid", "section_key": "uuid", "type": "number", "text": "How far away should you stand?",
+      "quiz": { "points": 1, "correct_min": 2, "correct_max": 3 } // exact value: min = max
+    }
+  ]
+}
+```
+
 ## Answer storage by type
 
 | Type | Stored as |
@@ -264,4 +352,5 @@ The builder sends and receives exactly this. Validate it with a Pydantic model o
 | multi | one row per selected option, `option_id` |
 | rating | one row, `value_num` 1–5 |
 | money | one row, `value_num` (2 decimals) |
+| number | one row, `value_num` (whole, or 2 decimals) |
 | short, long | one row, `value_text` (trimmed; max 2,000 / 10,000 chars) |

@@ -45,6 +45,18 @@ Survey-level access: each survey has an **owner** and optional **co-owners** (fu
 - **Number type:** a number answer, such as a headcount or a distance. Lowest and highest allowed, whole numbers or up to 2 decimals, and an optional unit ("people", "km"). Can drive conditions (is at least / is at most). See `05-survey-builder.md`.
 - **Money type:** number input that formats while typing and shows the amount in words; currency, min/max and decimals settings. See `05-survey-builder.md`.
 
+## Trainings (agreed 2026-11-12)
+
+A **training** is a survey where employees watch videos and answer a scored quiz about them. Full spec: `09-trainings.md`; approved mockups linked there.
+
+- Separate **Trainings** area for HR and **My trainings** for employees, built on the survey engine.
+- Each section can have one **video**: uploaded (MP4/WebM, up to 200 MB) or linked from the internal video server. The section's questions appear after the video ends.
+- Per video, the creator chooses whether people may skip ahead and change the playback speed (both off by default).
+- **Quiz:** correct answers and points on choice and Number questions; optional pass mark; the creator chooses whether to show the pass mark, the score, and the correct answers (default: once they pass or have no attempts left).
+- **Retakes:** none, up to N attempts, until they pass, or until every answer is correct. Retakes skip the videos. The best attempt counts.
+- Optional due date. Trainings are never anonymous.
+- Reports: completion, pass rate, average score, attempts, % correct per question, and a completion report with Excel download.
+
 ## Survey settings
 
 | Setting | Options | Default |
@@ -109,8 +121,8 @@ See `07-reports-dashboard.md`. Summary:
 ## Open questions (confirm before the relevant phase)
 
 1. SSO details: which AD/identity provider, and how employee ID and role come through.
-2. Email: SMTP/relay for invitations and reminders (Phase 5).
-3. Image storage: local disk on the API server vs object storage.
+2. Email: SMTP/relay for invitations and reminders (Phase 6), including training due-date reminders.
+3. Image and video storage: local disk on the API server vs object storage. Training videos make this more important (size, backups, hosting).
 4. Who can create surveys: only HR/Admin, or also managers?
 5. Data retention: how long to keep responses after a survey closes.
 6. Hosting: where the app runs (server, container platform).

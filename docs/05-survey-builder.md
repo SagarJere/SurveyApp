@@ -190,6 +190,15 @@ The **Preview** toggle renders the real respondent component (same code as `/s/:
 - "Reset answers".
 - No data is saved.
 
+## Trainings
+
+A training uses this builder with three additions (full rules: `09-trainings.md`):
+
+- **Video on a section:** the section card gets a Video panel with Upload / Internal link, the file or address with its length, and two switches: allow skipping ahead, allow changing the playback speed. "+ Add section with a video" sits beside "+ Add question". The section shows "The questions in this section appear after the video ends."
+- **Answer key on questions:** single choice, dropdown and checkboxes get "Correct answer" ticks on options and a Points field; Number gets "Correct answer: exactly / from–to". Unmarked questions show "not marked (feedback)" on the collapsed card.
+- **Quiz tab** (between Questions and Theme): pass mark and "show it before they start"; after submitting, show the score and when to show the correct answers; retakes; optional due date. The Settings tab hides Anonymous and "Allow editing" for trainings.
+- Preview gets "Skip video" so HR can test the questions without watching.
+
 ## Publishing
 
 1. Click Publish → `POST /validate`.

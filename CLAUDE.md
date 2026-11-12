@@ -13,7 +13,8 @@ Internal survey application for an organisation of ~5,000–8,000 employees. HR/
 | `docs/05-survey-builder.md` | Builder UI, question types, sections, conditions, Money type |
 | `docs/06-respondent-experience.md` | Taking a survey: layouts, navigator, validation, themes |
 | `docs/07-reports-dashboard.md` | Results dashboards, calculations, anonymity rules, exports |
-| `docs/08-implementation-plan.md` | Phased build plan with acceptance criteria |
+| `docs/08-implementation-plan.md` | Phased build plan with acceptance criteria (Phase T, Trainings, comes before Phase 6) |
+| `docs/09-trainings.md` | Trainings: video sections, quiz and scoring, retakes, completion report. Links the approved mockups |
 | `docs/reference/ui-prototype.html` | Working HTML prototype of the builder, theme, settings and preview. Open it in a browser. It is the visual and behavioural reference, not production code |
 | `docs/reference/README.md` | Where the prototype and the docs differ and which wins, plus the full "Workplace pulse" sample survey |
 
@@ -78,3 +79,7 @@ make check
 - **Audience**: employees allowed to respond, from an uploaded list (or "open to all").
 - **Participation**: the record that an employee has started or submitted a survey. Kept separate from answers so anonymous surveys still enforce one response per person.
 - **Shown**: an employee was shown a question because its conditions were met. Report percentages use "shown" as the denominator.
+- **Training**: a survey with `kind = 'training'`: video sections plus a scored quiz. Never anonymous. Listed under Trainings / My trainings.
+- **Video section**: a section with one video (uploaded or an internal link). Its questions appear after the video ends.
+- **Attempt**: one submitted try at a training. Retake rules limit attempts; the best attempt counts in results.
+- **Answer key**: a question's correct answer(s) and points (`quiz` on the question). Never sent to respondents until the creator's rule allows.

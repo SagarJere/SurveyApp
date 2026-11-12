@@ -87,6 +87,10 @@ Applied from the version's `theme`:
 - The survey card is always a solid surface, so text never sits directly on an image.
 - Works in light and dark mode. The theme only changes accent and images, not text colours.
 
+## Trainings
+
+See `09-trainings.md` → Employee experience. In short: My trainings (`/trainings`) lists to do, in progress and completed trainings with due dates. Inside a training, each video section shows the player first and its questions after the video ends (the player obeys the creator's skip and speed options and remembers progress). After submitting, a score screen shows the result, attempts left, the answer review when allowed, and Retake. The player has keyboard controls, a visible focus ring, and the "questions appear after the video" message is announced to screen readers.
+
 ## Accessibility checklist
 
 - Every input has a label (question text). Required state is announced.

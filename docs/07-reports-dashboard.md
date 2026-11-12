@@ -126,6 +126,20 @@ Every sheet opens with a title block: the survey title (row 1), the response cou
 
 **Later:** PDF snapshot of the dashboard, scheduled weekly email to owners, compare view (two departments side by side), cross-tab (one question by another), keyword frequency for comments, section scores (average of rating questions per section).
 
+## Trainings
+
+Trainings add a Trainings home, training figures on the results page, and a completion report (on screen and in Excel). Every training figure and question widget uses **each person's best attempt only**. Full spec: `09-trainings.md` → Reports.
+
+```sql
+-- % correct per question (best attempts)
+SELECT q.key, avg(a.correct::int) AS share_correct, count(*) AS answered
+FROM response_answers a
+JOIN survey_questions q ON q.id = a.question_id
+JOIN survey_participation p ON p.best_response_id = a.response_id
+WHERE p.survey_id = :survey_id AND a.correct IS NOT NULL
+GROUP BY q.key;
+```
+
 ## Frontend notes
 
 - Recharts for the daily bar chart. Simple HTML/CSS bars for option lists (easier to make responsive and accessible).

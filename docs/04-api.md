@@ -19,8 +19,8 @@ Roles: **E** = employee, **H** = HR, **A** = admin. "Member" = owner/co-owner of
 
 | Method | Path | Who | Notes |
 |---|---|---|---|
-| GET | `/surveys` | H A | Surveys the user is a member of (admin: all). Each item: id, title, status, version_no, response_count, audience_count, response_rate, opens_at, closes_at, has_unpublished_changes |
-| POST | `/surveys` | H A | Creates an empty draft with one section. Returns the survey |
+| GET | `/surveys?kind=survey\|training` | H A | Surveys (default) or trainings the user is a member of (admin: all). Each item: id, title, status, version_no, response_count, audience_count, response_rate, opens_at, closes_at, has_unpublished_changes |
+| POST | `/surveys` | H A | `{kind: "survey"\|"training"}` (default survey). Creates an empty draft with one section. A training starts with anonymous and edit-after-submit off and default quiz settings. Returns the survey |
 | GET | `/surveys/{id}` | member | Survey + draft + settings summary |
 | PUT | `/surveys/{id}/draft` | owner/co-owner | Body: full draft JSON + `draft_updated_at` from last read. **409** if someone else saved in between. Returns new `draft_updated_at` |
 | POST | `/surveys/{id}/validate` | owner/co-owner | Runs publish validation without publishing. Returns `{issues: []}` |
@@ -40,6 +40,11 @@ Roles: **E** = employee, **H** = HR, **A** = admin. "Member" = owner/co-owner of
 - Opens date before closes date if both set.
 - Audience not empty unless `open_to_all`.
 - Anonymous with audience < 10: return a **warning** (not blocking).
+- Trainings (`09-trainings.md`):
+  - A section's video: an uploaded video that belongs to this survey, or an `http(s)://` link (`https://` only when Pulse is served over HTTPS).
+  - Quiz answer keys: correct options exist on the question (single/dropdown: exactly one; checkboxes: at least one); Number: `correct_min <= correct_max`, inside the question's own limits. Points 1–100.
+  - Pass mark 1–100 or null; "until they pass" needs a pass mark; max attempts 2–10 when limited.
+  - At least one marked question: a **warning** if none (it's then a video course without a score).
 
 ## Theme assets
 
@@ -48,6 +53,14 @@ Roles: **E** = employee, **H** = HR, **A** = admin. "Member" = owner/co-owner of
 | GET | `/theme-assets/gallery` | H A | Company gallery images |
 | POST | `/surveys/{id}/theme-assets` | owner/co-owner | multipart upload. JPG/PNG/WebP, ≤ 2 MB. Server converts to WebP (max 2400px wide) + mobile copy (800px). Returns `{id, url, mobile_url}` |
 | GET | `/files/{asset_id}` and `/files/{asset_id}/mobile` | any logged-in | Serves the image |
+
+## Training videos
+
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| POST | `/surveys/{id}/videos` | owner/co-owner | multipart upload, trainings only. MP4/WebM by content, ≤ `VIDEO_MAX_MB` (default 200), streamed to disk. Body may include `duration_seconds` from the builder. Returns `{id, file_name, size_bytes, duration_seconds, url}` |
+| DELETE | `/surveys/{id}/videos/{video_id}` | owner/co-owner | 409 while a published version uses it |
+| GET | `/files/videos/{video_id}?exp=&sig=` | signed link | Streams the video with HTTP range requests (206 Partial Content). Links expire like image links |
 
 ## Audience
 
@@ -76,6 +89,13 @@ Roles: **E** = employee, **H** = HR, **A** = admin. "Member" = owner/co-owner of
 | PUT | `/respond/{survey_id}/draft` | E | Autosave `{answers}` keyed by question key. Debounced by the client (~1.5 s) |
 | POST | `/respond/{survey_id}/submit` | E | `{answers}`. Server evaluates visibility, drops hidden answers, validates required and ranges, writes response + answers + shown rows + participation in **one transaction**. 409 if already submitted and editing isn't allowed. 422 with per-question errors |
 | GET | `/respond/{survey_id}/my-response` | E | Their submitted answers (not available for anonymous surveys) |
+| GET | `/me/trainings` | E | Trainings the user can take: to do, in progress (videos watched), completed (best score, passed, attempts left), due dates |
+| PUT | `/respond/{survey_id}/videos/{section_key}` | E | `{furthest_seconds, completed}`. Records progress; `completed` only moves from false to true |
+
+**Trainings on the respondent endpoints:**
+- `GET /respond/{id}` adds per-section video links (signed) with their options, the sections whose videos are finished, the pass mark when it may be shown, and `attempts: {used, left, best_score, passed}`. It **never** includes answer keys.
+- `POST /respond/{id}/submit` also rejects answers to questions in a video section whose video isn't finished (422), refuses an attempt beyond the retake rules (409), scores the attempt on the server, and returns `{score, points, max_points, passed, attempt_no, attempts_left, review}`. `review` (each marked question: correct or not, and the correct answer) is included only when the creator's rule allows it.
+- A retake is simply another submit while attempts remain. Videos already finished stay finished.
 
 ### Answer payload
 
@@ -108,6 +128,16 @@ All take the same filter query params: `department`, `location`, `from`, `to`, `
 | GET | `/surveys/{id}/results/responses?page=` | member | Individual responses. **403 for anonymous surveys** |
 | GET | `/surveys/{id}/results/non-responders.xlsx` | owner/co-owner | Audience members who haven't submitted. Allowed for anonymous surveys too, because it uses participation only and never shows answers |
 | GET | `/surveys/{id}/results/export.xlsx?kind=responses\|analytics` | member | `responses`: one Responses sheet. `analytics` (default): Summary with charts, Participation, Responses per day, Responses, Comments. Money columns include an "in words" column |
+
+Trainings add:
+
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| GET | `/surveys/{id}/results/training` | member | Completed, passed, average score, average attempts, attempts needed, % correct per question, videos watched to the end |
+| GET | `/surveys/{id}/results/completion?status=&page=` | member | Everyone in the audience: status, best score, attempts, completed date, late |
+| GET | `/surveys/{id}/results/completion.xlsx?status=` | member | The completion report as Excel |
+
+For trainings, all results endpoints use each person's **best attempt** only.
 
 **Small-group rule (anonymous surveys only):** if a filter leaves fewer than 5 responses, return headline counts only, with `small_group: true` and no answer data.
 
