@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.types import AuthenticatedUser
 from app.errors import AppError
 from app.models import Survey, SurveyMember
-from app.schemas.draft import Draft, Section
+from app.schemas.draft import Draft, QuizSettings, Section
 from app.services import videos
 from app.services.storage import LocalFileStorage
 
@@ -134,20 +134,31 @@ async def _insert(
 
 def apply_kind_rules(kind: str, draft: Draft) -> Draft:
     """Trainings are never anonymous and can't be edited after submitting (scores would
-    change). Only trainings have videos (docs/09-trainings.md)."""
+    change), and always have quiz settings. Only trainings have videos, correct answers and a
+    due date (docs/09-trainings.md)."""
     if kind == "training":
         draft.settings.anonymous = False
         draft.settings.allow_edit = False
+        if draft.settings.quiz is None:
+            draft.settings.quiz = QuizSettings()
         return draft
-    if any(section.video is not None for section in draft.sections):
-        raise AppError(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            code="VALIDATION_FAILED",
-            message="Only trainings can have videos.",
-            details={
-                "issues": [{"field": "sections", "message": "Only trainings can have videos."}]
-            },
-        )
+    draft.settings.quiz = None
+    draft.settings.due_date = None
+    for field, message, found in (
+        ("sections", "Only trainings can have videos.", any(s.video for s in draft.sections)),
+        (
+            "questions",
+            "Only trainings can have correct answers.",
+            any(q.quiz for q in draft.questions),
+        ),
+    ):
+        if found:
+            raise AppError(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                code="VALIDATION_FAILED",
+                message=message,
+                details={"issues": [{"field": field, "message": message}]},
+            )
     return draft
 
 

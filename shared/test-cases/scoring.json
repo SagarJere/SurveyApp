@@ -1,0 +1,126 @@
+{
+  "_comment": "Training quiz rules (docs/09-trainings.md, 'Quiz and scoring'). Used by backend/app/tests/test_scoring.py and frontend/src/features/quiz/scoring.test.ts. Expected values are written by hand. Score is points / max_points as a whole %, halves rounded up; null when nothing marked was shown.",
+  "questions": [
+    { "key": "single", "type": "single", "quiz": { "points": 1, "correct_options": ["a"] } },
+    { "key": "dropdown", "type": "dropdown", "quiz": { "points": 2, "correct_options": ["d2"] } },
+    { "key": "multi", "type": "multi", "quiz": { "points": 3, "correct_options": ["m1", "m3"] } },
+    { "key": "exact", "type": "number", "quiz": { "points": 1, "correct_min": 3, "correct_max": 3 } },
+    { "key": "range", "type": "number", "quiz": { "points": 1, "correct_min": 2.5, "correct_max": 4 } },
+    { "key": "unmarked", "type": "single", "quiz": null },
+    { "key": "feedback", "type": "long", "quiz": null },
+    { "key": "rating", "type": "rating", "quiz": { "points": 5, "correct_options": [] } }
+  ],
+  "score": [
+    {
+      "name": "everything right",
+      "visible": ["single", "dropdown", "multi", "exact", "range", "unmarked", "feedback", "rating"],
+      "answers": { "single": "a", "dropdown": "d2", "multi": ["m3", "m1"], "exact": 3, "range": 2.5, "unmarked": "x", "feedback": "Good", "rating": 4 },
+      "expected": { "points": 8, "max_points": 8, "score": 100, "correct": { "single": true, "dropdown": true, "multi": true, "exact": true, "range": true } }
+    },
+    {
+      "name": "everything wrong",
+      "visible": ["single", "dropdown", "multi", "exact", "range"],
+      "answers": { "single": "b", "dropdown": "d1", "multi": ["m2"], "exact": 4, "range": 5 },
+      "expected": { "points": 0, "max_points": 8, "score": 0, "correct": { "single": false, "dropdown": false, "multi": false, "exact": false, "range": false } }
+    },
+    {
+      "name": "checkboxes need exactly the right boxes: one missing",
+      "visible": ["multi"],
+      "answers": { "multi": ["m1"] },
+      "expected": { "points": 0, "max_points": 3, "score": 0, "correct": { "multi": false } }
+    },
+    {
+      "name": "checkboxes need exactly the right boxes: one extra",
+      "visible": ["multi"],
+      "answers": { "multi": ["m1", "m2", "m3"] },
+      "expected": { "points": 0, "max_points": 3, "score": 0, "correct": { "multi": false } }
+    },
+    {
+      "name": "unanswered marked questions earn nothing but still count",
+      "visible": ["single", "dropdown", "multi", "exact", "range"],
+      "answers": { "single": "a" },
+      "expected": { "points": 1, "max_points": 8, "score": 13, "correct": { "single": true, "dropdown": false, "multi": false, "exact": false, "range": false } }
+    },
+    {
+      "name": "hidden questions don't count, even if answered",
+      "visible": ["single", "exact"],
+      "answers": { "single": "a", "exact": 2, "multi": ["m1", "m3"] },
+      "expected": { "points": 1, "max_points": 2, "score": 50, "correct": { "single": true, "exact": false } }
+    },
+    {
+      "name": "range limits are inclusive, compared in hundredths",
+      "visible": ["range", "exact"],
+      "answers": { "range": 4.0, "exact": 3.001 },
+      "expected": { "points": 2, "max_points": 2, "score": 100, "correct": { "range": true, "exact": true } }
+    },
+    {
+      "name": "just outside a range",
+      "visible": ["range"],
+      "answers": { "range": 2.49 },
+      "expected": { "points": 0, "max_points": 1, "score": 0, "correct": { "range": false } }
+    },
+    {
+      "name": "two thirds rounds to 67",
+      "visible": ["single", "dropdown"],
+      "answers": { "single": "b", "dropdown": "d2" },
+      "expected": { "points": 2, "max_points": 3, "score": 67, "correct": { "single": false, "dropdown": true } }
+    },
+    {
+      "name": "one third rounds to 33",
+      "visible": ["single", "dropdown"],
+      "answers": { "single": "a", "dropdown": "d3" },
+      "expected": { "points": 1, "max_points": 3, "score": 33, "correct": { "single": true, "dropdown": false } }
+    },
+    {
+      "name": "nothing marked was shown: no score",
+      "visible": ["unmarked", "feedback"],
+      "answers": { "unmarked": "x" },
+      "expected": { "points": 0, "max_points": 0, "score": null, "correct": {} }
+    },
+    {
+      "name": "a type that can't be marked is never scored",
+      "visible": ["rating"],
+      "answers": { "rating": 5 },
+      "expected": { "points": 0, "max_points": 0, "score": null, "correct": {} }
+    },
+    {
+      "name": "a wrong-shaped answer is simply wrong",
+      "visible": ["single", "multi", "exact"],
+      "answers": { "single": ["a"], "multi": "m1", "exact": "3" },
+      "expected": { "points": 0, "max_points": 5, "score": 0, "correct": { "single": false, "multi": false, "exact": false } }
+    }
+  ],
+  "passed": [
+    { "name": "no pass mark", "score": 40, "pass_mark": null, "expected": null },
+    { "name": "no score", "score": null, "pass_mark": 80, "expected": null },
+    { "name": "on the mark", "score": 80, "pass_mark": 80, "expected": true },
+    { "name": "just under", "score": 79, "pass_mark": 80, "expected": false },
+    { "name": "100 needs 100", "score": 99, "pass_mark": 100, "expected": false }
+  ],
+  "attempts_left": [
+    { "name": "none: before the first attempt", "rules": { "retakes": "none", "max_attempts": 3 }, "used": 0, "best_score": null, "passed": null, "expected": 1 },
+    { "name": "none: after one attempt", "rules": { "retakes": "none", "max_attempts": 3 }, "used": 1, "best_score": 40, "passed": false, "expected": 0 },
+    { "name": "limit: before the first attempt", "rules": { "retakes": "limit", "max_attempts": 3 }, "used": 0, "best_score": null, "passed": null, "expected": 3 },
+    { "name": "limit: one used, not passed", "rules": { "retakes": "limit", "max_attempts": 3 }, "used": 1, "best_score": 50, "passed": false, "expected": 2 },
+    { "name": "limit: all used", "rules": { "retakes": "limit", "max_attempts": 3 }, "used": 3, "best_score": 50, "passed": false, "expected": 0 },
+    { "name": "limit: passing ends it", "rules": { "retakes": "limit", "max_attempts": 3 }, "used": 1, "best_score": 90, "passed": true, "expected": 0 },
+    { "name": "limit without a pass mark: retake to improve", "rules": { "retakes": "limit", "max_attempts": 3 }, "used": 1, "best_score": 90, "passed": null, "expected": 2 },
+    { "name": "limit without a pass mark: a perfect score ends it", "rules": { "retakes": "limit", "max_attempts": 3 }, "used": 1, "best_score": 100, "passed": null, "expected": 0 },
+    { "name": "until pass: not passed yet", "rules": { "retakes": "until_pass", "max_attempts": 3 }, "used": 7, "best_score": 70, "passed": false, "expected": null },
+    { "name": "until pass: passed", "rules": { "retakes": "until_pass", "max_attempts": 3 }, "used": 2, "best_score": 85, "passed": true, "expected": 0 },
+    { "name": "until perfect: passed but not perfect", "rules": { "retakes": "until_perfect", "max_attempts": 3 }, "used": 2, "best_score": 90, "passed": true, "expected": null },
+    { "name": "until perfect: perfect", "rules": { "retakes": "until_perfect", "max_attempts": 3 }, "used": 4, "best_score": 100, "passed": true, "expected": 0 },
+    { "name": "until perfect: before the first attempt", "rules": { "retakes": "until_perfect", "max_attempts": 3 }, "used": 0, "best_score": null, "passed": null, "expected": null },
+    { "name": "nothing to score: one attempt is enough", "rules": { "retakes": "until_perfect", "max_attempts": 3 }, "used": 1, "best_score": null, "passed": null, "expected": 0 }
+  ],
+  "show_answers": [
+    { "name": "always", "show_answers": "always", "passed": false, "attempts_left": 2, "expected": true },
+    { "name": "never, even when done", "show_answers": "never", "passed": true, "attempts_left": 0, "expected": false },
+    { "name": "after pass or last: still trying", "show_answers": "after_pass_or_last", "passed": false, "attempts_left": 2, "expected": false },
+    { "name": "after pass or last: unlimited retakes, not passed", "show_answers": "after_pass_or_last", "passed": false, "attempts_left": null, "expected": false },
+    { "name": "after pass or last: passed", "show_answers": "after_pass_or_last", "passed": true, "attempts_left": 0, "expected": true },
+    { "name": "after pass or last: passed, still improving to 100%", "show_answers": "after_pass_or_last", "passed": true, "attempts_left": null, "expected": true },
+    { "name": "after pass or last: no attempts left", "show_answers": "after_pass_or_last", "passed": false, "attempts_left": 0, "expected": true },
+    { "name": "after pass or last: no pass mark, no attempts left", "show_answers": "after_pass_or_last", "passed": null, "attempts_left": 0, "expected": true }
+  ]
+}

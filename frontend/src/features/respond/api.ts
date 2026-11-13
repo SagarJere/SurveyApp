@@ -1,4 +1,4 @@
-import type { Answers, Draft, Theme } from '@/features/survey-logic/types'
+import type { Answers, Draft, Retakes, Theme } from '@/features/survey-logic/types'
 import { api } from '@/lib/api'
 
 import type { AssetLinks } from './form/theme-utils'
@@ -25,6 +25,44 @@ export interface VideoProgress {
   completed: boolean
 }
 
+/** Trainings: a marked question in the answer review, in the attempt's own words. */
+export interface ReviewItem {
+  question_key: string
+  text: string
+  correct: boolean
+  points: number
+  your_answer: string | null
+  correct_answer: string
+}
+
+/**
+ * Trainings: one attempt's result. Score fields are null when the creator hides the score;
+ * `review` is null unless the creator's rule allows showing the correct answers now.
+ */
+export interface AttemptResult {
+  attempt_no: number
+  score: number | null
+  points: number | null
+  max_points: number | null
+  passed: boolean | null
+  pass_mark: number | null
+  attempts_used: number
+  /** null = no limit. */
+  attempts_left: number | null
+  review: ReviewItem[] | null
+}
+
+/** Trainings: the rules shown before starting, attempts, and the latest result. */
+export interface TrainingInfo {
+  /** null when there's none, or the creator doesn't show it up front. */
+  pass_mark: number | null
+  retakes: Retakes
+  max_attempts: number
+  attempts_used: number
+  attempts_left: number | null
+  last_result: AttemptResult | null
+}
+
 export interface RespondentSurvey extends Pick<
   Draft,
   'title' | 'description' | 'settings' | 'theme' | 'sections' | 'questions'
@@ -36,6 +74,8 @@ export interface RespondentSurvey extends Pick<
   /** Trainings: section key -> its video, and how far this person got in each. */
   videos: Record<string, PlayableVideo>
   video_progress: Record<string, VideoProgress>
+  /** Trainings only. Never includes an answer key. */
+  training?: TrainingInfo | null
   participation: RespondentParticipation
 }
 
@@ -44,6 +84,8 @@ export interface SubmitResult {
   submitted_at: string
   can_edit: boolean
   can_respond_again: boolean
+  /** Trainings: the attempt's result, scored on the server. */
+  training?: AttemptResult | null
 }
 
 export interface MySurvey {
@@ -61,6 +103,11 @@ export interface MySurvey {
   /** Trainings: section videos, and how many this person has finished. */
   videos_total: number
   videos_done: number
+  /** Trainings: attempts, and the best score and pass (null when the score is hidden). */
+  attempts_used?: number
+  attempts_left?: number | null
+  best_score?: number | null
+  passed?: boolean | null
 }
 
 export const respondKeys = {

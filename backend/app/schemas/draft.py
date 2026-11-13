@@ -74,6 +74,21 @@ TYPE_CONFIGS: dict[str, type[_Model]] = {"money": MoneyConfig, "number": NumberC
 QuestionType = Literal["single", "multi", "dropdown", "rating", "short", "long", "money", "number"]
 
 
+class QuizKey(_Model):
+    """Trainings: a question's correct answer and points (docs/09-trainings.md).
+
+    Choice questions use `correct_options`; Number uses `correct_min`..`correct_max` (an exact
+    value is min = max). A key may be incomplete while HR edits; publish checks it.
+    """
+
+    points: Annotated[int, Field(ge=1, le=100)] = 1
+    correct_options: Annotated[list[UUID], Field(max_length=MAX_OPTIONS)] = Field(
+        default_factory=list
+    )
+    correct_min: Annotated[float, Field(ge=-float(MAX_NUMBER), le=float(MAX_NUMBER))] | None = None
+    correct_max: Annotated[float, Field(ge=-float(MAX_NUMBER), le=float(MAX_NUMBER))] | None = None
+
+
 class Question(_Model):
     key: UUID
     section_key: UUID
@@ -86,6 +101,7 @@ class Question(_Model):
     options: Annotated[list[Option], Field(max_length=MAX_OPTIONS)] = Field(default_factory=list)
     config: dict[str, Any] = Field(default_factory=dict)
     condition: Condition | None = None
+    quiz: QuizKey | None = None  # trainings only
 
     @model_validator(mode="after")
     def _check_config(self) -> "Question":
@@ -137,6 +153,17 @@ class Section(_Model):
     video: SectionVideo | None = None
 
 
+class QuizSettings(_Model):
+    """Trainings: pass mark, what people see after submitting, and retakes."""
+
+    pass_mark: Annotated[int, Field(ge=1, le=100)] | None = 80
+    show_pass_mark: bool = True
+    show_score: bool = True
+    show_answers: Literal["after_pass_or_last", "always", "never"] = "after_pass_or_last"
+    retakes: Literal["none", "limit", "until_pass", "until_perfect"] = "limit"
+    max_attempts: Annotated[int, Field(ge=2, le=10)] = 3
+
+
 class Settings(_Model):
     layout: Literal["all", "section", "step"] = "step"
     show_navigator: bool = True
@@ -146,6 +173,8 @@ class Settings(_Model):
     anonymous: bool = False
     opens_at: date | None = None
     closes_at: date | None = None
+    due_date: date | None = None  # trainings only
+    quiz: QuizSettings | None = None  # trainings only
 
 
 class Theme(_Model):

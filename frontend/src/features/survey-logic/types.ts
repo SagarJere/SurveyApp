@@ -47,6 +47,34 @@ export interface Question {
   /** Money or number settings. Kept when the type changes, so changing back restores them. */
   config: Partial<MoneyConfig> & Partial<NumberConfig> & Record<string, unknown>
   condition: Condition | null
+  /** Trainings: the answer key, or null when the question isn't marked. */
+  quiz?: QuizKey | null
+}
+
+/**
+ * Trainings: a question's correct answer and points (docs/09-trainings.md). Choice questions
+ * use `correct_options`; Number uses `correct_min`..`correct_max` (an exact value is min = max).
+ */
+export interface QuizKey {
+  points: number
+  correct_options?: string[]
+  correct_min?: number | null
+  correct_max?: number | null
+}
+
+export type Retakes = 'none' | 'limit' | 'until_pass' | 'until_perfect'
+export type ShowAnswers = 'after_pass_or_last' | 'always' | 'never'
+
+/** Trainings: pass mark, what people see after submitting, and retakes. */
+export interface QuizSettings {
+  /** 1–100, or null for no pass mark. */
+  pass_mark: number | null
+  show_pass_mark: boolean
+  show_score: boolean
+  show_answers: ShowAnswers
+  retakes: Retakes
+  /** 2–10, used when retakes is "limit". */
+  max_attempts: number
 }
 
 /** Trainings: the video at the top of a section (docs/09-trainings.md). */
@@ -78,6 +106,10 @@ export interface SurveySettings {
   anonymous: boolean
   opens_at: string | null
   closes_at: string | null
+  /** Trainings only: an optional due date (YYYY-MM-DD). */
+  due_date?: string | null
+  /** Trainings only. */
+  quiz?: QuizSettings | null
 }
 
 export interface Theme {

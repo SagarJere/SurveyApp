@@ -19,6 +19,8 @@ class QuestionRef:
     required: bool
     config: dict[str, Any]
     option_ids: dict[str, uuid.UUID]  # option key -> option row id, in display order
+    # Trainings: the answer key. Kept out of `content`, which is what respondents receive.
+    quiz: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +33,10 @@ class VersionContent:
     def logic(self) -> Any:
         """The DraftDict shape services.survey_logic expects."""
         return self.content
+
+    def scorable(self) -> list[dict[str, Any]]:
+        """Questions with their answer keys, for services.scoring (server-side only)."""
+        return [{**q, "quiz": self.questions[q["key"]].quiz} for q in self.content["questions"]]
 
 
 async def load_version(session: AsyncSession, version_id: uuid.UUID) -> VersionContent:
@@ -77,6 +83,7 @@ async def load_version(session: AsyncSession, version_id: uuid.UUID) -> VersionC
             required=q.required,
             config=q.config,
             option_ids={str(o.key): o.id for o in q_options},
+            quiz=q.quiz,
         )
         question_dicts.append(
             {

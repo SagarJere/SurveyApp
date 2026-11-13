@@ -35,7 +35,27 @@ function closingText(survey: MySurvey): string | null {
   return `Closes ${shortDate(survey.closes_at)}`
 }
 
+/** Trainings: "Passed · 92%", "Not passed · 60%" or "Score 75%" (when there's no pass mark). */
+function resultText(survey: MySurvey): { text: string; tone: 'good' | 'bad' | null } | null {
+  if (survey.status !== 'submitted') return null
+  const score = survey.best_score
+  const scoreText = score === null || score === undefined ? '' : ` · ${String(score)}%`
+  if (survey.passed === true) return { text: `Passed${scoreText}`, tone: 'good' }
+  if (survey.passed === false) return { text: `Not passed${scoreText}`, tone: 'bad' }
+  return score === null || score === undefined
+    ? null
+    : { text: `Score ${String(score)}%`, tone: null }
+}
+
 function SurveyCard({ survey, action }: { survey: MySurvey; action: string }) {
+  const result = resultText(survey)
+  // Trainings: a completed one can be retaken while attempts remain (null = no limit).
+  const retake =
+    survey.status === 'submitted' &&
+    survey.open &&
+    survey.attempts_left !== undefined &&
+    survey.attempts_left !== 0
+  const label = retake ? 'Retake' : action
   const closing = closingText(survey)
   const soon = closing !== null && survey.closes_at !== null && daysUntil(survey.closes_at) <= 3
   const title = survey.title.trim() || 'Untitled survey'
@@ -72,6 +92,22 @@ function SurveyCard({ survey, action }: { survey: MySurvey; action: string }) {
                 {survey.videos_total === 1 ? '' : 's'} watched
               </span>
             ) : null}
+            {result ? (
+              <span
+                className={cn(
+                  'font-semibold',
+                  result.tone === 'good' && 'text-success',
+                  result.tone === 'bad' && 'text-warn',
+                )}
+              >
+                {result.text}
+              </span>
+            ) : null}
+            {retake && survey.attempts_left !== null && survey.attempts_left !== undefined ? (
+              <span>
+                {survey.attempts_left} attempt{survey.attempts_left === 1 ? '' : 's'} left
+              </span>
+            ) : null}
             {survey.status === 'submitted' && survey.submitted_at ? (
               <span>Submitted {shortDate(survey.submitted_at.slice(0, 10))}</span>
             ) : null}
@@ -100,11 +136,11 @@ function SurveyCard({ survey, action }: { survey: MySurvey; action: string }) {
         {survey.open || survey.status !== 'submitted' ? (
           <Button
             asChild
-            variant={survey.status === 'submitted' ? 'outline' : 'default'}
+            variant={survey.status === 'submitted' && !retake ? 'outline' : 'default'}
             className="self-start sm:self-center"
           >
-            <Link to={`/s/${survey.id}`} aria-label={`${action}: ${title}`}>
-              {action}
+            <Link to={`/s/${survey.id}`} aria-label={`${label}: ${title}`}>
+              {label}
             </Link>
           </Button>
         ) : (

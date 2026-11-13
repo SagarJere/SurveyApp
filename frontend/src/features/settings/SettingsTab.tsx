@@ -53,7 +53,7 @@ function LayoutDiagram({ layout }: { layout: Layout }) {
   )
 }
 
-function Panel({
+export function Panel({
   title,
   description,
   children,
@@ -74,7 +74,7 @@ function Panel({
   )
 }
 
-function SettingRow({
+export function SettingRow({
   label,
   description,
   checked,
@@ -165,19 +165,19 @@ export function SettingsTab() {
       </Panel>
 
       <Panel title="Responses">
-        <SettingRow
-          label="One response per employee"
-          description="Anyone who has already responded sees a confirmation instead of the form."
-          checked={settings.one_response}
-          onChange={set('one_response')}
-        />
         {training ? (
           <p className="mt-2 text-sm text-muted-foreground">
             Trainings are never anonymous, and answers can’t be changed after submitting, so
-            everyone’s result is clear.
+            everyone’s result is clear. How many attempts people get is set on the Quiz tab.
           </p>
         ) : (
           <>
+            <SettingRow
+              label="One response per employee"
+              description="Anyone who has already responded sees a confirmation instead of the form."
+              checked={settings.one_response}
+              onChange={set('one_response')}
+            />
             <SettingRow
               label="Allow editing until the survey closes"
               description="Employees can reopen the survey and change their answers."

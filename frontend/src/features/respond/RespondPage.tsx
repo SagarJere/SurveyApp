@@ -13,6 +13,8 @@ import { toast } from 'sonner'
 import { EmptyState } from '@/components/empty-state'
 import { PageLoader } from '@/components/page-loader'
 import { Button } from '@/components/ui/button'
+import { ScoreScreen } from '@/features/quiz/ScoreScreen'
+import { fixedAttempts, introText } from '@/features/quiz/training-rules'
 import { usePageTitle } from '@/hooks/use-page-title'
 import { ApiError } from '@/lib/api'
 
@@ -21,6 +23,7 @@ import {
   respondKeys,
   saveVideoProgress,
   submitAnswers,
+  type AttemptResult,
   type RespondentSurvey,
 } from './api'
 import { SurveyForm, type SubmitOutcome } from './form/SurveyForm'
@@ -113,6 +116,8 @@ function LiveSurvey({ survey, onReload }: { survey: RespondentSurvey; onReload: 
     !participation.can_edit &&
     !participation.can_respond_again
   const autosave = useDraftAutosave(survey.survey_id, !locked)
+  const training = survey.kind === 'training' ? survey.training : null
+  const [result, setResult] = useState<AttemptResult | null>(training?.last_result ?? null)
 
   useEffect(() => {
     if (participation.draft_updated) {
@@ -139,9 +144,12 @@ function LiveSurvey({ survey, onReload }: { survey: RespondentSurvey; onReload: 
   const submit = async (answers: Parameters<typeof submitAnswers>[1]): Promise<SubmitOutcome> => {
     autosave.cancel()
     try {
-      const result = await submitAnswers(survey.survey_id, answers)
-      setAllowed({ canEdit: result.can_edit, canRespondAgain: result.can_respond_again })
-      void queryClient.invalidateQueries({ queryKey: respondKeys.mine })
+      const submitted = await submitAnswers(survey.survey_id, answers)
+      setAllowed({ canEdit: submitted.can_edit, canRespondAgain: submitted.can_respond_again })
+      if (submitted.training) setResult(submitted.training)
+      void queryClient.invalidateQueries({
+        queryKey: training ? respondKeys.trainings : respondKeys.mine,
+      })
       return undefined
     } catch (error) {
       if (!(error instanceof ApiError)) throw error
@@ -153,6 +161,11 @@ function LiveSurvey({ survey, onReload }: { survey: RespondentSurvey; onReload: 
             issues.filter((i) => i.question_key).map((i) => [i.question_key ?? '', i.message]),
           ),
         }
+      }
+      if (error.code === 'NO_ATTEMPTS_LEFT') {
+        toast.error(error.message)
+        onReload()
+        return undefined
       }
       if (error.code === 'ALREADY_SUBMITTED') {
         setAllowed({ canEdit: false, canRespondAgain: false })
@@ -187,6 +200,27 @@ function LiveSurvey({ survey, onReload }: { survey: RespondentSurvey; onReload: 
           })
       }}
       onSubmit={submit}
+      intro={
+        training
+          ? introText({
+              ...training,
+              attempts_used: result?.attempts_used ?? training.attempts_used,
+            })
+          : undefined
+      }
+      doneScreen={
+        training && result
+          ? (retake) => (
+              <ScoreScreen
+                result={result}
+                retakes={training.retakes}
+                maxAttempts={fixedAttempts(training.retakes, training.max_attempts)}
+                onRetake={retake}
+                homeLink={TRAININGS_LINK}
+              />
+            )
+          : undefined
+      }
     />
   )
 }

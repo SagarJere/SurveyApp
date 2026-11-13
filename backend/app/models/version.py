@@ -85,6 +85,9 @@ class VersionQuestion(Base):
     required: Mapped[bool] = mapped_column(Boolean)
     config: Mapped[dict[str, Any]] = mapped_column(JSONB)
     condition: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # Trainings: the answer key {points, correct_options} or {points, correct_min, correct_max},
+    # or null when not marked. Never sent to respondents until the creator's rule allows.
+    quiz: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 class QuestionOption(Base):

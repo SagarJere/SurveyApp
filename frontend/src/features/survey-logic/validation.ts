@@ -22,6 +22,10 @@ export type IssueCode =
   | 'dates_order'
   /** Server-only checks (they need the database). */
   | 'theme_image_missing'
+  | 'video_missing'
+  | 'quiz_key_missing'
+  | 'quiz_settings'
+  | 'quiz_unmarked'
   | 'audience_empty'
   | 'audience_small_anonymous'
 

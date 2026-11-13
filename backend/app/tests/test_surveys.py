@@ -136,8 +136,13 @@ async def test_reload_restores_the_whole_sample_survey(
 
     reloaded = (await client.get(f"/api/surveys/{survey['id']}", headers=hr)).json()
 
-    # Every section now has a "video" field (only trainings fill it in).
-    expected = {**PULSE, "sections": [{**section, "video": None} for section in PULSE["sections"]]}
+    # Training-only fields are filled in as empty: section videos, answer keys, quiz settings.
+    expected = {
+        **PULSE,
+        "settings": {**PULSE["settings"], "due_date": None, "quiz": None},
+        "sections": [{**section, "video": None} for section in PULSE["sections"]],
+        "questions": [{**question, "quiz": None} for question in PULSE["questions"]],
+    }
     assert reloaded["draft"] == expected
     assert reloaded["title"] == PULSE["title"]
     assert reloaded["draft_updated_at"] == survey["draft_updated_at"]

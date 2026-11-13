@@ -34,6 +34,41 @@ class VideoProgress(BaseModel):
     completed: bool
 
 
+class ReviewItem(BaseModel):
+    """A marked question in the answer review, in the attempt's own words."""
+
+    question_key: str
+    text: str
+    correct: bool
+    points: int
+    your_answer: str | None
+    correct_answer: str
+
+
+class AttemptResult(BaseModel):
+    """A training attempt. Score fields are null when the creator hides the score; `review`
+    is null unless the creator's rule allows showing the correct answers now."""
+
+    attempt_no: int
+    score: int | None
+    points: int | None
+    max_points: int | None
+    passed: bool | None
+    pass_mark: int | None
+    attempts_used: int
+    attempts_left: int | None  # null = no limit
+    review: list[ReviewItem] | None
+
+
+class TrainingInfo(BaseModel):
+    pass_mark: int | None  # null when there's none, or the creator doesn't show it up front
+    retakes: Literal["none", "limit", "until_pass", "until_perfect"]
+    max_attempts: int
+    attempts_used: int
+    attempts_left: int | None
+    last_result: AttemptResult | None
+
+
 class RespondentSurvey(BaseModel):
     survey_id: UUID
     kind: Literal["survey", "training"]
@@ -48,6 +83,9 @@ class RespondentSurvey(BaseModel):
     # Trainings: section key -> its video, and how far this person got in each.
     videos: dict[str, SectionVideo] = Field(default_factory=dict)
     video_progress: dict[str, VideoProgress] = Field(default_factory=dict)
+    # Trainings: the quiz rules as shown before starting, attempts, and the latest result.
+    # Never includes an answer key.
+    training: TrainingInfo | None = None
     participation: Participation
 
 
@@ -64,6 +102,7 @@ class SubmitResult(BaseModel):
     submitted_at: datetime
     can_edit: bool
     can_respond_again: bool
+    training: AttemptResult | None = None
 
 
 class MySurvey(BaseModel):
@@ -81,3 +120,8 @@ class MySurvey(BaseModel):
     # Trainings: how many of its section videos this person has finished.
     videos_total: int = 0
     videos_done: int = 0
+    # Trainings: attempts, and the best score and pass (null when the score is hidden).
+    attempts_used: int = 0
+    attempts_left: int | None = None
+    best_score: int | None = None
+    passed: bool | None = None

@@ -298,6 +298,9 @@ IssueCode = Literal[
     "dates_order",
     "theme_image_missing",  # server-only checks (need the database), see services/publish.py
     "video_missing",
+    "quiz_key_missing",
+    "quiz_settings",
+    "quiz_unmarked",  # a warning: a training with no marked questions has no score
     "audience_empty",
     "audience_small_anonymous",  # a warning: doesn't block publishing
 ]

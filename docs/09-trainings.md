@@ -29,7 +29,7 @@ The kind is chosen when the survey is created and can't be changed. Everything e
 - **Per-video options** (creator's choice, both off by default):
   - **Allow skipping ahead.** Off: the person can pause and rewind but can't move past the furthest point they've watched.
   - **Allow changing the playback speed.** Off: always 1×.
-- **The rule:** the section's questions stay hidden until its video has played to the end ("The questions appear when the video ends"). In the one-question layout the video is its own step before the section's questions.
+- **The rule:** the section's questions stay hidden until its video has played to the end ("The questions appear when the video ends"). In the one-question layout the video sits on the step of the section's first question, and Next waits until it ends (so question numbers and the navigator stay as they are).
 - **Remembered:** finishing a video is saved on the server, so leaving and coming back doesn't mean watching again. Watching again is always allowed.
 - **Honest limit:** "watched" is reported by the browser. The server records and enforces it (questions of an unwatched video section can't be submitted), but it can't prove a person actually watched.
 - **Preview:** HR gets a "Skip video" button in Preview.
@@ -51,7 +51,11 @@ The kind is chosen when the survey is created and can't be changed. Everything e
   - Up to N attempts in total (2–10).
   - Until they pass (needs a pass mark).
   - Until every answer is correct (100%).
-- A retake skips the videos: the person only answers the questions again (watching again is optional).
+- How attempts end (shared rules, `shared/test-cases/scoring.json`): passing ends them, except "until every answer is correct", which goes on to 100%. A perfect score always ends them. With "up to N" and no pass mark, people may retake to improve. A training with nothing marked needs one attempt.
+- Once passed, a person stays passed, even if a later attempt scores lower.
+- A retake skips the videos: the person only answers the questions again (watching again is optional). Answers saved during a retake resume like a draft.
+- For trainings, the Settings tab hides "One response per employee": attempts replace it.
+- Preview scores attempts in the browser with the draft's answer key and the same shared rules, so HR can try the score screen and retakes before publishing.
 - **The best attempt counts** for the person's result, the reports and the completion report. Every attempt is kept.
 - **Due date:** optional. Shown on My trainings ("Due in 4 days", "Overdue"). People can still complete after it; reports mark those as late.
 

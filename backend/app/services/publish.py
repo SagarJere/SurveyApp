@@ -18,6 +18,7 @@ from app.models import QuestionOption, Survey, SurveyVersion, VersionQuestion, V
 from app.schemas.draft import Draft
 from app.services.audience import audience_count
 from app.services.results_cache import results_cache
+from app.services.scoring import has_marked_questions, published_key, quiz_problems
 from app.services.survey_logic import Issue, validate_draft
 from app.services.surveys import SurveyAccess
 from app.services.theme_assets import usable_asset_ids
@@ -61,9 +62,26 @@ async def audience_issues(session: AsyncSession, survey: Survey) -> list[Issue]:
     ]
 
 
+def quiz_issues(draft: Draft) -> list[Issue]:
+    """Trainings: complete answer keys and retake rules that can finish."""
+    return [
+        Issue("quiz_key_missing", message, question_key=key)
+        if key
+        else Issue("quiz_settings", message)
+        for key, message in quiz_problems(draft.as_logic_dict())
+    ]
+
+
 async def publish_warnings(session: AsyncSession, survey: Survey) -> list[Issue]:
     """Things worth knowing that don't block publishing."""
     draft = Draft.model_validate(survey.draft)
+    if survey.kind == "training" and not has_marked_questions(draft.as_logic_dict()):
+        return [
+            Issue(
+                "quiz_unmarked",
+                "No question has a correct answer, so this training won't have a score.",
+            )
+        ]
     if not draft.settings.anonymous or survey.open_to_all:
         return []
     count = await audience_count(session, survey.id)
@@ -87,6 +105,7 @@ async def publish_issues(session: AsyncSession, survey: Survey, settings: Settin
     ]
     if survey.kind == "training":
         issues += await video_issues(session, settings, survey.id, draft)
+        issues += quiz_issues(draft)
     return [*issues, *await audience_issues(session, survey)]
 
 
@@ -198,6 +217,7 @@ async def publish(
                 # Only money and number settings matter in a published version.
                 "config": _own_settings(question) if has_settings else {},
                 "condition": question["condition"],
+                "quiz": published_key(question) if survey.kind == "training" else None,
             }
         )
         if question["type"] in CHOICE_TYPES:

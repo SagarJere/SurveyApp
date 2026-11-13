@@ -34,7 +34,9 @@ from app.services.answers import (
     is_invalid,
     range_error,
 )
+from app.services.numbers import format_number
 from app.services.results_cache import results_cache
+from app.services.scoring import Score, attempts_left, passed, score_attempt, show_answers
 from app.services.survey_logic import evaluate, is_answered
 from app.services.version_content import VersionContent, load_version
 from app.services.videos import Progress, progress_for
@@ -91,6 +93,14 @@ async def close_if_expired(
         await session.refresh(survey)
 
 
+def _no_attempts_left() -> AppError:
+    return AppError(
+        status_code=status.HTTP_409_CONFLICT,
+        code="NO_ATTEMPTS_LEFT",
+        message="You've used all your attempts at this training.",
+    )
+
+
 def _unavailable() -> AppError:
     return AppError(
         status_code=status.HTTP_403_FORBIDDEN,
@@ -114,6 +124,22 @@ class RespondentContext:
     @property
     def anonymous(self) -> bool:
         return bool(self.settings.get("anonymous"))
+
+    @property
+    def training(self) -> bool:
+        return self.survey.kind == "training"
+
+    @property
+    def quiz_rules(self) -> dict[str, Any]:
+        rules: dict[str, Any] = self.settings.get("quiz") or {}
+        return rules
+
+    def attempts_left(self) -> int | None:
+        """Trainings: attempts still allowed (None = no limit)."""
+        p = self.participation
+        if p is None:
+            return attempts_left(self.quiz_rules, 0, None, None)
+        return attempts_left(self.quiz_rules, p.attempts, p.best_score, p.passed)
 
     def can_edit(self, open_now: bool) -> bool:
         """Editing a submitted response: allowed by the survey, still open, and traceable to
@@ -250,6 +276,18 @@ async def respondent_view(
     elif p.draft_answers:
         answers = clean_draft(context.version.questions, p.draft_answers)
     draft_updated = bool(p.draft_answers) and p.draft_version_id not in (None, current)
+    if context.training:
+        # A retake started (answers saved since the last attempt) carries on as in progress.
+        more = p.status == "submitted" and context.attempts_left() != 0
+        retaking = more and bool(p.draft_answers)
+        return RespondentView(
+            context,
+            "in_progress" if p.status != "submitted" or retaking else "submitted",
+            answers,
+            can_edit=False,
+            can_respond_again=more,
+            draft_updated=draft_updated,
+        )
     return RespondentView(
         context,
         "submitted" if p.status == "submitted" else "in_progress",
@@ -276,7 +314,10 @@ async def save_draft(
 ) -> datetime:
     context = await respondent_context(session, settings, user, survey_id)
     p = context.participation
-    if (
+    if p is not None and p.status == "submitted" and context.training:
+        if context.attempts_left() == 0:
+            raise _no_attempts_left()
+    elif (
         p is not None
         and p.status == "submitted"
         and context.settings.get("one_response", True)
@@ -348,10 +389,27 @@ def check_answers(
 
 
 @dataclass(frozen=True, slots=True)
+class AttemptResult:
+    """A training attempt as the person may see it. Score fields are None when the creator
+    hides the score; `review` is None unless the creator's rule allows it now."""
+
+    attempt_no: int
+    score: int | None
+    points: int | None
+    max_points: int | None
+    passed: bool | None
+    pass_mark: int | None
+    attempts_used: int
+    attempts_left: int | None
+    review: list[dict[str, Any]] | None
+
+
+@dataclass(frozen=True, slots=True)
 class Submitted:
     submitted_at: datetime
     can_edit: bool
     can_respond_again: bool
+    training: AttemptResult | None = None
 
 
 def _hour(moment: datetime) -> datetime:
@@ -394,6 +452,69 @@ def merge_video_problems(
     """One message per question: "watch the video first" replaces e.g. "required"."""
     blocked = {p["question_key"] for p in watch}
     return [p for p in problems if p["question_key"] not in blocked] + watch
+
+
+def _refusal(
+    context: RespondentContext, participation: SurveyParticipation, *, editing: bool
+) -> AppError | None:
+    """Why this person can't submit again, if they can't."""
+    if participation.status != "submitted":
+        return None
+    if context.training:
+        return _no_attempts_left() if context.attempts_left() == 0 else None
+    if context.settings.get("one_response", True) and not editing:
+        return AppError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="ALREADY_SUBMITTED",
+            message="You've already responded to this survey.",
+        )
+    return None
+
+
+async def _next_attempt_no(
+    session: AsyncSession, survey_id: uuid.UUID, user: AuthenticatedUser
+) -> int:
+    """1, 2, 3… per person: training attempts, or repeat responses to a survey."""
+    previous = await session.scalar(
+        select(func.max(SurveyResponse.attempt_no)).where(
+            SurveyResponse.survey_id == survey_id,
+            SurveyResponse.employee_id == user.employee_id,
+        )
+    )
+    return (previous or 0) + 1
+
+
+def _answer_rows(
+    version: VersionContent,
+    response_id: uuid.UUID,
+    answers: dict[str, Any],
+    scored: Score | None,
+) -> list[dict[str, Any]]:
+    """response_answers rows: one per selected option for checkboxes, otherwise one per
+    answer. Trainings mark the first row of each marked question right or wrong."""
+    answer_rows: list[dict[str, Any]] = []
+    for key, value in answers.items():
+        ref = version.questions[key]
+        base: dict[str, Any] = {
+            "response_id": response_id,
+            "question_id": ref.id,
+            "option_id": None,
+            "value_num": None,
+            "value_text": None,
+            "correct": None,
+        }
+        if ref.type == "multi":
+            rows = [{**base, "option_id": ref.option_ids[k]} for k in value]
+        elif ref.type in ("single", "dropdown"):
+            rows = [{**base, "option_id": ref.option_ids[value]}]
+        elif ref.type in ("rating", "money", "number"):
+            rows = [{**base, "value_num": Decimal(str(value))}]
+        else:
+            rows = [{**base, "value_text": value}]
+        if scored is not None and key in scored.correct:
+            rows[0]["correct"] = scored.correct[key]
+        answer_rows.extend(rows)
+    return answer_rows
 
 
 async def submit(
@@ -439,13 +560,9 @@ async def submit(
     context.participation = participation
     one_response = bool(context.settings.get("one_response", True))
     editing = participation.status == "submitted" and context.can_edit(open_now=True)
-    if participation.status == "submitted" and one_response and not editing:
+    if refusal := _refusal(context, participation, editing=editing):
         await session.rollback()
-        raise AppError(
-            status_code=status.HTTP_409_CONFLICT,
-            code="ALREADY_SUBMITTED",
-            message="You've already responded to this survey.",
-        )
+        raise refusal
 
     now = datetime.now(UTC)
     anonymous = context.anonymous
@@ -453,6 +570,10 @@ async def submit(
     # be matched to the participation record.
     stamp = _hour(now) if anonymous else now
     member = context.member
+    scored = score_attempt(version.scorable(), answers, visible) if context.training else None
+    attempt_passed = (
+        passed(scored.score, context.quiz_rules.get("pass_mark")) if scored is not None else None
+    )
 
     if editing and participation.response_id is not None:
         response_id = participation.response_id
@@ -471,6 +592,7 @@ async def submit(
         )
     else:
         response_id = uuid.uuid4()
+        attempt_no = 1 if anonymous else await _next_attempt_no(session, survey_id, user)
         await session.execute(
             insert(SurveyResponse).values(
                 id=response_id,
@@ -482,21 +604,15 @@ async def submit(
                 location=member.location if member else None,
                 submitted_at=stamp,
                 updated_at=stamp,
+                attempt_no=attempt_no,
+                points=scored.points if scored else None,
+                max_points=scored.max_points if scored else None,
+                score=scored.score if scored else None,
+                passed=attempt_passed,
             )
         )
 
-    answer_rows: list[dict[str, Any]] = []
-    for key, value in answers.items():
-        ref = version.questions[key]
-        base = {"response_id": response_id, "question_id": ref.id}
-        if ref.type == "multi":
-            answer_rows.extend({**base, "option_id": ref.option_ids[k]} for k in value)
-        elif ref.type in ("single", "dropdown"):
-            answer_rows.append({**base, "option_id": ref.option_ids[value]})
-        elif ref.type in ("rating", "money", "number"):
-            answer_rows.append({**base, "value_num": Decimal(str(value))})
-        else:
-            answer_rows.append({**base, "value_text": value})
+    answer_rows = _answer_rows(version, response_id, answers, scored)
     if answer_rows:
         await session.execute(insert(ResponseAnswer), answer_rows)
     shown_rows = [
@@ -518,15 +634,179 @@ async def submit(
             draft_answers={},
             draft_version_id=None,
             response_id=None if anonymous else response_id,
+            **(
+                _best_attempt(participation, response_id, scored.score, attempt_passed, now)
+                if scored is not None
+                else {}
+            ),
         )
     )
     await session.commit()
     results_cache.invalidate(survey_id)
-    context.participation = await session.get(SurveyParticipation, (survey_id, user.employee_id))
+    context.participation = await session.get(
+        SurveyParticipation, (survey_id, user.employee_id), populate_existing=True
+    )
+    if context.training:
+        response = await session.get(SurveyResponse, response_id)
+        assert response is not None  # noqa: S101 - inserted above
+        return Submitted(
+            submitted_at=stamp,
+            can_edit=False,
+            can_respond_again=context.attempts_left() != 0,
+            training=await attempt_result(session, context, response),
+        )
     return Submitted(
         submitted_at=stamp,
         can_edit=context.can_edit(open_now=True),
         can_respond_again=not one_response,
+    )
+
+
+def _best_attempt(
+    participation: SurveyParticipation,
+    response_id: uuid.UUID,
+    score: int | None,
+    attempt_passed: bool | None,
+    now: datetime,
+) -> dict[str, Any]:
+    """Participation updates for a new training attempt. The best score counts (the earliest
+    attempt on a tie); once passed, a person stays passed."""
+    best = participation.best_score
+    better = participation.best_response_id is None or (
+        score is not None and (best is None or score > best)
+    )
+    if participation.passed or attempt_passed:
+        ever_passed: bool | None = True
+    elif participation.passed is False or attempt_passed is False:
+        ever_passed = False
+    else:
+        ever_passed = None
+    return {
+        "attempts": participation.attempts + 1,
+        "best_response_id": response_id if better else participation.best_response_id,
+        "best_score": score if better else best,
+        "passed": ever_passed,
+        "passed_at": participation.passed_at or (now if attempt_passed else None),
+    }
+
+
+# --- training results for the person ----------------------------------------------------------
+
+
+def _shown_answer(question: dict[str, Any], value: Any) -> str | None:
+    """An answer as text, in the version's own words (labels, grouped numbers)."""
+    if value is None:
+        return None
+    labels = {o["key"]: o["label"] for o in question["options"]}
+    if question["type"] == "multi" and isinstance(value, list):
+        return ", ".join(labels.get(k, "") for k in value) or None
+    if question["type"] in ("single", "dropdown"):
+        return labels.get(value)
+    if question["type"] == "number" and isinstance(value, int | float):
+        return format_number(value, question["config"].get("number_unit"))
+    return str(value)
+
+
+def _correct_answer(question: dict[str, Any], key: dict[str, Any]) -> str:
+    if question["type"] == "number":
+        unit = question["config"].get("number_unit")
+        low, high = key.get("correct_min"), key.get("correct_max")
+        if low is None or high is None:
+            return ""
+        if low == high:
+            return format_number(low, unit)
+        return f"{format_number(low)} to {format_number(high, unit)}"
+    labels = {o["key"]: o["label"] for o in question["options"]}
+    return ", ".join(labels[k] for k in key.get("correct_options") or [] if k in labels)
+
+
+async def answer_review(session: AsyncSession, response: SurveyResponse) -> list[dict[str, Any]]:
+    """Each marked question the person was shown: right or not, their answer and the correct
+    one. Built from the attempt's own version, so a later republish doesn't change it."""
+    version = await load_version(session, response.version_id)
+    answers = await response_answers(session, version, response.id)
+    by_id = {ref.id: key for key, ref in version.questions.items()}
+    shown = [
+        by_id[qid]
+        for qid in (
+            await session.scalars(
+                select(ResponseShown.question_id).where(ResponseShown.response_id == response.id)
+            )
+        )
+        if qid in by_id
+    ]
+    questions = version.scorable()
+    scored = score_attempt(questions, answers, shown)
+    review: list[dict[str, Any]] = []
+    for question in questions:
+        key = question["key"]
+        if key not in scored.correct:
+            continue
+        review.append(
+            {
+                "question_key": key,
+                "text": question["text"],
+                "correct": scored.correct[key],
+                "points": int(question["quiz"].get("points") or 1),
+                "your_answer": _shown_answer(question, answers.get(key)),
+                "correct_answer": _correct_answer(question, question["quiz"]),
+            }
+        )
+    return review
+
+
+async def attempt_result(
+    session: AsyncSession, context: RespondentContext, response: SurveyResponse
+) -> AttemptResult:
+    """A training attempt, with only what the creator lets the person see."""
+    rules = context.quiz_rules
+    p = context.participation
+    left = context.attempts_left()
+    show_score = bool(rules.get("show_score", True))
+    allowed = show_answers(
+        rules.get("show_answers", "after_pass_or_last"), p.passed if p else None, left
+    )
+    return AttemptResult(
+        attempt_no=response.attempt_no,
+        score=response.score if show_score else None,
+        points=response.points if show_score else None,
+        max_points=response.max_points if show_score else None,
+        passed=response.passed if show_score else None,
+        pass_mark=rules.get("pass_mark") if show_score else None,
+        attempts_used=p.attempts if p else 0,
+        attempts_left=left,
+        review=await answer_review(session, response) if allowed else None,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class TrainingInfo:
+    """GET /respond/{id} for a training: the rules as shown before starting, and the latest
+    attempt's result."""
+
+    pass_mark: int | None
+    retakes: str
+    max_attempts: int
+    attempts_used: int
+    attempts_left: int | None
+    last_result: AttemptResult | None
+
+
+async def training_info(session: AsyncSession, context: RespondentContext) -> TrainingInfo:
+    rules = context.quiz_rules
+    p = context.participation
+    last: AttemptResult | None = None
+    if p is not None and p.attempts > 0 and p.response_id is not None:
+        response = await session.get(SurveyResponse, p.response_id)
+        if response is not None:
+            last = await attempt_result(session, context, response)
+    return TrainingInfo(
+        pass_mark=rules.get("pass_mark") if rules.get("show_pass_mark", True) else None,
+        retakes=rules.get("retakes", "none"),
+        max_attempts=int(rules.get("max_attempts") or 1),
+        attempts_used=p.attempts if p else 0,
+        attempts_left=context.attempts_left(),
+        last_result=last,
     )
 
 
@@ -599,8 +879,22 @@ async def my_surveys(
         if video_sections:
             progress = await progress_for(session, survey.id, user.employee_id)
             videos_done = sum(1 for k in video_sections if k in progress and progress[k].completed)
+        extra: dict[str, Any] = {}
+        if kind == "training":
+            rules = version_settings.get("quiz") or {}
+            used = participation.attempts if participation else 0
+            best = participation.best_score if participation else None
+            ever = participation.passed if participation else None
+            show_score = bool(rules.get("show_score", True))
+            extra = {
+                "attempts_used": used,
+                "attempts_left": attempts_left(rules, used, best, ever),
+                "best_score": best if show_score else None,
+                "passed": ever if show_score else None,
+            }
         items.append(
             {
+                **extra,
                 "id": survey.id,
                 "title": version.content["title"],
                 "description": version.content["description"],

@@ -2,6 +2,16 @@ import { RotateCcwIcon, SmartphoneIcon } from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { ScoreScreen } from '@/features/quiz/ScoreScreen'
+import {
+  DEFAULT_QUIZ,
+  fixedAttempts,
+  introText,
+  NO_ATTEMPTS,
+  previewAttempt,
+  type PreviewAttempts,
+} from '@/features/quiz/training-rules'
+import type { AttemptResult } from '@/features/respond/api'
 import { SurveyForm } from '@/features/respond/form/SurveyForm'
 import { useThemeAssets } from '@/features/theme/use-theme-assets'
 import { useDraftVideos } from '@/features/video/use-videos'
@@ -21,9 +31,15 @@ export function PreviewPane({ stickyTop }: { stickyTop: number }) {
   const videos = useDraftVideos(surveyId, draft.sections, training)
   const [phone, setPhone] = useState(false)
   const [run, setRun] = useState(0)
+  // Trainings: Preview keeps its own attempts, scored with the draft's answer key.
+  const [attempts, setAttempts] = useState<PreviewAttempts>(NO_ATTEMPTS)
+  const [result, setResult] = useState<AttemptResult | null>(null)
   const reset = () => {
     setRun((n) => n + 1)
+    setAttempts(NO_ATTEMPTS)
+    setResult(null)
   }
+  const quiz = draft.settings.quiz ?? DEFAULT_QUIZ
 
   return (
     <>
@@ -61,8 +77,37 @@ export function PreviewPane({ stickyTop }: { stickyTop: number }) {
           survey={draft}
           assets={resolve}
           stickyTop={stickyTop}
-          onSubmit={() => undefined}
+          onSubmit={(answers) => {
+            if (!training) return undefined
+            const scored = previewAttempt(draft, answers, attempts)
+            setAttempts(scored.after)
+            setResult(scored.result)
+            return undefined
+          }}
           onReset={reset}
+          intro={
+            training
+              ? introText({
+                  pass_mark: quiz.show_pass_mark ? quiz.pass_mark : null,
+                  retakes: quiz.retakes,
+                  max_attempts: quiz.max_attempts,
+                  attempts_used: attempts.used,
+                })
+              : undefined
+          }
+          doneScreen={
+            training && result
+              ? (retake) => (
+                  <ScoreScreen
+                    result={result}
+                    retakes={quiz.retakes}
+                    maxAttempts={fixedAttempts(quiz.retakes, quiz.max_attempts)}
+                    onRetake={retake}
+                    onReset={reset}
+                  />
+                )
+              : undefined
+          }
           videos={training ? videos : undefined}
           allowSkipVideos
         />

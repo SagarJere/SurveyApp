@@ -21,6 +21,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { audienceKeys, listAudience, type AudienceQuery } from '@/features/audience/api'
 import { AudienceTab } from '@/features/audience/AudienceTab'
+import { QuizTab } from '@/features/quiz/QuizTab'
 import { SettingsTab } from '@/features/settings/SettingsTab'
 import type { Issue } from '@/features/survey-logic/validation'
 import {
@@ -117,16 +118,22 @@ export function BuilderPage() {
   )
 }
 
-const TABS = [
+const ALL_TABS = [
   { value: 'questions', label: 'Questions' },
+  { value: 'quiz', label: 'Quiz' },
   { value: 'theme', label: 'Theme' },
   { value: 'settings', label: 'Settings' },
   { value: 'audience', label: 'Audience' },
 ] as const
-type Tab = (typeof TABS)[number]['value']
+type Tab = (typeof ALL_TABS)[number]['value']
 
-function isTab(value: string | null): value is Tab {
-  return TABS.some((tab) => tab.value === value)
+/** The Quiz tab (between Questions and Theme) is for trainings only. */
+function tabsFor(kind: SurveyDetail['kind']) {
+  return ALL_TABS.filter((tab) => tab.value !== 'quiz' || kind === 'training')
+}
+
+function isTab(value: string | null, tabs: readonly { value: Tab }[]): value is Tab {
+  return tabs.some((tab) => tab.value === value)
 }
 
 interface Lifecycle {
@@ -144,7 +151,8 @@ function BuilderEditor({ survey, onReload }: { survey: SurveyDetail; onReload: (
   const autosave = useAutosave(survey.id, survey.draft_updated_at)
   const [params, setParams] = useSearchParams()
   const tabParam = params.get('tab')
-  const tab: Tab = isTab(tabParam) ? tabParam : 'questions'
+  const TABS = tabsFor(survey.kind)
+  const tab: Tab = isTab(tabParam, TABS) ? tabParam : 'questions'
   const mode: BuilderMode = params.get('mode') === 'preview' ? 'preview' : 'edit'
   const [lifecycle, setLifecycle] = useState<Lifecycle>({
     status: survey.status,
@@ -218,6 +226,8 @@ function BuilderEditor({ survey, onReload }: { survey: SurveyDetail; onReload: (
       navigate({ tab: 'theme', mode: 'edit' })
     } else if (first.code === 'dates_order') {
       navigate({ tab: 'settings', mode: 'edit' })
+    } else if (first.code === 'quiz_settings') {
+      navigate({ tab: 'quiz', mode: 'edit' })
     } else if (first.question_key) {
       navigate({ tab: 'questions', mode: 'edit' })
       const question = store.draft.questions.find((q) => q.key === first.question_key)
@@ -375,7 +385,7 @@ function BuilderEditor({ survey, onReload }: { survey: SurveyDetail; onReload: (
           <div
             role="tablist"
             aria-label="Survey parts"
-            className="mx-auto flex max-w-[760px] gap-0.5 px-1.5 sm:px-5"
+            className="mx-auto flex max-w-[760px] gap-0.5 overflow-x-auto px-1.5 sm:px-5"
           >
             {TABS.map((item, index) => (
               <button
@@ -387,7 +397,7 @@ function BuilderEditor({ survey, onReload }: { survey: SurveyDetail; onReload: (
                 aria-controls="builder-panel"
                 tabIndex={tab === item.value ? 0 : -1}
                 className={cn(
-                  'min-h-11 border-b-2 border-transparent px-3 font-semibold text-muted-foreground',
+                  'min-h-11 shrink-0 border-b-2 border-transparent px-2 font-semibold text-muted-foreground min-[400px]:px-3',
                   tab === item.value && 'border-primary text-foreground',
                 )}
                 onClick={() => {
@@ -436,6 +446,8 @@ function BuilderEditor({ survey, onReload }: { survey: SurveyDetail; onReload: (
               <ThemeTab />
             ) : tab === 'settings' ? (
               <SettingsTab />
+            ) : tab === 'quiz' ? (
+              <QuizTab />
             ) : (
               <AudienceTab />
             )}

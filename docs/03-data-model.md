@@ -150,7 +150,7 @@ One row per employee per survey. Enforces one response per person, even when ano
 | department, location | text | snapshot at submit |
 | submitted_at | timestamptz | for anonymous surveys, round to the hour |
 | updated_at | timestamptz | |
-| attempt_no | int | 1 for surveys; 1, 2, 3… per person for trainings. Unique with (survey_id, employee_id) when employee_id is set |
+| attempt_no | int | 1, 2, 3… per person: training attempts, or repeat responses to a survey that allows responding again (existing rows were numbered by submit time). Unique with (survey_id, employee_id) when employee_id is set |
 | points, max_points | int | trainings: points earned and available to this person (hidden questions excluded); null for surveys |
 | score | int | trainings: points ÷ max_points as a whole % |
 | passed | boolean | trainings: against the pass mark of this version; null when there's no pass mark |

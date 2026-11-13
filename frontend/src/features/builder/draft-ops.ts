@@ -91,7 +91,7 @@ export function addQuestion(
   return [normalize({ ...draft, questions: [...draft.questions, question] }), question]
 }
 
-export type QuestionPatch = Partial<Pick<Question, 'text' | 'help' | 'required'>>
+export type QuestionPatch = Partial<Pick<Question, 'text' | 'help' | 'required' | 'quiz'>>
 
 export function updateQuestion(draft: Draft, key: string, patch: QuestionPatch): Draft {
   return mapQuestion(draft, key, (q) => ({ ...q, ...patch }))
@@ -144,7 +144,21 @@ export function updateOption(draft: Draft, key: string, optionKey: string, label
 /** Remove an option. The last remaining option can't be removed. */
 export function removeOption(draft: Draft, key: string, optionKey: string): Draft {
   return mapQuestion(draft, key, (q) =>
-    q.options.length <= 1 ? q : { ...q, options: q.options.filter((o) => o.key !== optionKey) },
+    q.options.length <= 1
+      ? q
+      : {
+          ...q,
+          options: q.options.filter((o) => o.key !== optionKey),
+          // A removed option can't stay a correct answer.
+          ...(q.quiz?.correct_options
+            ? {
+                quiz: {
+                  ...q.quiz,
+                  correct_options: q.quiz.correct_options.filter((k) => k !== optionKey),
+                },
+              }
+            : {}),
+        },
   )
 }
 
@@ -199,13 +213,24 @@ export function duplicateQuestion(draft: Draft, key: string): [Draft, Question |
   const index = draft.questions.findIndex((q) => q.key === key)
   const source = draft.questions[index]
   if (!source) return [draft, null]
+  const optionKeys = new Map(source.options.map((o) => [o.key, newKey()]))
   const copy: Question = {
     ...source,
     key: newKey(),
     text: source.text ? `${source.text} (copy)` : '',
-    options: source.options.map((o) => ({ ...o, key: newKey() })),
+    options: source.options.map((o) => ({ ...o, key: optionKeys.get(o.key) ?? newKey() })),
     config: { ...source.config },
     condition: source.condition ? { ...source.condition } : null,
+  }
+  if (source.quiz) {
+    // The copy's correct answers point at its own new options.
+    copy.quiz = {
+      ...source.quiz,
+      correct_options: (source.quiz.correct_options ?? []).flatMap((k) => {
+        const mapped = optionKeys.get(k)
+        return mapped ? [mapped] : []
+      }),
+    }
   }
   const questions = [...draft.questions]
   questions.splice(index + 1, 0, copy)

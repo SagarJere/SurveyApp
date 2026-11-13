@@ -115,7 +115,8 @@ async def test_publish_creates_version_1_with_all_content(
     assert response.json()["status"] == "published"
     rows = await _version_rows(engine, survey["id"], 1)
     assert rows["version"].title == PULSE["title"]
-    assert rows["version"].settings == PULSE["settings"]
+    # Training-only settings are stored empty for a survey.
+    assert rows["version"].settings == {**PULSE["settings"], "due_date": None, "quiz": None}
     assert rows["version"].theme == PULSE["theme"]
     assert [str(s.key) for s in rows["sections"]] == [s["key"] for s in PULSE["sections"]]
     assert rows["sections"][1].condition == PULSE["sections"][1]["condition"]

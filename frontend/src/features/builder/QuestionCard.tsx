@@ -6,6 +6,7 @@ import { NativeSelect } from '@/components/ui/native-select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { QUESTION_TYPE_LIST, QUESTION_TYPES } from '@/features/question-types/registry'
+import { AnswerKeyEditor } from '@/features/quiz/AnswerKeyEditor'
 import { countDependents, questionConditionProblem } from '@/features/survey-logic/conditions'
 import type { Question, QuestionType } from '@/features/survey-logic/types'
 import { cn } from '@/lib/utils'
@@ -88,6 +89,7 @@ function QuestionBody({ question, number }: { question: Question; number: number
   const total = useBuilderStore((s) => s.draft.questions.length)
   const dependents = useBuilderStore((s) => countDependents(s.draft, question.key))
   const prompt = useBuilderStore((s) => s.conditionPrompt === question.key)
+  const training = useBuilderStore((s) => s.kind === 'training')
   const problem = useBuilderStore((s) =>
     question.condition ? questionConditionProblem(s.draft, question.key) : null,
   )
@@ -155,6 +157,8 @@ function QuestionBody({ question, number }: { question: Question; number: number
       />
 
       <Editor question={question} />
+
+      {training ? <AnswerKeyEditor question={question} number={number} /> : null}
 
       {question.condition || prompt ? (
         <ConditionPanel target={target} condition={question.condition} problem={problem} />

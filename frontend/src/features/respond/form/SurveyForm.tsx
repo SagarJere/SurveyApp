@@ -59,6 +59,13 @@ interface SurveyFormProps {
   onVideoProgress?: (sectionKey: string, furthestSeconds: number, completed: boolean) => void
   /** Preview: offer "Skip video" so HR can test the questions without watching. */
   allowSkipVideos?: boolean
+  /** Shown under the cover, e.g. a training's pass mark and attempt number. */
+  intro?: ReactNode
+  /**
+   * Replaces the thank-you screen (trainings: the score screen). `retake` opens an empty form
+   * again; videos already watched stay watched.
+   */
+  doneScreen?: (retake: () => void) => ReactNode
 }
 
 export interface FormVideo {
@@ -113,6 +120,8 @@ export function SurveyForm({
   videoProgress,
   onVideoProgress,
   allowSkipVideos = false,
+  intro,
+  doneScreen,
 }: SurveyFormProps) {
   const { settings, theme } = survey
   const layout = settings.layout
@@ -566,30 +575,34 @@ export function SurveyForm({
     }
   }
 
+  const startAgain = () => {
+    setAnswers({})
+    onAnswersChange?.({})
+    setErrors({})
+    setRevealed(new Set())
+    setPosition(0)
+    setDirection(null)
+    setSubmitted(false)
+  }
+
   const card = submitted ? (
-    <ThankYou
-      survey={survey}
-      onEdit={
-        (canEditAfterSubmit ?? (settings.allow_edit && !settings.anonymous))
-          ? () => {
-              setSubmitted(false)
-            }
-          : undefined
-      }
-      onAnother={
-        (canRespondAgain ?? !settings.one_response)
-          ? () => {
-              setAnswers({})
-              onAnswersChange?.({})
-              setPosition(0)
-              setDirection(null)
-              setSubmitted(false)
-            }
-          : undefined
-      }
-      onReset={onReset}
-      homeLink={homeLink}
-    />
+    doneScreen ? (
+      doneScreen(startAgain)
+    ) : (
+      <ThankYou
+        survey={survey}
+        onEdit={
+          (canEditAfterSubmit ?? (settings.allow_edit && !settings.anonymous))
+            ? () => {
+                setSubmitted(false)
+              }
+            : undefined
+        }
+        onAnother={(canRespondAgain ?? !settings.one_response) ? startAgain : undefined}
+        onReset={onReset}
+        homeLink={homeLink}
+      />
+    )
   ) : (
     <>
       <SurveyCover
@@ -598,6 +611,9 @@ export function SurveyForm({
         title={survey.title}
         description={survey.description}
       />
+      {intro ? (
+        <div className="border-b bg-muted/40 px-6 py-3 text-sm @max-[640px]:px-4.5">{intro}</div>
+      ) : null}
       <div
         className="sticky z-10 flex items-center gap-3 border-b bg-card px-6 py-2.5 text-[13px] text-muted-foreground @max-[640px]:px-4.5"
         style={{ top: stickyTop }}

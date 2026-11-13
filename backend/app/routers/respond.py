@@ -1,6 +1,7 @@
 """Taking surveys (docs/04-api.md, "Respondent"). Any signed-in employee; access is checked
 per survey (audience, dates) on every call."""
 
+from dataclasses import asdict
 from typing import Any, Literal
 from uuid import UUID
 
@@ -14,12 +15,14 @@ from app.models import ThemeAsset, VideoAsset
 from app.schemas.respond import (
     AnswersBody,
     AssetLinks,
+    AttemptResult,
     DraftSaved,
     MySurvey,
     Participation,
     RespondentSurvey,
     SectionVideo,
     SubmitResult,
+    TrainingInfo,
     VideoProgress,
 )
 from app.schemas.videos import VideoProgressIn, VideoProgressOut
@@ -144,7 +147,8 @@ async def get_survey(
         version_no=view.context.version.version.version_no,
         title=content["title"],
         description=content["description"],
-        settings=content["settings"],
+        # Quiz rules go out through `training`, with only what the person may see.
+        settings={k: v for k, v in content["settings"].items() if k != "quiz"},
         theme=content["theme"],
         # The section's raw video settings stay on the server; `videos` has what's playable.
         sections=[{k: v for k, v in s.items() if k != "video"} for s in content["sections"]],
@@ -155,6 +159,11 @@ async def get_survey(
             key: VideoProgress(furthest_seconds=p.furthest_seconds, completed=p.completed)
             for key, p in progress.items()
         },
+        training=TrainingInfo.model_validate(
+            asdict(await service.training_info(session, view.context))
+        )
+        if training
+        else None,
         participation=Participation(
             status=view.status,
             answers=view.answers,
@@ -183,7 +192,8 @@ async def save_draft(
     "/respond/{survey_id}/submit",
     response_model=SubmitResult,
     responses={**_ERRORS, status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ErrorResponse}},
-    summary="Submit answers (one transaction: response, answers, shown questions, participation)",
+    summary="Submit answers (one transaction: response, answers, shown questions, participation)."
+    " Trainings: scored on the server; 409 when no attempts are left",
 )
 async def submit(
     survey_id: UUID, body: AnswersBody, request: Request, user: CurrentUser, session: SessionDep
@@ -195,6 +205,7 @@ async def submit(
         submitted_at=result.submitted_at,
         can_edit=result.can_edit,
         can_respond_again=result.can_respond_again,
+        training=AttemptResult.model_validate(asdict(result.training)) if result.training else None,
     )
 
 

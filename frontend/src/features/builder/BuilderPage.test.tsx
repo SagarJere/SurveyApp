@@ -621,8 +621,9 @@ describe('publishing and closing', () => {
 
     await waitFor(() => {
       expect(router.state.location.search).toBe('?tab=theme')
+      // The URL changes a moment before the tabs re-render.
+      expect(screen.getByRole('tab', { name: 'Theme' })).toHaveAttribute('aria-selected', 'true')
     })
-    expect(screen.getByRole('tab', { name: 'Theme' })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('closes a published survey after confirming', async () => {
