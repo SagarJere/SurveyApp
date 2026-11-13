@@ -23,6 +23,13 @@ export interface SurveyListItem {
   can_delete: boolean
   open_to_all: boolean
   updated_at: string
+  /**
+   * Trainings: `response_count` counts people who completed. People who passed and their
+   * share of those who completed (null with no pass mark), and the due date.
+   */
+  passed_count?: number | null
+  pass_rate?: number | null
+  due_date?: string | null
 }
 
 export interface SurveyDetail {

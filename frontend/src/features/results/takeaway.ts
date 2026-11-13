@@ -4,10 +4,12 @@ import { percent, whole } from './format'
 /** One plain sentence from the data, shown under the survey title. */
 export function takeaway(summary: ResultsSummary, filtered: boolean): string {
   const people = summary.respondents === 1 ? 'person has' : 'people have'
+  const verb = summary.kind === 'training' ? 'completed it' : 'responded'
   if (summary.respondents === 0) {
-    return filtered ? 'Nobody in this group has responded yet.' : 'Nobody has responded yet.'
+    const nobody = summary.kind === 'training' ? 'completed it' : 'responded'
+    return filtered ? `Nobody in this group has ${nobody} yet.` : `Nobody has ${nobody} yet.`
   }
-  let sentence = `${whole(summary.respondents)} ${people} responded`
+  let sentence = `${whole(summary.respondents)} ${people} ${verb}`
   if (summary.response_rate !== null) {
     sentence += `, ${percent(summary.response_rate)} of those invited`
   }

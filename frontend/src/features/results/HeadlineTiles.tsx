@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import type { ResultsSummary } from './api'
 import { percent, whole } from './format'
 
-function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
+export function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-xl border bg-card p-4">
       <dt className="text-sm text-muted-foreground">{label}</dt>

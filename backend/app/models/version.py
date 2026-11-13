@@ -24,6 +24,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
 
+# Optional JSON values are stored as SQL NULL (not a JSON null), so SQL like
+# "quiz IS NULL" means what it says.
+NullableJSONB = JSONB(none_as_null=True)
+
 
 class SurveyVersion(Base):
     __tablename__ = "survey_versions"
@@ -59,9 +63,9 @@ class VersionSection(Base):
     sort_order: Mapped[int] = mapped_column(Integer)
     title: Mapped[str] = mapped_column(Text)
     description: Mapped[str] = mapped_column(Text)
-    condition: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    condition: Mapped[dict[str, Any] | None] = mapped_column(NullableJSONB)
     # Trainings: the section's video (docs/03-data-model.md, "Training additions"), or null.
-    video: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    video: Mapped[dict[str, Any] | None] = mapped_column(NullableJSONB)
 
 
 class VersionQuestion(Base):
@@ -84,10 +88,10 @@ class VersionQuestion(Base):
     help: Mapped[str] = mapped_column(Text)
     required: Mapped[bool] = mapped_column(Boolean)
     config: Mapped[dict[str, Any]] = mapped_column(JSONB)
-    condition: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    condition: Mapped[dict[str, Any] | None] = mapped_column(NullableJSONB)
     # Trainings: the answer key {points, correct_options} or {points, correct_min, correct_max},
     # or null when not marked. Never sent to respondents until the creator's rule allows.
-    quiz: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    quiz: Mapped[dict[str, Any] | None] = mapped_column(NullableJSONB)
 
 
 class QuestionOption(Base):

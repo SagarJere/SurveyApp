@@ -52,6 +52,7 @@ class Summary(BaseModel):
     filter_options: FilterOptions
     can_download_non_responders: bool
     closes_at: date | None
+    kind: Literal["survey", "training"] = "survey"
 
 
 class Day(BaseModel):
@@ -188,3 +189,71 @@ class AnswerRow(BaseModel):
 
 class ResponseDetail(ResponseRow):
     answers: list[AnswerRow]
+
+
+# --- trainings (docs/09-trainings.md, "Reports") --------------------------------------------
+
+
+class QuestionCorrect(BaseModel):
+    key: str
+    number: int
+    text: str
+    shown: int
+    correct: int
+    share: float | None
+    needs_attention: bool
+
+
+class AttemptsBucket(BaseModel):
+    attempts: int
+    label: str
+    people: int
+
+
+class VideoWatched(BaseModel):
+    section_key: str
+    title: str
+    watched: int
+
+
+class TrainingFigures(BaseModel):
+    """Best attempts only. `passed`/`pass_rate` are null when there's no pass mark."""
+
+    completed: int
+    invited: int | None
+    pass_mark: int | None
+    passed: int | None
+    pass_rate: float | None
+    average_score: float | None
+    average_attempts: float | None
+    attempts_to_pass: list[AttemptsBucket]
+    questions: list[QuestionCorrect]
+    videos: list[VideoWatched]
+    due_date: date | None
+
+
+CompletionStatus = Literal["passed", "not_passed", "completed", "in_progress", "not_started"]
+
+
+class CompletionPerson(BaseModel):
+    employee_id: str
+    name: str | None
+    department: str | None
+    location: str | None
+    status: CompletionStatus
+    best_score: int | None
+    attempts: int
+    completed_at: datetime | None
+    late: bool
+
+
+class CompletionReport(BaseModel):
+    total: int
+    counts: dict[CompletionStatus, int]
+    late: int
+    matching: int
+    page: int
+    page_size: int
+    has_pass_mark: bool
+    due_date: date | None
+    rows: list[CompletionPerson]

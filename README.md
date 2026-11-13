@@ -131,6 +131,12 @@ cd backend && uv run python -m app.scripts.seed_responses <survey id> 420
 
 This adds test people T3001 onwards to the survey's audience and submits through the real submit path.
 
+For a published training, this adds learners L4001 onwards. Some never start, some only start, and the rest watch the videos and take the quiz, retaking while the rules allow:
+
+```bash
+cd backend && uv run python -m app.scripts.seed_training_results <training id> 450
+```
+
 `npm run ui-check` publishes the sample survey (if it's still a draft) with the dev test accounts as its audience, open from today for 30 days, so you can try it as E2001.
 
 ## Trainings (video + quiz)

@@ -53,7 +53,7 @@ import {
 } from '@/features/surveys/types'
 import { relativeTime, shortDate } from '@/lib/format'
 
-import { closingSoon, filterSurveys, homeKpis, type StatusFilter } from './home-stats'
+import { closingSoon, dueText, filterSurveys, homeKpis, type StatusFilter } from './home-stats'
 import { RateRing } from './RateRing'
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
@@ -169,17 +169,19 @@ function SurveyList({ surveys, noun }: { surveys: SurveyListItem[]; noun: string
   const [search, setSearch] = useState('')
   const kpis = homeKpis(surveys)
   const shown = filterSurveys(surveys, status, search)
+  const training = noun === 'trainings'
+  const rate = training ? kpis.averagePassRate : kpis.averageRate
   return (
     <div className="flex flex-col gap-5">
       <dl className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
         <Kpi label={`Live ${noun}`} value={String(kpis.live)} />
         <Kpi
-          label="Responses this week"
+          label={training ? 'Completed this week' : 'Responses this week'}
           value={new Intl.NumberFormat().format(kpis.responsesThisWeek)}
         />
         <Kpi
-          label="Average response rate"
-          value={kpis.averageRate === null ? '–' : `${String(Math.round(kpis.averageRate * 100))}%`}
+          label={training ? 'Average pass rate' : 'Average response rate'}
+          value={rate === null ? '–' : `${String(Math.round(rate * 100))}%`}
         />
       </dl>
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -275,6 +277,7 @@ function SurveyRow({ survey }: { survey: SurveyListItem }) {
     survey.title.trim() || (survey.kind === 'training' ? UNTITLED_TRAINING : UNTITLED_SURVEY)
   const published = survey.status !== 'draft'
   const closes = closingSoon(survey)
+  const due = survey.kind === 'training' && survey.due_date ? dueText(survey.due_date) : null
 
   const duplicate = useMutation({
     mutationFn: () => duplicateSurvey(survey.id),
@@ -342,6 +345,19 @@ function SurveyRow({ survey }: { survey: SurveyListItem }) {
           <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold">
             <ClockIcon className="size-4 text-warn" aria-hidden="true" />
             {closes}
+          </p>
+        ) : null}
+        {due || (published && survey.pass_rate !== undefined && survey.pass_rate !== null) ? (
+          <p className="mt-1 flex flex-wrap gap-x-3 text-sm text-muted-foreground">
+            {published && survey.pass_rate !== null && survey.pass_rate !== undefined ? (
+              <span>
+                <span className="font-semibold text-foreground">
+                  {Math.round(survey.pass_rate * 100)}% passed
+                </span>{' '}
+                ({survey.passed_count ?? 0} of {survey.response_count})
+              </span>
+            ) : null}
+            {due ? <span>{due}</span> : null}
           </p>
         ) : null}
       </div>

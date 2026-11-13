@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router'
 
 import type { ResultFilters } from './api'
 
-export type ResultsTab = 'overview' | 'responses'
+export type ResultsTab = 'overview' | 'completion' | 'responses'
 
 /** Filters and the open tab, kept in the URL query string so views can be shared. */
 export function useResultFilters() {
@@ -19,7 +19,9 @@ export function useResultFilters() {
       version: Number.isInteger(version) && version > 0 ? version : null,
     }
   }, [params])
-  const tab: ResultsTab = params.get('tab') === 'responses' ? 'responses' : 'overview'
+  const tabParam = params.get('tab')
+  const tab: ResultsTab =
+    tabParam === 'responses' || tabParam === 'completion' ? tabParam : 'overview'
 
   const update = useCallback(
     (patch: Partial<ResultFilters> & { tab?: ResultsTab }) => {

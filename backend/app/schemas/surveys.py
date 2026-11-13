@@ -30,6 +30,11 @@ class SurveyListItem(BaseModel):
     can_delete: bool
     open_to_all: bool
     updated_at: datetime
+    # Trainings: people who passed and the share of those who completed (null with no pass
+    # mark), and the due date. response_count counts people, not attempts.
+    passed_count: int | None = None
+    pass_rate: float | None = None
+    due_date: date | None = None
 
 
 class SurveyDetail(BaseModel):

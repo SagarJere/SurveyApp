@@ -35,6 +35,17 @@ function closingText(survey: MySurvey): string | null {
   return `Closes ${shortDate(survey.closes_at)}`
 }
 
+/** Trainings not yet completed: "Due in 4 days", "Due today", "Overdue". */
+function dueText(survey: MySurvey): { text: string; urgent: boolean } | null {
+  if (!survey.due_date || survey.status === 'submitted') return null
+  const days = daysUntil(survey.due_date)
+  if (days < 0) return { text: 'Overdue', urgent: true }
+  if (days === 0) return { text: 'Due today', urgent: true }
+  if (days === 1) return { text: 'Due tomorrow', urgent: true }
+  if (days <= 7) return { text: `Due in ${String(days)} days`, urgent: days <= 3 }
+  return { text: `Due ${shortDate(survey.due_date)}`, urgent: false }
+}
+
 /** Trainings: "Passed · 92%", "Not passed · 60%" or "Score 75%" (when there's no pass mark). */
 function resultText(survey: MySurvey): { text: string; tone: 'good' | 'bad' | null } | null {
   if (survey.status !== 'submitted') return null
@@ -58,6 +69,7 @@ function SurveyCard({ survey, action }: { survey: MySurvey; action: string }) {
   const label = retake ? 'Retake' : action
   const closing = closingText(survey)
   const soon = closing !== null && survey.closes_at !== null && daysUntil(survey.closes_at) <= 3
+  const due = dueText(survey)
   const title = survey.title.trim() || 'Untitled survey'
   return (
     <li className="flex overflow-hidden rounded-xl border bg-card">
@@ -83,6 +95,9 @@ function SurveyCard({ survey, action }: { survey: MySurvey; action: string }) {
               <ClockIcon className="size-3.5" aria-hidden="true" />
               About {survey.minutes} minute{survey.minutes === 1 ? '' : 's'}
             </span>
+            {due ? (
+              <span className={cn(due.urgent && 'font-semibold text-warn')}>{due.text}</span>
+            ) : null}
             {closing ? (
               <span className={cn(soon && 'font-semibold text-warn')}>{closing}</span>
             ) : null}

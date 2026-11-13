@@ -300,6 +300,8 @@ The builder sends and receives exactly this. Validate it with a Pydantic model o
 
 `questions` is always stored in display order, grouped by section in section order.
 
+In the published version tables, an empty optional JSON value (`condition`, `video`, `quiz`) is stored as SQL NULL, never a JSON `null`, so `quiz IS NULL` means "not marked".
+
 ### Training additions
 
 A training's draft has the same shape plus these fields (`09-trainings.md`):

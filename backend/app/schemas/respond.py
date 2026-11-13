@@ -120,6 +120,7 @@ class MySurvey(BaseModel):
     # Trainings: how many of its section videos this person has finished.
     videos_total: int = 0
     videos_done: int = 0
+    due_date: date | None = None  # trainings only
     # Trainings: attempts, and the best score and pass (null when the score is hidden).
     attempts_used: int = 0
     attempts_left: int | None = None

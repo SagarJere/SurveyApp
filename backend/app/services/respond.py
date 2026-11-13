@@ -907,6 +907,7 @@ async def my_surveys(
                 "progress": round(answered / total, 2) if total and not submitted else None,
                 "theme": version.content["theme"],
                 "submitted_at": participation.submitted_at if submitted and participation else None,
+                "due_date": _parse_date(version_settings.get("due_date")),
                 "videos_total": len(video_sections),
                 "videos_done": videos_done,
             }

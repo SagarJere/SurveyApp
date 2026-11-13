@@ -97,15 +97,30 @@ class Scope:
     def anonymous(self) -> bool:
         return bool(self.version.content["settings"].get("anonymous"))
 
+    @property
+    def training(self) -> bool:
+        return self.survey.kind == "training"
+
+
+def best_attempts(survey_id: uuid.UUID) -> Select[Any]:
+    """Trainings: each person's best attempt, the one that counts in every report."""
+    return select(SurveyParticipation.best_response_id).where(
+        SurveyParticipation.survey_id == survey_id,
+        SurveyParticipation.best_response_id.is_not(None),
+    )
+
 
 def _local_day(settings: Settings) -> Any:
     return func.date(func.timezone(settings.survey_timezone, SurveyResponse.submitted_at))
 
 
 def filtered_responses(scope: Scope) -> Select[Any]:
-    """IDs of the responses that pass the filters."""
+    """IDs of the responses that pass the filters. Trainings: best attempts only, so nobody
+    is counted twice."""
     f = scope.filters
     query = select(SurveyResponse.id).where(SurveyResponse.survey_id == scope.survey.id)
+    if scope.training:
+        query = query.where(SurveyResponse.id.in_(best_attempts(scope.survey.id)))
     if scope.version_applied is not None:
         query = query.join(SurveyVersion, SurveyVersion.id == SurveyResponse.version_id).where(
             SurveyVersion.version_no == scope.version_applied
@@ -144,13 +159,13 @@ def filtered_responses(scope: Scope) -> Select[Any]:
     return query
 
 
-async def _versions(session: AsyncSession, survey_id: uuid.UUID) -> list[dict[str, Any]]:
-    responses = (
-        select(func.count())
-        .select_from(SurveyResponse)
-        .where(SurveyResponse.version_id == SurveyVersion.id)
-        .scalar_subquery()
-    )
+async def _versions(
+    session: AsyncSession, survey_id: uuid.UUID, *, training: bool = False
+) -> list[dict[str, Any]]:
+    counted = select(func.count()).select_from(SurveyResponse)
+    if training:
+        counted = counted.where(SurveyResponse.id.in_(best_attempts(survey_id)))
+    responses = counted.where(SurveyResponse.version_id == SurveyVersion.id).scalar_subquery()
     rows = await session.execute(
         select(SurveyVersion.id, SurveyVersion.version_no, SurveyVersion.published_at, responses)
         .where(SurveyVersion.survey_id == survey_id)
@@ -183,7 +198,7 @@ async def build_scope(
     if survey.current_version_id is None:
         msg = "Survey has no published version"
         raise LookupError(msg)
-    versions = await _versions(session, survey.id)
+    versions = await _versions(session, survey.id, training=survey.kind == "training")
     compatible = await _compatible(session, versions)
     current_no = next(v["version_no"] for v in versions if v["id"] == survey.current_version_id)
     # "All versions" only when the questions match; otherwise report one version at a time.
@@ -403,11 +418,13 @@ async def participation(session: AsyncSession, scope: Scope) -> dict[str, Any]:
     survey_id = scope.survey.id
     if scope.survey.open_to_all:
         # No invitation list: count responses by the department captured at submit.
+        counted = select(SurveyResponse.department, func.count()).where(
+            SurveyResponse.survey_id == survey_id
+        )
+        if scope.training:
+            counted = counted.where(SurveyResponse.id.in_(best_attempts(survey_id)))
         rows = await session.execute(
-            select(SurveyResponse.department, func.count())
-            .where(SurveyResponse.survey_id == survey_id)
-            .group_by(SurveyResponse.department)
-            .order_by(func.count().desc())
+            counted.group_by(SurveyResponse.department).order_by(func.count().desc())
         )
         return {
             "open_to_all": True,

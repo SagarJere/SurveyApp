@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Request, Response, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
 from app.auth.deps import CurrentUser, HrUser
 from app.config import Settings
@@ -57,6 +57,10 @@ class _Counts:
     respondents: int = 0
     closes_at: date | None = None
     opens_at: date | None = None
+    # Trainings: people who passed, whether the live version has a pass mark, the due date.
+    passed: int = 0
+    pass_mark: bool = False
+    due_date: date | None = None
 
 
 def _list_item(access: service.SurveyAccess, counts: _Counts) -> SurveyListItem:
@@ -77,6 +81,11 @@ def _list_item(access: service.SurveyAccess, counts: _Counts) -> SurveyListItem:
         # Published surveys run on the published dates; drafts show what's being planned.
         opens_at=counts.opens_at if published else _date(settings.get("opens_at")),
         closes_at=counts.closes_at if published else _date(settings.get("closes_at")),
+        passed_count=counts.passed if survey.kind == "training" and counts.pass_mark else None,
+        pass_rate=round(counts.passed / counts.responses, 4)
+        if survey.kind == "training" and counts.pass_mark and counts.responses
+        else None,
+        due_date=counts.due_date if published else _date(settings.get("due_date")),
         has_unpublished_changes=survey.has_unpublished_changes,
         my_role=access.member_role,  # type: ignore[arg-type]
         can_edit=access.can_edit,
@@ -93,21 +102,27 @@ async def _list_counts(
         return {}
     week_ago = today(settings) - timedelta(days=6)
     local_day = func.date(func.timezone(settings.survey_timezone, SurveyResponse.submitted_at))
-    responses = dict(
-        (
-            await session.execute(
-                select(SurveyResponse.survey_id, func.count())
-                .where(SurveyResponse.survey_id.in_(survey_ids))
-                .group_by(SurveyResponse.survey_id)
-            )
-        ).all()
+    # Trainings count people, not attempts: a person's first attempt is when they completed.
+    counted = (
+        select(SurveyResponse.survey_id, func.count())
+        .join(Survey, Survey.id == SurveyResponse.survey_id)
+        .where(
+            SurveyResponse.survey_id.in_(survey_ids),
+            or_(Survey.kind != "training", SurveyResponse.attempt_no == 1),
+        )
+        .group_by(SurveyResponse.survey_id)
     )
-    this_week = dict(
+    responses = dict((await session.execute(counted)).all())
+    this_week = dict((await session.execute(counted.where(local_day >= week_ago))).all())
+    passed = dict(
         (
             await session.execute(
-                select(SurveyResponse.survey_id, func.count())
-                .where(SurveyResponse.survey_id.in_(survey_ids), local_day >= week_ago)
-                .group_by(SurveyResponse.survey_id)
+                select(SurveyParticipation.survey_id, func.count())
+                .where(
+                    SurveyParticipation.survey_id.in_(survey_ids),
+                    SurveyParticipation.passed.is_(True),
+                )
+                .group_by(SurveyParticipation.survey_id)
             )
         ).all()
     )
@@ -155,6 +170,9 @@ async def _list_counts(
             respondents=respondents.get(survey_id, 0),
             opens_at=_date(version.settings.get("opens_at")) if version else None,
             closes_at=_date(version.settings.get("closes_at")) if version else None,
+            passed=passed.get(survey_id, 0),
+            pass_mark=bool(version and (version.settings.get("quiz") or {}).get("pass_mark")),
+            due_date=_date(version.settings.get("due_date")) if version else None,
         )
     return out
 

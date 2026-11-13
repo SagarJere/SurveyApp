@@ -2,6 +2,7 @@
 
 import re
 import uuid
+from dataclasses import asdict
 from datetime import UTC, date, datetime
 from typing import Annotated, Any
 
@@ -13,18 +14,23 @@ from app.db import SessionDep
 from app.errors import AppError, ErrorResponse
 from app.schemas.results import (
     Comments,
+    CompletionReport,
+    CompletionStatus,
     Participation,
     QuestionsResult,
     ResponseDetail,
     ResponsesPage,
     Summary,
     Timeline,
+    TrainingFigures,
 )
 from app.services import results as service
 from app.services import surveys as survey_service
+from app.services import training_results as training_service
 from app.services.exports import (
     ExportKind,
     build_export,
+    completion_workbook,
     export_filename,
     non_responders_workbook,
 )
@@ -143,7 +149,114 @@ async def summary(
         version_applied=scope.version_applied,
         can_download_non_responders=access.can_edit and not access.survey.open_to_all,
         closes_at=date.fromisoformat(settings["closes_at"]) if settings.get("closes_at") else None,
+        kind="training" if scope.training else "survey",
     )
+
+
+def _training_scope(scope: service.Scope) -> None:
+    if not scope.training:
+        raise AppError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            message="Training results are only for trainings.",
+        )
+
+
+@router.get(
+    "/training",
+    response_model=TrainingFigures,
+    responses=_ERRORS,
+    summary="Trainings: completed, passed, scores, attempts, % correct per question, videos",
+)
+async def training(
+    survey_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    session: SessionDep,
+    filters: FiltersDep,
+) -> TrainingFigures:
+    scope, _ = await _scope(request, session, user, survey_id, filters)
+    _training_scope(scope)
+    data = await results_cache.get_or_compute(
+        survey_id,
+        _cache_key("training", scope),
+        lambda: training_service.training_figures(session, scope),
+    )
+    return TrainingFigures(**data)
+
+
+@router.get(
+    "/completion",
+    response_model=CompletionReport,
+    responses=_ERRORS,
+    summary="Trainings: everyone in the audience with status, best score and attempts",
+)
+async def completion(
+    *,
+    survey_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    session: SessionDep,
+    filters: FiltersDep,
+    status_filter: Annotated[CompletionStatus | None, Query(alias="status")] = None,
+    page: Annotated[int, Query(ge=1, le=10_000)] = 1,
+) -> CompletionReport:
+    """Department and location filters apply; dates and versions don't (it's about people,
+    not responses)."""
+    scope, _ = await _scope(request, session, user, survey_id, filters)
+    _training_scope(scope)
+    data = await results_cache.get_or_compute(
+        survey_id,
+        _cache_key("completion", scope, status_filter, page),
+        lambda: training_service.completion_report(session, scope, status=status_filter, page=page),
+    )
+    return CompletionReport(
+        **{**data, "rows": [asdict(row) for row in data["rows"]]},
+    )
+
+
+async def _completion_data(scope: service.Scope, session: SessionDep) -> list[dict[str, Any]]:
+    """Completion rows for Excel: local times without a zone (Excel has none)."""
+    zone = scope.settings.timezone
+    return [
+        {
+            **asdict(row),
+            "status_label": training_service.STATUS_LABELS[row.status],
+            "completed_at": row.completed_at.astimezone(zone).replace(tzinfo=None)
+            if row.completed_at
+            else None,
+        }
+        for row in await training_service.completion_rows(session, scope)
+    ]
+
+
+@router.get("/completion.xlsx", response_class=Response, responses=_ERRORS)
+async def completion_export(
+    *,
+    survey_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    session: SessionDep,
+    filters: FiltersDep,
+    status_filter: Annotated[CompletionStatus | None, Query(alias="status")] = None,
+) -> Response:
+    scope, _ = await _scope(request, session, user, survey_id, filters)
+    _training_scope(scope)
+    rows = await _completion_data(scope, session)
+    if status_filter:
+        rows = [r for r in rows if r["status"] == status_filter]
+    title = scope.version.content["title"] or "Training"
+    exported_at = datetime.now(UTC)
+    data: dict[str, Any] = {
+        "title": title,
+        "exported_at": exported_at,
+        "filters_text": _filters_text(filters, scope)
+        + (f", Status: {training_service.STATUS_LABELS[status_filter]}" if status_filter else ""),
+        "summary": await service.summary(session, scope),
+        "training": True,
+        "due_date": training_service.due_date(scope),
+        "completion": rows,
+    }
+    return _xlsx(completion_workbook(data), export_filename(title, exported_at, "completion"))
 
 
 @router.get("/timeline", response_model=Timeline, responses=_ERRORS)
@@ -315,6 +428,7 @@ async def export(
     scope, _ = await _scope(request, session, user, survey_id, filters)
     summary_data = await service.summary(session, scope)
     data: dict[str, Any] = {
+        "training": scope.training,
         "title": scope.version.content["title"] or "Survey",
         "exported_at": datetime.now(UTC),
         "filters_text": _filters_text(filters, scope),
@@ -327,6 +441,9 @@ async def export(
     if kind == "analytics":
         data["participation"] = await service.participation(session, scope)
         data["timeline"] = await service.timeline(session, scope)
+        if scope.training:
+            data["completion"] = await _completion_data(scope, session)
+            data["due_date"] = training_service.due_date(scope)
     if not summary_data["small_group"]:
         data["responses"] = await service.all_responses(session, scope)
         data["answers"] = await service.all_answers(session, scope)

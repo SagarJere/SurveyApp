@@ -37,11 +37,13 @@ import {
   getQuestions,
   getSummary,
   getTimeline,
+  getTrainingFigures,
   resultKeys,
   type ExportKind,
   type ResultFilters,
   type ResultsSummary,
 } from './api'
+import { CompletionTab } from './CompletionTab'
 import { DailyChart } from './DailyChart'
 import { FilterBar } from './FilterBar'
 import { HeadlineTiles, HeadlineTilesSkeleton } from './HeadlineTiles'
@@ -50,6 +52,7 @@ import { QuestionResults, QuestionResultsSkeleton } from './QuestionResults'
 import { ResponsesTab } from './ResponsesTab'
 import { SmallGroupNotice } from './SmallGroupNotice'
 import { takeaway } from './takeaway'
+import { TrainingPanels, TrainingSkeleton, TrainingTiles } from './TrainingOverview'
 import { useResultFilters, type ResultsTab } from './use-result-filters'
 
 const EXPORTS: { kind: ExportKind; label: string; description: string }[] = [
@@ -65,6 +68,13 @@ const EXPORTS: { kind: ExportKind; label: string; description: string }[] = [
       'Summary with a chart per question, participation, daily responses, all responses and comments.',
   },
 ]
+
+/** Trainings: what the same two downloads hold (best attempts; a Completion sheet). */
+const TRAINING_EXPORT_NOTES: Record<ExportKind, string> = {
+  responses: 'One row per person: their best attempt.',
+  analytics:
+    'Summary with charts, a Completion sheet (everyone, with status and best score), participation, daily counts and best attempts.',
+}
 
 const SURVEY_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -135,8 +145,12 @@ export function ResultsPage() {
   }
 
   const data = summary.data
-  const showResponsesTab = !data.anonymous
-  const currentTab: ResultsTab = showResponsesTab ? tab : 'overview'
+  const training = data.kind === 'training'
+  const views: [ResultsTab, string][] = [['overview', 'Overview']]
+  if (training) views.push(['completion', 'Completion'])
+  if (!data.anonymous)
+    views.push(['responses', training ? 'Best attempts' : 'Individual responses'])
+  const currentTab: ResultsTab = views.some(([value]) => value === tab) ? tab : 'overview'
 
   return (
     <div className="flex flex-col gap-6">
@@ -156,18 +170,13 @@ export function ResultsPage() {
         onChange={update}
         onClear={clear}
       />
-      {showResponsesTab ? (
+      {views.length > 1 ? (
         <div
           className="inline-flex self-start rounded-full border bg-muted p-[3px]"
           role="group"
           aria-label="View"
         >
-          {(
-            [
-              ['overview', 'Overview'],
-              ['responses', 'Individual responses'],
-            ] as const
-          ).map(([value, label]) => (
+          {views.map(([value, label]) => (
             <button
               key={value}
               type="button"
@@ -182,7 +191,13 @@ export function ResultsPage() {
           ))}
         </div>
       ) : null}
-      {currentTab === 'responses' ? (
+      {currentTab === 'completion' ? (
+        <CompletionTab
+          surveyId={surveyId}
+          filters={filters}
+          title={data.title.trim() || UNTITLED_SURVEY}
+        />
+      ) : currentTab === 'responses' ? (
         data.small_group ? (
           <SmallGroupNotice />
         ) : (
@@ -221,11 +236,11 @@ function ResultsHeader({
   return (
     <header className="flex flex-col gap-4">
       <Link
-        to="/admin/surveys"
+        to={summary.kind === 'training' ? '/admin/trainings' : '/admin/surveys'}
         className="inline-flex items-center gap-1 self-start rounded-md text-sm text-muted-foreground hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
       >
         <ArrowLeftIcon className="size-4" aria-hidden="true" />
-        Surveys
+        {summary.kind === 'training' ? 'Trainings' : 'Surveys'}
       </Link>
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
@@ -311,7 +326,11 @@ function ResultsHeader({
                   }}
                 >
                   <span className="font-medium">{option.label}</span>
-                  <span className="text-xs text-muted-foreground">{option.description}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {summary.kind === 'training'
+                      ? TRAINING_EXPORT_NOTES[option.kind]
+                      : option.description}
+                  </span>
                 </DropdownMenuItem>
               ))}
               {filtered ? (
@@ -360,10 +379,25 @@ function Overview({
     queryFn: ({ signal }) => getQuestions(surveyId, filters, signal),
     placeholderData: keepPreviousData,
   })
+  const training = summary.kind === 'training'
+  const figures = useQuery({
+    queryKey: resultKeys.part(surveyId, 'training', filters),
+    queryFn: ({ signal }) => getTrainingFigures(surveyId, filters, signal),
+    placeholderData: keepPreviousData,
+    enabled: training,
+  })
 
   return (
     <div className="flex flex-col gap-6">
-      <HeadlineTiles summary={summary} />
+      {!training ? (
+        <HeadlineTiles summary={summary} />
+      ) : figures.data ? (
+        <TrainingTiles figures={figures.data} />
+      ) : figures.isError ? (
+        <PanelState label="training figures" query={figures} />
+      ) : (
+        <HeadlineTilesSkeleton />
+      )}
       {summary.small_group ? <SmallGroupNotice /> : null}
       <div className="grid gap-6 xl:grid-cols-2">
         {timeline.data ? (
@@ -393,6 +427,13 @@ function Overview({
           <PanelState label="participation" query={participation} />
         )}
       </div>
+      {training ? (
+        figures.data ? (
+          <TrainingPanels figures={figures.data} />
+        ) : figures.isError ? null : (
+          <TrainingSkeleton />
+        )
+      ) : null}
       {summary.small_group ? null : questions.data ? (
         questions.data.small_group ? null : (
           <QuestionResults surveyId={surveyId} filters={filters} result={questions.data} />

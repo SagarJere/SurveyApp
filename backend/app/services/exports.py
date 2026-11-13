@@ -4,6 +4,10 @@ Two kinds:
 - "responses": one sheet, one row per response, one column per question.
 - "analytics": Summary (the dashboard's figures with a bar chart per question), Participation
   (by department, with a chart), Responses per day (with a chart), Responses and Comments.
+  Trainings add a Completion sheet: everyone in the audience with status, best score,
+  attempts, completed date and late flag (also downloadable on its own).
+
+Trainings report each person's best attempt only, so counts are people who completed.
 
 Every sheet opens with the survey title, the response count, and when it was exported with
 which filters; the data below it is an Excel table (filter buttons, works with pivot tables).
@@ -75,10 +79,15 @@ def _safe(value: Any) -> Any:
     return value
 
 
-def response_count_text(summary: dict[str, Any]) -> str:
-    """ "421 responses, from 490 invited (86%)" or "3 responses (open to all employees)"."""
+def response_count_text(summary: dict[str, Any], *, training: bool = False) -> str:
+    """ "421 responses, from 490 invited (86%)" or "3 responses (open to all employees)".
+    Trainings: "421 completed, from 490 invited (86%)"."""
     count = summary["responses"]
-    text = f"{count:,} {'response' if count == 1 else 'responses'}"
+    text = (
+        f"{count:,} completed"
+        if training
+        else f"{count:,} {'response' if count == 1 else 'responses'}"
+    )
     if summary["invited"] is None:
         return f"{text} (open to all employees)"
     text += f", from {summary['invited']:,} invited"
@@ -91,7 +100,7 @@ def _title_block(sheet: Any, data: dict[str, Any], extra: str | None = None) -> 
     """Rows 1-3: survey title, response count, export time and filters. Also the print setup."""
     title = data["title"]
     sheet.cell(row=1, column=1, value=_safe(title)).font = TITLE_FONT
-    count = response_count_text(data["summary"])
+    count = response_count_text(data["summary"], training=bool(data.get("training")))
     sheet.cell(row=2, column=1, value=f"{count} · {extra}" if extra else count).font = BOLD
     sheet.cell(
         row=3,
@@ -473,6 +482,59 @@ def _small_group_sheet(sheet: Any, data: dict[str, Any]) -> None:
     sheet.cell(row=HEADING_ROW, column=1, value=SMALL_GROUP_NOTE)
 
 
+COMPLETION_HEADER = [
+    "EmployeeId",
+    "Name",
+    "Department",
+    "Location",
+    "Status",
+    "Best score",
+    "Attempts",
+    "Completed",
+    "Late",
+]
+
+
+def _completion_sheet(sheet: Any, data: dict[str, Any]) -> None:
+    """Trainings: everyone in the audience, including people who haven't started."""
+    rows: list[dict[str, Any]] = data["completion"]
+    due = data.get("due_date")
+    _title_block(sheet, data, f"Due {due:%d %b %Y}" if due else None)
+    _header(sheet, HEADING_ROW, COMPLETION_HEADER)
+    for row in rows:
+        sheet.append(
+            [
+                _safe(row["employee_id"]),
+                _safe(row["name"]),
+                _safe(row["department"]),
+                _safe(row["location"]),
+                row["status_label"],
+                row["best_score"] / 100 if row["best_score"] is not None else None,
+                row["attempts"],
+                row["completed_at"],
+                "Late" if row["late"] else "",
+            ]
+        )
+        sheet.cell(row=sheet.max_row, column=6).number_format = "0%"
+        sheet.cell(row=sheet.max_row, column=8).number_format = "dd mmm yyyy hh:mm"
+    for column, width in zip("ABCDEFGHI", (14, 26, 20, 16, 14, 12, 10, 20, 8), strict=True):
+        sheet.column_dimensions[column].width = width
+    _as_table(sheet, "Completion", len(COMPLETION_HEADER))
+
+
+def completion_workbook(data: dict[str, Any]) -> bytes:
+    workbook = Workbook()
+    workbook.properties.title = data["title"][:255]
+    workbook.properties.creator = "Pulse"
+    sheet = workbook.active
+    assert sheet is not None  # noqa: S101 - a new workbook always has one sheet
+    sheet.title = "Completion"
+    _completion_sheet(sheet, data)
+    out = io.BytesIO()
+    workbook.save(out)
+    return out.getvalue()
+
+
 def build_export(data: dict[str, Any], kind: ExportKind = "analytics") -> bytes:
     """The workbook for one of the two export kinds (see the module docstring)."""
     workbook = Workbook()
@@ -489,6 +551,8 @@ def build_export(data: dict[str, Any], kind: ExportKind = "analytics") -> bytes:
             _responses_sheet(first, data)
     else:
         _summary_sheet(first, data)
+        if "completion" in data:
+            _completion_sheet(workbook.create_sheet("Completion"), data)
         _participation_sheet(workbook.create_sheet("Participation"), data)
         _daily_sheet(workbook.create_sheet("Responses per day"), data)
         if not small:

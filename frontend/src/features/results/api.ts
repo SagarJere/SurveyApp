@@ -37,6 +37,57 @@ export interface ResultsSummary {
   filter_options: { departments: string[]; locations: string[] }
   can_download_non_responders: boolean
   closes_at: string | null
+  /** Trainings report each person's best attempt, so `responses` counts people. */
+  kind?: 'survey' | 'training'
+}
+
+/** Trainings (best attempts only). `passed`/`pass_rate` are null with no pass mark. */
+export interface TrainingFigures {
+  completed: number
+  invited: number | null
+  pass_mark: number | null
+  passed: number | null
+  pass_rate: number | null
+  average_score: number | null
+  average_attempts: number | null
+  attempts_to_pass: { attempts: number; label: string; people: number }[]
+  questions: {
+    key: string
+    number: number
+    text: string
+    shown: number
+    correct: number
+    share: number | null
+    needs_attention: boolean
+  }[]
+  videos: { section_key: string; title: string; watched: number }[]
+  due_date: string | null
+}
+
+export type CompletionStatus = 'passed' | 'not_passed' | 'completed' | 'in_progress' | 'not_started'
+
+export interface CompletionPerson {
+  employee_id: string
+  name: string | null
+  department: string | null
+  location: string | null
+  status: CompletionStatus
+  best_score: number | null
+  attempts: number
+  completed_at: string | null
+  late: boolean
+}
+
+export interface CompletionReport {
+  total: number
+  counts: Record<CompletionStatus, number>
+  late: number
+  matching: number
+  page: number
+  page_size: number
+  has_pass_mark: boolean
+  due_date: string | null
+  rows: CompletionPerson[]
 }
 
 export interface Timeline {
@@ -178,6 +229,18 @@ export const getComments = (
 ) => fetchPart<CommentsResult>(id, 'comments', f, signal, query)
 export const getResponses = (id: string, f: ResultFilters, page: number, signal?: AbortSignal) =>
   fetchPart<ResponsesPage>(id, 'responses', f, signal, { page })
+export const getTrainingFigures = (id: string, f: ResultFilters, signal?: AbortSignal) =>
+  fetchPart<TrainingFigures>(id, 'training', f, signal)
+export const getCompletion = (
+  id: string,
+  f: ResultFilters,
+  query: { status: CompletionStatus | null; page: number },
+  signal?: AbortSignal,
+) =>
+  fetchPart<CompletionReport>(id, 'completion', f, signal, {
+    status: query.status ?? undefined,
+    page: query.page,
+  })
 export async function getResponse(id: string, responseId: string): Promise<ResponseDetail> {
   return (await api.get<ResponseDetail>(`${base(id)}/responses/${responseId}`)).data
 }
@@ -219,5 +282,20 @@ export function downloadNonResponders(
   return downloadFile(
     `${base(id)}/non-responders.xlsx${query(filters)}`,
     `${title || 'Survey'} - not yet responded.xlsx`,
+  )
+}
+
+/** Trainings: everyone in the audience with their status (the status filter applies). */
+export function downloadCompletion(
+  id: string,
+  filters: ResultFilters,
+  title: string,
+  status: CompletionStatus | null,
+): Promise<void> {
+  const search = query(filters)
+  const extra = status ? `${search ? '&' : '?'}status=${status}` : ''
+  return downloadFile(
+    `${base(id)}/completion.xlsx${search}${extra}`,
+    `${title || 'Training'} - completion.xlsx`,
   )
 }

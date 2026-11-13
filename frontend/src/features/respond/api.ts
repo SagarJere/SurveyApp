@@ -104,6 +104,8 @@ export interface MySurvey {
   videos_total: number
   videos_done: number
   /** Trainings: attempts, and the best score and pass (null when the score is hidden). */
+  /** Trainings: an optional due date (YYYY-MM-DD). */
+  due_date?: string | null
   attempts_used?: number
   attempts_left?: number | null
   best_score?: number | null

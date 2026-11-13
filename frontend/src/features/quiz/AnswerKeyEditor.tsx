@@ -99,7 +99,7 @@ function ChoiceKey({
                 className={cn(
                   'inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 text-sm font-medium',
                   on
-                    ? 'border-success bg-success/10 text-success'
+                    ? 'border-success bg-card text-success'
                     : 'text-muted-foreground hover:bg-muted',
                 )}
                 onClick={() => {

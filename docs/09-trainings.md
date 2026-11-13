@@ -73,6 +73,12 @@ The kind is chosen when the survey is created and can't be changed. Everything e
   - **% correct per question**, lowest first, with "Needs attention" under 60%.
   - Attempts needed to pass, and how many people watched each video to the end.
   - **Completion report:** everyone in the audience with department, location, status (Passed, Not passed, In progress, Not started), best score, attempts used, completed date, late flag. Filter by status; download as Excel.
+    - With no pass mark, anyone with an attempt is "Completed" (instead of Passed / Not passed).
+    - "In progress" means they started (watched a video or saved answers) but haven't submitted.
+    - Completed date: when they first passed, or (no pass mark) their first attempt.
+    - Late: completed after the due date ("Late"), or not completed and the due date has passed ("Overdue").
+    - Department and location filters apply to the report; date and version filters don't, because it's about people, not responses.
+    - Open to all: the report lists everyone who started or watched a video.
 - Question widgets and the Responses export use **each person's best attempt only**, so nobody is counted twice. "Responses with analytics" adds a Completion sheet.
 
 ## Build steps

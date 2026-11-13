@@ -5,16 +5,43 @@ export interface HomeKpis {
   responsesThisWeek: number
   /** Average response rate across live surveys that have an invite list. Null when none do. */
   averageRate: number | null
+  /** Trainings: average pass rate across live trainings with a pass mark and completions. */
+  averagePassRate: number | null
+}
+
+function average(values: (number | null | undefined)[]): number | null {
+  const known = values.filter((v): v is number => v !== null && v !== undefined)
+  return known.length ? known.reduce((a, b) => a + b, 0) / known.length : null
 }
 
 export function homeKpis(surveys: SurveyListItem[]): HomeKpis {
   const live = surveys.filter((s) => s.status === 'published')
-  const rates = live.map((s) => s.response_rate).filter((r): r is number => r !== null)
   return {
     live: live.length,
+    // Trainings count people completing (first attempts), not every retake.
     responsesThisWeek: surveys.reduce((sum, s) => sum + s.responses_this_week, 0),
-    averageRate: rates.length ? rates.reduce((a, b) => a + b, 0) / rates.length : null,
+    averageRate: average(live.map((s) => s.response_rate)),
+    averagePassRate: average(live.map((s) => s.pass_rate)),
   }
+}
+
+/** "Due 16 Nov", "Due today", "Due tomorrow", "Overdue since 12 Nov" relative to today. */
+export function dueText(dueDate: string, today: string = localToday()): string {
+  const days = dayNumber(dueDate) - dayNumber(today)
+  if (days < 0) return `Overdue since ${formatDay(dueDate)}`
+  if (days === 0) return 'Due today'
+  if (days === 1) return 'Due tomorrow'
+  if (days <= CLOSING_SOON_DAYS) return `Due in ${String(days)} days`
+  return `Due ${formatDay(dueDate)}`
+}
+
+function formatDay(isoDate: string): string {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  return new Intl.DateTimeFormat(undefined, {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(y ?? 2000, (m ?? 1) - 1, d ?? 1)))
 }
 
 /** Today's date as YYYY-MM-DD in the browser's time zone. */
